@@ -4,6 +4,7 @@ import Truss from '../../utility/Truss'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { Line2 } from 'three/examples/jsm/lines/Line2'
+import Force from './Force'
 
 const TRUSS_COLORS: { [key: string]: Vector3 } = {
 	compression: new Vector3(0, 1, 0),
@@ -73,6 +74,22 @@ const TrussModel = (props: TrussModelProps) => {
 
 					return members
 				})}
+			</group>
+			<group>
+				{joints.reduce((acc, joint) => {
+					if (joint.fixed) {
+						const pos = joint.position.clone().multiplyScalar(scale)
+						acc.push(
+							<Force
+								key={joint.id}
+								force={new Vector3(joint.external_force.x, joint.external_force.y, 0)}
+								origin={new Vector3(pos.x, pos.y, 0)}
+							/>
+						)
+					}
+
+					return acc
+				}, [] as React.ReactNode[])}
 			</group>
 		</group>
 	)
