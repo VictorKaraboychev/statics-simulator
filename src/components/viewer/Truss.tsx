@@ -43,7 +43,7 @@ const TrussModel = (props: TrussModelProps) => {
 						]),
 						new LineMaterial({
 							color: color.getHex(),
-							linewidth: 5 * Math.abs(stress) + 1,
+							linewidth: 5 * Math.min(Math.abs(stress), 1) + 1,
 							worldUnits: true,
 						}),
 					))

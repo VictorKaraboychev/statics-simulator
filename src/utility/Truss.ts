@@ -24,7 +24,7 @@ export class Joint {
 	}
 
 	get degrees_of_freedom(): number {
-		return Object.values(this.connections).reduce((acc: number, v) => acc + (v ? 1 : 0), 0) - (Math.abs(this.external_force.x) > 0 ? 1 : 0) - (Math.abs(this.external_force.y) > 0 ? 1 : 0) 
+		return Object.values(this.connections).reduce((acc: number, v) => acc + (v === null ? 1 : -1), 0) - (Math.abs(this.external_force.x) > 0 ? 1 : 0) - (Math.abs(this.external_force.y) > 0 ? 1 : 0) 
 	}
 
 	get fixed(): boolean {
@@ -221,11 +221,10 @@ export default class Truss {
 
 		while (queue.length > 0 && i < 2 * this.size_) {
 			const joint = queue.shift()!
+			// console.log(i, joint.id, joint.connections_count, joint.degrees_of_freedom)
 
 			if (joint.degrees_of_freedom <= 1) {
-				console.log(queue, joint.degrees_of_freedom)
 				if (!joint.computed) {
-					joint.computed = true
 					const connections = this.getConnections(joint.id)
 	
 					let f = 0
@@ -249,11 +248,9 @@ export default class Truss {
 						const force = connection.connections[joint.id] as number
 						return acc.sub(new Vector2(Math.cos(angle) * force, Math.sin(angle) * force))
 					}, joint.external_force.clone()).toArray())
-		
-	
-					if (connectionForces.columns === 0) break
-	
-					if (connectionForces.columns < 3) {
+			
+					if (f === 0) break
+					if (f < 3) {
 						const solution = solve(connectionForces, netForce)
 	
 						f = 0
@@ -266,9 +263,10 @@ export default class Truss {
 								queue.push(connection)
 							}
 						})
+						joint.computed = true
 						i--
 					} else {
-						console.log(connectionForces, netForce)
+						// console.log(joint.id, connectionForces, netForce, queue.length)
 						queue.push(joint)
 						i++
 					}

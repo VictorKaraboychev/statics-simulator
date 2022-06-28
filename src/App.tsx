@@ -43,6 +43,15 @@ function App() {
 		new Joint(new Vector2(8.75, 2)),
 		new Joint(new Vector2(11.25, 2)),
 		new Joint(new Vector2(13.75, 2)),
+
+		// new Joint(new Vector2(2.5, 4)),
+		// new Joint(new Vector2(5, 4)),
+		// new Joint(new Vector2(7.5, 4)),
+		// new Joint(new Vector2(10, 4)),
+		// new Joint(new Vector2(12.5, 4)),
+
+		new Joint(new Vector2(6.25, -2)),
+		new Joint(new Vector2(8.75, -2)),
 	], [
 		[0, 1],
 		[1, 2],
@@ -50,6 +59,7 @@ function App() {
 		[3, 4],
 		[4, 5],
 		[5, 6],
+
 		[0, 7],
 		[1, 7],
 		[1, 8],
@@ -62,83 +72,107 @@ function App() {
 		[5, 11],
 		[5, 12],
 		[6, 12],
+
 		[7, 8],
 		[8, 9],
 		[9, 10],
 		[10, 11],
 		[11, 12],
+
+		[2, 13],
+		[3, 13],
+		[3, 14],
+		[4, 14],
+
+		[13, 14],
+
+		// [7, 13],
+		// [8, 13],
+		// [8, 14],
+		// [9, 14],
+		// [9, 15],
+		// [10, 15],
+		// [10, 16],
+		// [11, 16],
+		// [11, 17],
+		// [12, 17],
+
+		// [13, 14],
+		// [14, 15],
+		// [15, 16],
+		// [16, 17],
 	], 20000, 20000)
 	
 	console.log(bridge.computeForces())
 
-	// const geneticAlgorithm = new GeneticAlgorithm({
-	// 	mutate: (item: Truss) => {
-	// 		const mutationCount = randInt(0, item.size - 1)
+	const geneticAlgorithm = new GeneticAlgorithm({
+		mutate: (item: Truss) => {
+			const mutationCount = randInt(0, item.size - 1)
 
-	// 		for (let i = 0; i < mutationCount; i++) {
-	// 			const mutation = randInt(0, item.size - 1)
-	// 			const joint = item.joints[mutation]
+			for (let i = 0; i < mutationCount; i++) {
+				const mutation = randInt(0, item.size - 1)
+				const joint = item.joints[mutation]
 
-	// 			if (!joint.fixed) {
-	// 				joint.position.add(new Vector2(Math.random() - 0.5, Math.random() - 0.5))
-	// 			}
-	// 		}
+				if (!joint.fixed) {
+					joint.position.add(new Vector2(Math.random() - 0.5, Math.random() - 0.5))
+				}
+			}
 
-	// 		// if (Math.random() < 0.02) {
-	// 		// 	if (Math.random() < 0.5) {
-	// 		// 		const indexA = randInt(0, item.size - 1)
-	// 		// 		const indexB = randInt(0, item.size - 1)
+			// if (Math.random() < 0.02) {
+			// 	if (Math.random() < 0.5) {
+			// 		const indexA = randInt(0, item.size - 1)
+			// 		const indexB = randInt(0, item.size - 1)
 
-	// 		// 		const position = item.joints[indexA].position.clone().add(item.joints[indexB].position).divideScalar(2).add(new Vector2(Math.random() * 4 - 2, Math.random() * 4 - 2))
+			// 		const position = item.joints[indexA].position.clone().add(item.joints[indexB].position).divideScalar(2).add(new Vector2(Math.random() * 4 - 2, Math.random() * 4 - 2))
 
-	// 		// 		item.addJoint(new Joint(position), [indexA, indexB])
-	// 		// 	} else {
-	// 		// 		const a = item.joints[randInt(0, item.size - 1)]
-	// 		// 		if (!a.fixed) item.removeJoint(a.id)
-	// 		// 	}
-	// 		// }
+			// 		item.addJoint(new Joint(position), [indexA, indexB])
+			// 	} else {
+			// 		const a = item.joints[randInt(0, item.size - 1)]
+			// 		if (!a.fixed) item.removeJoint(a.id)
+			// 	}
+			// }
 
-	// 		return item
-	// 	},
-	// 	crossover: (item1: Truss, item2: Truss) => {
-	// 		return (Math.random() > 0.5 ? item1 : item2).clone()
-	// 	},
-	// 	fitness: (item: Truss) => {
-	// 		const success = item.computeForces()
+			return item
+		},
+		crossover: (item1: Truss, item2: Truss) => {
+			return (Math.random() > 0.5 ? item1 : item2).clone()
+		},
+		fitness: (item: Truss) => {
+			const success = item.computeForces()
 
-	// 		let fitness = 0
+			let fitness = 0
 
-	// 		if (!success || !item.meetsConstraints(constraints)) fitness -= 1000
+			// if (!success || !item.meetsConstraints(constraints)) fitness -= 1000
 
-	// 		const joints = item.joints
+			const joints = item.joints
 
-	// 		let inefficiency = 0
-	// 		for (let i = 0; i < joints.length; i++) {
-	// 			const from = joints[i]
-	// 			for (let j = i; j < joints.length; j++) {
-	// 				const to = joints[j]
+			let inefficiency = 0
+			for (let i = 0; i < joints.length; i++) {
+				const from = joints[i]
+				for (let j = i; j < joints.length; j++) {
+					const to = joints[j]
 					
-	// 				const force = item.getForce(from.id, to.id)
-	// 				if (force) {
-	// 					inefficiency += Math.abs((force > 0 ? constraints.maxCompression : constraints.maxTension) - force)
-	// 				}
-	// 			}
-	// 		}
+					const force = item.getForce(from.id, to.id)
+					if (force) {
+						inefficiency += Math.abs((force > 0 ? constraints.maxCompression : constraints.maxTension) - force)
+					}
+				}
+			}
 
-	// 		fitness -= joints.length**2
-	// 		fitness += 1 / (inefficiency**2 + 0.01)
+			fitness -= joints.length**2
+			fitness += 1 / (inefficiency**2 + 0.01)
 
-	// 		return fitness
-	// 	},
-	// 	initialPopulation: [bridge]
-	// })
+			return fitness
+		},
+		initialPopulation: [bridge.clone()]
+	})
 
-	// for (let i = 0; i < 10; i++) {
+	// for (let i = 0; i < 100; i++) {
 	// 	console.log("Generation: ", geneticAlgorithm.generation, "Best: ", geneticAlgorithm.best.item, "Worst: ", geneticAlgorithm.worst.item, "Avg Fitness: ", geneticAlgorithm.avgFitness)
 	// 	geneticAlgorithm.evolve()
 	// }
 
-	// const best = geneticAlgorithm.best.item
+	const best = geneticAlgorithm.best.item
 
 	return (
 		<ThemeProvider
