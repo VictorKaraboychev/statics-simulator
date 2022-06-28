@@ -14,8 +14,9 @@ const CameraController = (props: CameraControllerProps) => {
 		() => {
 			const controls = new OrbitControls(camera, gl.domElement)
 			if (props.target) controls.target = props.target
-			controls.rotateSpeed = 0.8
+			controls.rotateSpeed = 0.0
 			controls.maxDistance = 750
+			controls.panSpeed = 0.8
 			// controls.minDistance = 100
 			controls.update()
 

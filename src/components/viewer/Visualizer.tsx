@@ -1,6 +1,6 @@
 import React from 'react'
 import { Canvas } from '@react-three/fiber'
-import { BackSide, MeshPhongMaterial, PerspectiveCamera, SphereGeometry, Vector3 } from 'three'
+import { BackSide, MeshPhongMaterial, OrthographicCamera, /*PerspectiveCamera,*/ SphereGeometry, Vector3 } from 'three'
 import CameraController from './CameraController'
 import { Box, useTheme } from '@mui/material'
 import Truss from '../../utility/Truss'
@@ -14,9 +14,11 @@ const Visualizer = (props: VisualizerProps) => {
 	const theme = useTheme()
 	const palette = theme.palette
 
-	const camera = new PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 2000)
-	camera.position.set(0, 100, 500)
-	camera.zoom = 0.75
+	// const camera = new PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 2000)
+	const camera = new OrthographicCamera(-window.innerWidth / 2, window.innerWidth / 2, window.innerHeight / 2, -window.innerHeight / 2, 1, 2000)
+	// camera.position.set(0, 100, 500)
+	camera.position.set(100, 0, 500)
+	camera.zoom = 2
 
 	const center = props.truss.center
 
@@ -40,14 +42,14 @@ const Visualizer = (props: VisualizerProps) => {
 				}}
 			>
 				<CameraController 
-					target={new Vector3(0, -10, 0)}
+					target={new Vector3(0, 0, 0)}
 				/>
 				<fog attach={'fog'} args={[0xffffff, 750, 1000]} />
 
 				<TrussModel
 					position={new Vector3(
-						-center.x,
-						1,
+						0,
+						0,
 						0,
 					)}
 					truss={props.truss}
@@ -68,7 +70,8 @@ const Visualizer = (props: VisualizerProps) => {
 				/>
 				<gridHelper
 					args={[2000, 100, '#000000']}
-					position={[0, 0, 0]}
+					position={[0, 0, -1]}
+					rotation={[Math.PI / 2, 0, 0]}
 				/>
 			</Canvas>
 		</Box>

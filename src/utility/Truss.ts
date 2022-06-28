@@ -87,7 +87,7 @@ export default class Truss {
 	}
 
 	removeJoint(id: string): Truss {
-		const joint = this.truss[id]
+		// const joint = this.truss[id]
 		this.getConnections(id).forEach((connection) => {
 			delete connection.connections[id]
 		})

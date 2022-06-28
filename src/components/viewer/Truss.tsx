@@ -31,7 +31,7 @@ const TrussModel = (props: TrussModelProps) => {
 						<mesh 
 							key={joint.id} 
 							position={new Vector3(p.x, p.y, 0).multiplyScalar(scale)}
-							geometry={new SphereGeometry(10, 16, 16)}
+							geometry={new SphereGeometry(4, 16, 16)}
 							material={new MeshPhongMaterial({
 								color: joint.fixed ? '#000000' : '#ffffff',
 							})}
