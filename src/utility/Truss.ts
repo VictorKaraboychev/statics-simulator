@@ -253,7 +253,7 @@ export default class Truss {
 	
 					if (connectionForces.columns === 0) break
 	
-					try {
+					if (connectionForces.columns < 3) {
 						const solution = solve(connectionForces, netForce)
 	
 						f = 0
@@ -267,10 +267,10 @@ export default class Truss {
 							}
 						})
 						i--
-					} catch (error) {
+					} else {
+						console.log(connectionForces, netForce)
 						queue.push(joint)
 						i++
-						console.log(error)
 					}
 				}
 			} else {
