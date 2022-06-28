@@ -15,6 +15,10 @@ const Visualizer = (props: VisualizerProps) => {
 	const palette = theme.palette
 
 	const camera = new PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 2000)
+	camera.position.set(0, 100, 500)
+	camera.zoom = 0.75
+
+	const center = props.truss.center
 
 	return (
 		<Box
@@ -41,6 +45,11 @@ const Visualizer = (props: VisualizerProps) => {
 				<fog attach={'fog'} args={[0xffffff, 750, 1000]} />
 
 				<TrussModel
+					position={new Vector3(
+						-center.x,
+						1,
+						0,
+					)}
 					truss={props.truss}
 				/>
 				<mesh
@@ -58,7 +67,7 @@ const Visualizer = (props: VisualizerProps) => {
 					position={new Vector3(0, 50, 0)}
 				/>
 				<gridHelper
-					args={[2000, 200, '#000000']}
+					args={[2000, 100, '#000000']}
 					position={[0, 0, 0]}
 				/>
 			</Canvas>
