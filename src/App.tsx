@@ -7,6 +7,8 @@ import GeneticAlgorithm from './utility/GeneticAlgorithm'
 import { randInt } from './utility/functions'
 import Joint from './utility/Joint'
 
+import { test_algo } from './utility/truss_me/the_algo'
+
 function App() {
 
 	const constraints = {
@@ -28,80 +30,126 @@ function App() {
 	// 	[2, 3],
 	// ], 20000, 20000)
 
-	const bridge = new Truss([
-		new Joint(new Vector2(0, 0), [new Vector2(1, 0), new Vector2(0, 1)]),
-		new Joint(new Vector2(2.5, 0), undefined, new Vector2(0, -15000)),
-		new Joint(new Vector2(5, 0), undefined, new Vector2(0, -15000)),
-		new Joint(new Vector2(7.5, 0), undefined, new Vector2(0, -15000)),
-		new Joint(new Vector2(10, 0), undefined, new Vector2(0, -15000)),
-		new Joint(new Vector2(12.5, 0), undefined, new Vector2(0, -15000)),
-		new Joint(new Vector2(15, 0), [new Vector2(0, 1)]),
+	// const bridge = new Truss([
+	// 	new Joint(new Vector2(0, 0), [new Vector2(1, 0), new Vector2(0, 1)]),
+	// 	new Joint(new Vector2(2.5, 0), undefined, new Vector2(0, -15000)),
+	// 	new Joint(new Vector2(5, 0), undefined, new Vector2(0, -15000)),
+	// 	new Joint(new Vector2(7.5, 0), undefined, new Vector2(0, -15000)),
+	// 	new Joint(new Vector2(10, 0), undefined, new Vector2(0, -15000)),
+	// 	new Joint(new Vector2(12.5, 0), undefined, new Vector2(0, -15000)),
+	// 	new Joint(new Vector2(15, 0), [new Vector2(0, 1)]),
 
-		new Joint(new Vector2(1.25, 1.25)),
-		new Joint(new Vector2(3.75, 2.5)),
-		new Joint(new Vector2(6.25, 3)),
-		new Joint(new Vector2(8.75, 3)),
-		new Joint(new Vector2(11.25, 2.5)),
-		new Joint(new Vector2(13.75, 1.25)),
+	// 	new Joint(new Vector2(1.25, 1.25)),
+	// 	new Joint(new Vector2(3.75, 2.5)),
+	// 	new Joint(new Vector2(6.25, 3)),
+	// 	new Joint(new Vector2(8.75, 3)),
+	// 	new Joint(new Vector2(11.25, 2.5)),
+	// 	new Joint(new Vector2(13.75, 1.25)),
 
-		// new Joint(new Vector2(2.5, 4)),
-		// new Joint(new Vector2(5, 4)),
-		// new Joint(new Vector2(7.5, 4)),
-		// new Joint(new Vector2(10, 4)),
-		// new Joint(new Vector2(12.5, 4)),
+	// 	// new Joint(new Vector2(2.5, 4)),
+	// 	// new Joint(new Vector2(5, 4)),
+	// 	// new Joint(new Vector2(7.5, 4)),
+	// 	// new Joint(new Vector2(10, 4)),
+	// 	// new Joint(new Vector2(12.5, 4)),
 
-		// new Joint(new Vector2(6.25, -2)),
-		// new Joint(new Vector2(8.75, -2)),
-	], [
-		[0, 1],
-		[1, 2],
-		[2, 3],
-		[3, 4],
-		[4, 5],
-		[5, 6],
+	// 	// new Joint(new Vector2(6.25, -2)),
+	// 	// new Joint(new Vector2(8.75, -2)),
+	// ], [
+	// 	[0, 1],
+	// 	[1, 2],
+	// 	[2, 3],
+	// 	[3, 4],
+	// 	[4, 5],
+	// 	[5, 6],
 
-		[0, 7],
-		[1, 7],
-		[1, 8],
-		[2, 8],
-		[2, 9],
-		[3, 9],
-		[3, 10],
-		[4, 10],
-		[4, 11],
-		[5, 11],
-		[5, 12],
-		[6, 12],
+	// 	[0, 7],
+	// 	[1, 7],
+	// 	[1, 8],
+	// 	[2, 8],
+	// 	[2, 9],
+	// 	[3, 9],
+	// 	[3, 10],
+	// 	[4, 10],
+	// 	[4, 11],
+	// 	[5, 11],
+	// 	[5, 12],
+	// 	[6, 12],
 
-		[7, 8],
-		[8, 9],
-		[9, 10],
-		[10, 11],
-		[11, 12],
+	// 	[7, 8],
+	// 	[8, 9],
+	// 	[9, 10],
+	// 	[10, 11],
+	// 	[11, 12],
 
-		// [2, 13],
-		// [3, 13],
-		// [3, 14],
-		// [4, 14],
+	// 	// [2, 13],
+	// 	// [3, 13],
+	// 	// [3, 14],
+	// 	// [4, 14],
 
-		// [13, 14],
+	// 	// [13, 14],
 
-		// [7, 13],
-		// [8, 13],
-		// [8, 14],
-		// [9, 14],
-		// [9, 15],
-		// [10, 15],
-		// [10, 16],
-		// [11, 16],
-		// [11, 17],
-		// [12, 17],
+	// 	// [7, 13],
+	// 	// [8, 13],
+	// 	// [8, 14],
+	// 	// [9, 14],
+	// 	// [9, 15],
+	// 	// [10, 15],
+	// 	// [10, 16],
+	// 	// [11, 16],
+	// 	// [11, 17],
+	// 	// [12, 17],
 
-		// [13, 14],
-		// [14, 15],
-		// [15, 16],
-		// [16, 17],
-	], 20000, 20000)
+	// 	// [13, 14],
+	// 	// [14, 15],
+	// 	// [15, 16],
+	// 	// [16, 17],
+	// ], 20000, 20000)
+
+	const spacing = -2.5;
+    const multiplier = 1;
+
+    const bridge = new Truss([
+        new Joint(new Vector2(0, 0), [new Vector2(1, 0), new Vector2(0, 1)]),
+        new Joint(new Vector2(2.5, 0), undefined, new Vector2(0, -15000)),
+        new Joint(new Vector2(5, 0), undefined, new Vector2(0, -15000)),
+        new Joint(new Vector2(7.5, 0), undefined, new Vector2(0, -15000)),
+        new Joint(new Vector2(10, 0), undefined, new Vector2(0, -15000)),
+        new Joint(new Vector2(12.5, 0), undefined, new Vector2(0, -15000)),
+        new Joint(new Vector2(15, 0), [new Vector2(0, 1)]),
+
+        new Joint(new Vector2(2.5, spacing)),
+        new Joint(new Vector2(5, spacing)),
+        new Joint(new Vector2(7.5, spacing)),
+        new Joint(new Vector2(10, spacing)),
+        new Joint(new Vector2(12.5, spacing)),
+
+    ], [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+        [3, 4],
+        [4, 5],
+        [5, 6],
+
+        [0, 7],
+        [7, 8],
+        [8, 9],
+        [9, 10],
+        [10, 11],
+        [11, 6],
+
+        [1, 7],
+        [2, 8],
+        [3, 9],
+        [4, 10],
+        [5, 11],
+
+        [2, 7],
+        [3, 8],
+        [3, 10],
+        [4, 11],
+
+    ], 4000 * multiplier, 8000 * multiplier)
 	
 	console.log('Forces Computed: ', bridge.computeForces())
 
@@ -188,7 +236,7 @@ function App() {
 				}}
 			>
 				<Visualizer
-					truss={bridge}
+					truss={test_algo(bridge)}
 				/>
 			</Box>
 		</ThemeProvider>
