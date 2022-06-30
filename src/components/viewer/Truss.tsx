@@ -50,7 +50,9 @@ const TrussModel = (props: TrussModelProps) => {
 							const stress = props.truss.getStress(a.id, b.id)
 
 							const stressType = stress < 0 ? 'tension' : 'compression'
-							const value = TRUSS_COLORS[stressType].clone().multiplyScalar(Math.abs(stress))
+							// const value = TRUSS_COLORS[stressType].clone().multiplyScalar(Math.abs(stress))
+							const value = Math.abs(stress) >= 1 ? TRUSS_COLORS[stressType] : new Vector3(0, 0, 0);
+							console.log(stress)
 							const color = new Color().fromArray(value.toArray())
 
 							members.push(<primitive
