@@ -1,6 +1,11 @@
 import { Vector2 } from "three"
 import { getUUID } from "./functions"
 
+export const FIXTURE = {
+	Pin: [new Vector2(0, 1), new Vector2(1, 0)],
+	Roller: [new Vector2(0, 1)]
+}
+
 export default class Joint {
 	id: string
 	position: Vector2
@@ -32,6 +37,10 @@ export default class Joint {
 
 	angleTo(joint: Joint): number {
 		return Math.atan2(this.position.y - joint.position.y, this.position.x - joint.position.x)
+	}
+
+	distanceTo(joint: Joint): number {
+		return this.position.distanceTo(joint.position)
 	}
 
 	clone(): Joint {

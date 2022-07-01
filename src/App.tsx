@@ -5,7 +5,8 @@ import Truss from './utility/Truss'
 import { Vector2 } from 'three'
 import GeneticAlgorithm from './utility/GeneticAlgorithm'
 import { randInt } from './utility/functions'
-import Joint from './utility/Joint'
+import Joint, { FIXTURE } from './utility/Joint'
+import { cost }from './utility/trussy/cost'
 
 function App() {
 
@@ -15,95 +16,130 @@ function App() {
 		maxTension: 8000,
 	}
 
+	// const length =  1.6
+
 	// const startingTruss = new Truss([
-	// 	new Joint(new Vector2(0, 2), undefined, new Vector2(0, -7000)),
-	// 	new Joint(new Vector2(2, 2), [new Vector2(1, 0), new Vector2(0, 1)]),
-	// 	new Joint(new Vector2(2, 0), [new Vector2(1, 0)]),
-	// 	new Joint(new Vector2(1, 1), undefined, new Vector2(0, -7000)),
+	// 	new Joint(new Vector2(0, 0), FIXTURE.Pin),
+	// 	new Joint(new Vector2(1 * length, 0)),
+	// 	new Joint(new Vector2(2 * length, 0), FIXTURE.Roller),
+	// 	new Joint(new Vector2(0.5 * length, Math.sqrt(3) / 2 * length)),
+		
+	// 	new Joint(new Vector2(1.5 * length, Math.sqrt(3) / 2 * length), undefined, new Vector2(0, -100)),
+		
+
 	// ], [
 	// 	[0, 1],
-	// 	[0, 3],
-	// 	[1, 2],
 	// 	[1, 3],
-	// 	[2, 3],
-	// ], 20000, 20000)
+	// 	[0, 3],
+	// 	[4, 1],
+	// 	[2, 4],
+	// 	[4, 3],
+	// 	[1, 2],
+	// ], 4000, 8000)
+
+	const spacing = -3;
+	const multiplier = 1;
+	const force = -(75000 / 4);
+	const offset = -3;
 
 	const bridge = new Truss([
 		new Joint(new Vector2(0, 0), [new Vector2(1, 0), new Vector2(0, 1)]),
-		new Joint(new Vector2(2.5, 0), undefined, new Vector2(0, -15000)),
-		new Joint(new Vector2(5, 0), undefined, new Vector2(0, -15000)),
-		new Joint(new Vector2(7.5, 0), undefined, new Vector2(0, -15000)),
-		new Joint(new Vector2(10, 0), undefined, new Vector2(0, -15000)),
-		new Joint(new Vector2(12.5, 0), undefined, new Vector2(0, -15000)),
-		new Joint(new Vector2(15, 0), [new Vector2(0, 1)]),
+		new Joint(new Vector2(-spacing, 0), undefined, new Vector2(0, force)),
+		new Joint(new Vector2(-spacing * 2, 0), undefined, new Vector2(0, force)),
+		new Joint(new Vector2(-spacing * 3, 0), undefined, new Vector2(0, force)),
+		new Joint(new Vector2(-spacing * 4, 0), undefined, new Vector2(0, force)),
+		new Joint(new Vector2(15, 0), [new Vector2(0, 1)]), //5
 
-		new Joint(new Vector2(1.25, 1.25)),
-		new Joint(new Vector2(3.75, 2.5)),
-		new Joint(new Vector2(6.25, 3)),
-		new Joint(new Vector2(8.75, 3)),
-		new Joint(new Vector2(11.25, 2.5)),
-		new Joint(new Vector2(13.75, 1.25)),
+		new Joint(new Vector2(-spacing, offset)), //6
+		new Joint(new Vector2(7.5, offset)),
+		new Joint(new Vector2(-spacing * 4, offset)), //8
 
-		// new Joint(new Vector2(2.5, 4)),
-		// new Joint(new Vector2(5, 4)),
-		// new Joint(new Vector2(7.5, 4)),
-		// new Joint(new Vector2(10, 4)),
-		// new Joint(new Vector2(12.5, 4)),
+		new Joint(new Vector2(7.5, 0.5)), //9
+		
 
-		// new Joint(new Vector2(6.25, -2)),
-		// new Joint(new Vector2(8.75, -2)),
+		new Joint(new Vector2(7.5, -0.5)), //10
+
 	], [
 		[0, 1],
 		[1, 2],
-		[2, 3],
-		[3, 4],
-		[4, 5],
-		[5, 6],
-
-		[0, 7],
-		[1, 7],
-		[1, 8],
-		[2, 8],
+		//[2, 3],
 		[2, 9],
+		[2, 10],
 		[3, 9],
 		[3, 10],
-		[4, 10],
-		[4, 11],
-		[5, 11],
-		[5, 12],
-		[6, 12],
-
-		[7, 8],
-		[8, 9],
 		[9, 10],
-		[10, 11],
-		[11, 12],
 
-		// [2, 13],
-		// [3, 13],
-		// [3, 14],
-		// [4, 14],
+		[3, 4],
+		[4, 5],
 
-		// [13, 14],
+		[6, 7],
+		[7, 8],
 
-		// [7, 13],
-		// [8, 13],
-		// [8, 14],
-		// [9, 14],
-		// [9, 15],
-		// [10, 15],
-		// [10, 16],
-		// [11, 16],
-		// [11, 17],
-		// [12, 17],
+		[0, 6],
+		[1, 6],
+		[2, 6],
+		[2, 7],
 
-		// [13, 14],
-		// [14, 15],
-		// [15, 16],
-		// [16, 17],
-	], 20000, 20000)
+		[3, 7],
+		[3, 8],
+		[4, 8],
+		[5, 8],
+
+	], 4000 * multiplier, 8000 * multiplier)
+
+	// const spacing = -2.5;
+	// const multiplier = 10;
+
+	// const bridge = new Truss([
+	// 	new Joint(new Vector2(0, 0), FIXTURE.Pin),
+	// 	new Joint(new Vector2(2.5, 0), undefined, new Vector2(0, -15000)),
+	// 	new Joint(new Vector2(5, 0), undefined, new Vector2(0, -15000)),
+	// 	new Joint(new Vector2(7.5, 0), undefined, new Vector2(0, -15000)),
+	// 	new Joint(new Vector2(10, 0), undefined, new Vector2(0, -15000)),
+	// 	new Joint(new Vector2(12.5, 0), undefined, new Vector2(0, -15000)),
+	// 	new Joint(new Vector2(15, 0), FIXTURE.Roller), //6
+
+	// 	new Joint(new Vector2(2.5, spacing)), //7
+	// 	new Joint(new Vector2(5, spacing)),
+	// 	new Joint(new Vector2(10, spacing)),
+	// 	new Joint(new Vector2(12.5, spacing)), //10
+	// ], [
+	// 	[0, 1],
+	// 	[1, 2],
+	// 	[2, 11],
+	// 	[2, 12],
+	// 	[11, 12],
+	// 	[3, 11],
+	// 	[3, 12],
+	// 	[3, 13],
+	// 	[3, 14],
+	// 	[13, 14],
+	// 	[4, 13],
+	// 	[4, 14],
+	// 	[4, 5],
+	// 	[5, 6],
+
+	// 	[0, 7],
+	// 	[7, 8],
+	// 	[8, 9],
+	// 	[9, 10],
+	// 	[10, 6],
+
+	// 	[1, 7],
+	// 	[2, 8],
+	// 	[4, 9],
+	// 	[5, 10],
+
+	// 	[2, 7],
+	// 	[3, 8],
+	// 	[3, 9],
+	// 	[4, 10],
+
+
+	// ], 4000 * multiplier, 8000 * multiplier)
 	
 	console.log('Forces Computed: ', bridge.computeForces())
+	// console.log('Cost: ', cost(startingTruss))
 
 	// const geneticAlgorithm = new GeneticAlgorithm({
 	// 	mutate: (item: Truss) => {

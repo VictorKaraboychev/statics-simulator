@@ -50,7 +50,10 @@ const TrussModel = (props: TrussModelProps) => {
 							const stress = props.truss.getStress(a.id, b.id)
 
 							const stressType = stress < 0 ? 'tension' : 'compression'
-							const value = TRUSS_COLORS[stressType].clone().multiplyScalar(Math.abs(stress))
+							// const value = TRUSS_COLORS[stressType].clone().multiplyScalar(Math.abs(stress))
+							// console.log(stress)
+
+							const value = Math.abs(stress) >= 1 ? TRUSS_COLORS[stressType] : new Vector3(0, 0, 0);
 							const color = new Color().fromArray(value.toArray())
 
 							members.push(<primitive
@@ -75,7 +78,7 @@ const TrussModel = (props: TrussModelProps) => {
 					return members
 				})}
 			</group>
-			<group>
+			{ /*<group>
 				{joints.reduce((acc, joint) => {
 					if (joint.fixed) {
 						const pos = joint.position.clone().multiplyScalar(scale)
@@ -90,7 +93,7 @@ const TrussModel = (props: TrussModelProps) => {
 
 					return acc
 				}, [] as React.ReactNode[])}
-			</group>
+			</group> */}
 		</group>
 	)
 }

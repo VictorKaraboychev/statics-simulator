@@ -1,4 +1,4 @@
-import Matrix, { solve } from "ml-matrix"
+import Matrix, { solve, inverse, linearDependencies } from "ml-matrix"
 import { Vector2, Vector3 } from "three"
 import Joint from "./Joint"
 
@@ -10,22 +10,17 @@ export default class Truss {
 	private maxTension: number = 0
 
 	constructor(joints: Joint[], connections: [number, number][], maxCompression?: number, maxTension?: number) {
-		const cleanedJoints = joints.map((joint) => {
-			joint.computed = false
-			joint.connections = {}
-			return joint
-		})
-
-		cleanedJoints.forEach((joint, i) => {
+		joints.forEach((joint, i) => {
 			connections.forEach(([a, b]) => {
 				if (a === i) {
-					joint.connections[cleanedJoints[b].id] = null
+					joint.connections[joints[b].id] = null
 				} else if (b === i) {
-					joint.connections[cleanedJoints[a].id] = null
+					joint.connections[joints[a].id] = null
 				}
 			})
 			this.truss[joint.id] = joint
 		})
+		
 		this.maxCompression = maxCompression ?? 0
 		this.maxTension = maxTension ?? 0
 		this.size_ = joints.length
@@ -118,29 +113,6 @@ export default class Truss {
 		return 0
 	}
 
-	meetsConstraints(constrains: {
-		maxCompression?: number,
-		maxTension?: number,
-		minLength?: number,
-		maxLength?: number,
-	}): boolean {
-		const joints = this.joints
-		for (let i = 0; i < joints.length; i++) {
-			const joint = joints[i]
-			const connections = this.getConnections(joint.id)
-			
-			for (let j = 0; j < connections.length; j++) {
-				const connection = connections[j]
-				const distance = joint.position.distanceTo(connection.position)
-				if (constrains.minLength && distance < constrains.minLength) return false
-				if (constrains.maxLength && distance > constrains.maxLength) return false
-				if (constrains.maxCompression && joint.connections[connection.id]! > constrains.maxCompression) return false
-				if (constrains.maxTension && joint.connections[connection.id]! < -constrains.maxTension) return false
-			}
-		}
-		return true
-	}
-
 	computeFixtureForces(): boolean {
 		let f = 0
 		const fixtures = new Matrix(3, 3)
@@ -183,79 +155,222 @@ export default class Truss {
 		return true
 	}
 
+	// computeForces(): boolean {
+	// 	this.joints.forEach((joint) => joint.computed = false)
+
+	// 	// evaluate the forces on each fixture
+	// 	if (this.computeFixtureForces() === false) return false
+
+	// 	// evaluate the forces on each joint (method of joints)
+
+	// 	const queue: Joint[] = this.joints.filter((joint) => {
+	// 		return joint.degrees_of_freedom <= 1
+	// 	})
+
+	// 	if (queue.length === 0) return false
+	// 	let i = 0
+
+	// 	while (queue.length > 0 && i < 2 * this.size_) {
+	// 		const joint = queue.shift()!
+	// 		// console.log(i, joint.id, joint.connections_count, joint.degrees_of_freedom)
+
+	// 		if (joint.degrees_of_freedom <= 1) {
+	// 			if (!joint.computed) {
+	// 				const connections = this.getConnections(joint.id)
+
+	// 				let f = 0
+	// 				const connectionForces = new Matrix(2, 0)
+	// 				// net force is the sum of the external force and the forces exerted by the connections
+	// 				const netForce = Matrix.columnVector(connections.reduce((acc, connection) => {
+	// 					const angle = connection.angleTo(joint)
+
+	// 					// unknown force
+	// 					if (connection.connections[joint.id] === null) {
+
+	// 						connectionForces.addColumn(f, [
+	// 							Math.cos(angle),
+	// 							Math.sin(angle)
+	// 						])
+	// 						f++
+	// 						return acc
+	// 					}
+
+	// 					// known force
+	// 					const force = connection.connections[joint.id] as number
+	// 					return acc.sub(new Vector2(Math.cos(angle) * force, Math.sin(angle) * force))
+	// 				}, joint.external_force.clone()).toArray())
+
+	// 				if (f === 0) break
+	// 				if (f < 3) {
+	// 					const solution = solve(connectionForces, netForce)
+
+	// 					f = 0
+	// 					connections.forEach((connection) => {
+	// 						if (joint.connections[connection.id] === null) {
+	// 							const force = solution.get(f, 0)
+	// 							joint.connections[connection.id] = force
+	// 							this.getJoint(connection.id).connections[joint.id] = force
+	// 							f++
+	// 							queue.push(connection)
+	// 						}
+	// 					})
+	// 					joint.computed = true
+	// 					i--
+	// 				} else {
+	// 					// console.log(joint.id, connectionForces, netForce, queue.length)
+	// 					queue.push(joint)
+	// 					i++
+	// 				}
+	// 			}
+	// 		} else {
+	// 			queue.push(joint)
+	// 			i++
+	// 		}
+	// 	}
+	// 	return i < 2 * this.size_
+	// }
+
 	computeForces(): boolean {
-		this.joints.forEach((joint) => joint.computed = false)
+		// this.joints.forEach((joint) => joint.computed = false)
 
-		// evaluate the forces on each fixture
-		if (this.computeFixtureForces() === false) return false
+		// // // evaluate the forces on each fixture
+		// if (this.computeFixtureForces() === false) return false
 
-		// evaluate the forces on each joint (method of joints)
+		const joints = this.joints
+		const connections = this.connections
 
-		const queue: Joint[] = this.joints.filter((joint) => {
-			return joint.degrees_of_freedom <= 1
-		})
+		const N = joints.reduce((acc, joint) => joint.fixed ? acc : acc++, 0)
 
-		if (queue.length === 0) return false
-		let i = 0
+		const c = this.size_
+		const A = Matrix.ones(c, 1)
+		const L = Matrix.columnVector(connections.map((connection) => {
+			const a = joints[connection[0]]
+			const b = joints[connection[1]]
 
-		while (queue.length > 0 && i < 2 * this.size_) {
-			const joint = queue.shift()!
-			// console.log(i, joint.id, joint.connections_count, joint.degrees_of_freedom)
+			return a.distanceTo(b)
+		}))
+		const T = Matrix.columnVector(connections.map((connection) => {
+			const a = joints[connection[0]]
+			const b = joints[connection[1]]
 
-			if (joint.degrees_of_freedom <= 1) {
-				if (!joint.computed) {
-					const connections = this.getConnections(joint.id)
-	
-					let f = 0
-					const connectionForces = new Matrix(2, 0)
-					// net force is the sum of the external force and the forces exerted by the connections
-					const netForce = Matrix.columnVector(connections.reduce((acc, connection) => {
-						const angle = connection.angleTo(joint)
-		
-						// unknown force
-						if (connection.connections[joint.id] === null) {
-	
-							connectionForces.addColumn(f, [
-								Math.cos(angle),
-								Math.sin(angle)
-							])
-							f++
-							return acc
-						}
-						
-						// known force
-						const force = connection.connections[joint.id] as number
-						return acc.sub(new Vector2(Math.cos(angle) * force, Math.sin(angle) * force))
-					}, joint.external_force.clone()).toArray())
-			
-					if (f === 0) break
-					if (f < 3) {
-						const solution = solve(connectionForces, netForce)
-	
-						f = 0
-						connections.forEach((connection) => {
-							if (joint.connections[connection.id] === null) {
-								const force = solution.get(f, 0)
-								joint.connections[connection.id] = force
-								this.getJoint(connection.id).connections[joint.id] = force
-								f++
-								queue.push(connection)
-							}
-						})
-						joint.computed = true
-						i--
-					} else {
-						// console.log(joint.id, connectionForces, netForce, queue.length)
-						queue.push(joint)
-						i++
-					}
-				}
-			} else {
-				queue.push(joint)
-				i++
+			return a.angleTo(b)
+		}))
+
+		const K = connections.reduce((TGSM, connection) => {
+			const GSM = new Matrix(this.size_ * 2, this.size_ * 2).fill(0)
+
+			const a = joints[connection[0]]
+			const b = joints[connection[1]]
+
+			const p1 = 2 * connection[0]
+			const p2 = 2 * connection[1]
+
+			const angle = a.angleTo(b)
+			const length = a.distanceTo(b)
+
+			const C = Math.cos(angle)
+			const S = Math.sin(angle)
+			const CS = C * S
+			const C2 = C * C
+			const S2 = S * S
+
+			const M1 = new Matrix([
+				[C2, CS],
+				[CS, S2]
+			])
+
+			const M2 = M1.clone().multiply(-1)
+
+			GSM.setSubMatrix(M1, p1, p1).setSubMatrix(M2, p1, p2).setSubMatrix(M2, p2, p1).setSubMatrix(M1, p2, p2)
+			GSM.divide(length)
+
+			TGSM.add(GSM)
+			return TGSM
+		}, new Matrix(this.size_ * 2, this.size_ * 2).fill(0))
+
+		let j = 0
+		const DL = solve(joints.reduceRight((acc, joint, i) => {
+			const jj = i * 2
+			const n = joint.fixtures.length
+			if (n == 2) {
+				acc.removeColumn(jj)
+				acc.removeColumn(jj)
+				acc.removeRow(jj)
+				acc.removeRow(jj)
+			} else if (n === 1) {
+				acc.removeColumn(jj + 1)
+				acc.removeRow(jj + 1)
 			}
-		}
-		return i < 2 * this.size_
+			return acc
+		}, K.clone()), joints.reduce((acc, joint, i) => {
+			const n = joint.fixtures.length
+			if (n == 0) {
+				acc.addRow(j++, [joint.external_force.x])
+				acc.addRow(j++, [joint.external_force.y])
+			}
+			else if (n === 1) {
+				acc.addRow(j++, [joint.external_force.x])
+			}
+			return acc
+		}, Matrix.zeros(0, 1)))
+
+		j = 0
+		const D = joints.reduce((acc, joint, i) => {
+			const n = joint.fixtures.length
+			if (n == 2) {
+				acc.addRow(i * 2, [0])
+				acc.addRow(j * 2 + 1, [0])
+			} else if (n === 1) {
+				acc.addRow(j * 2 + 1, [0])
+			}
+			j++
+			return acc
+		}, DL.clone())
+
+		const F = K.mmul(D)
+
+		const S = connections.reduce((acc, connection, i) => {
+			const a = connection[0] * 2
+			const b = connection[1] * 2
+
+			const Z = new Matrix([
+				[D.get(a, 0)],
+				[D.get(a + 1, 0)],
+				[D.get(b, 0)],
+				[D.get(b + 1, 0)]
+			])
+			acc.addRow(i, [
+				new Matrix(
+					[
+						[-1, 1]
+					]
+				)
+					.mmul(
+						new Matrix([
+							[Math.cos(T.get(i, 0)), Math.sin(T.get(i, 0)), 0, 0],
+							[0, 0, Math.cos(T.get(i, 0)), Math.sin(T.get(i, 0))]
+						])
+					).mmul(
+						new Matrix([
+							[D.get(a, 0)],
+							[D.get(a + 1, 0)],
+							[D.get(b, 0)],
+							[D.get(b + 1, 0)]
+						])
+					).get(0, 0) * (1 / L.get(i, 0))]
+			)
+
+			return acc
+		}, Matrix.zeros(0, 1))
+
+		console.log(
+			K.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			DL.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			D.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			F.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+		)
+		return true
 	}
 
 	clone(): Truss {
