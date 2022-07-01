@@ -20,7 +20,7 @@ export default class Truss {
 			})
 			this.truss[joint.id] = joint
 		})
-		
+
 		this.maxCompression = maxCompression ?? 0
 		this.maxTension = maxTension ?? 0
 		this.size_ = joints.length
@@ -231,18 +231,9 @@ export default class Truss {
 	// }
 
 	computeForces(): boolean {
-		// this.joints.forEach((joint) => joint.computed = false)
-
-		// // // evaluate the forces on each fixture
-		// if (this.computeFixtureForces() === false) return false
-
 		const joints = this.joints
 		const connections = this.connections
 
-		const N = joints.reduce((acc, joint) => joint.fixed ? acc : acc++, 0)
-
-		const c = this.size_
-		const A = Matrix.ones(c, 1)
 		const L = Matrix.columnVector(connections.map((connection) => {
 			const a = joints[connection[0]]
 			const b = joints[connection[1]]
@@ -290,16 +281,16 @@ export default class Truss {
 
 		let j = 0
 		const DL = solve(joints.reduceRight((acc, joint, i) => {
-			const jj = i * 2
+			const k = i * 2
 			const n = joint.fixtures.length
 			if (n == 2) {
-				acc.removeColumn(jj)
-				acc.removeColumn(jj)
-				acc.removeRow(jj)
-				acc.removeRow(jj)
+				acc.removeColumn(k)
+				acc.removeColumn(k)
+				acc.removeRow(k)
+				acc.removeRow(k)
 			} else if (n === 1) {
-				acc.removeColumn(jj + 1)
-				acc.removeRow(jj + 1)
+				acc.removeColumn(k + 1)
+				acc.removeRow(k + 1)
 			}
 			return acc
 		}, K.clone()), joints.reduce((acc, joint, i) => {
@@ -314,50 +305,41 @@ export default class Truss {
 			return acc
 		}, Matrix.zeros(0, 1)))
 
-		j = 0
 		const D = joints.reduce((acc, joint, i) => {
 			const n = joint.fixtures.length
 			if (n == 2) {
 				acc.addRow(i * 2, [0])
-				acc.addRow(j * 2 + 1, [0])
+				acc.addRow(i * 2 + 1, [0])
 			} else if (n === 1) {
-				acc.addRow(j * 2 + 1, [0])
+				acc.addRow(i * 2 + 1, [0])
 			}
-			j++
 			return acc
 		}, DL.clone())
 
 		const F = K.mmul(D)
 
 		const S = connections.reduce((acc, connection, i) => {
-			const a = connection[0] * 2
-			const b = connection[1] * 2
+			const p1 = 2 * connection[0]
+			const p2 = 2 * connection[1]
 
-			const Z = new Matrix([
-				[D.get(a, 0)],
-				[D.get(a + 1, 0)],
-				[D.get(b, 0)],
-				[D.get(b + 1, 0)]
-			])
 			acc.addRow(i, [
 				new Matrix(
 					[
 						[-1, 1]
 					]
-				)
-					.mmul(
-						new Matrix([
-							[Math.cos(T.get(i, 0)), Math.sin(T.get(i, 0)), 0, 0],
-							[0, 0, Math.cos(T.get(i, 0)), Math.sin(T.get(i, 0))]
-						])
-					).mmul(
-						new Matrix([
-							[D.get(a, 0)],
-							[D.get(a + 1, 0)],
-							[D.get(b, 0)],
-							[D.get(b + 1, 0)]
-						])
-					).get(0, 0) * (1 / L.get(i, 0))]
+				).mmul(
+					new Matrix([
+						[Math.cos(T.get(i, 0)), Math.sin(T.get(i, 0)), 0, 0],
+						[0, 0, Math.cos(T.get(i, 0)), Math.sin(T.get(i, 0))]
+					])
+				).mmul(
+					new Matrix([
+						[D.get(p1, 0)],
+						[D.get(p1 + 1, 0)],
+						[D.get(p2, 0)],
+						[D.get(p2 + 1, 0)]
+					])
+				).get(0, 0) / L.get(i, 0)]
 			)
 
 			return acc
