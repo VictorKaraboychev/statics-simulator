@@ -7,6 +7,8 @@ import { randInt } from './utility/functions'
 import Joint, { FIXTURE } from './utility/Joint'
 import Viewer from './components/viewer/Viewer'
 
+import { test_algo } from './utility/truss_me/the_algo'
+
 function App() {
 	const spacing = -3;
 	const multiplier = 1;
