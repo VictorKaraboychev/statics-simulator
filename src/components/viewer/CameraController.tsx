@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { useThree } from '@react-three/fiber'
 import { MOUSE, Vector3 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+
 interface CameraControllerProps {
 	target?: Vector3
 }

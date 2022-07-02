@@ -130,9 +130,9 @@ export default class Truss {
 			}
 
 			return acc.add(new Vector3(
-				joint.external_force.x,
-				joint.external_force.y,
-				joint.external_force.clone().cross(joint.position) // moment
+				joint.externalForce.x,
+				joint.externalForce.y,
+				joint.externalForce.clone().cross(joint.position) // moment
 			))
 		}, new Vector3(0, 0, 0)).toArray())
 
@@ -146,7 +146,7 @@ export default class Truss {
 		this.joints.forEach((joint, i) => {
 			if (joint.fixtures.length > 0) {
 				joint.fixtures.forEach((fixture, j) => {
-					joint.external_force.sub(fixture.clone().setLength(solution.get(f, 0)))
+					joint.externalForce.sub(fixture.clone().setLength(solution.get(f, 0)))
 					f++
 				})
 			}
@@ -259,13 +259,10 @@ export default class Truss {
 
 			const C = Math.cos(angle)
 			const S = Math.sin(angle)
-			const CS = C * S
-			const C2 = C * C
-			const S2 = S * S
 
 			const M1 = new Matrix([
-				[C2, CS],
-				[CS, S2]
+				[C * C, C * S],
+				[C * S, S * S]
 			])
 
 			const M2 = M1.clone().multiply(-1)
@@ -277,98 +274,101 @@ export default class Truss {
 			return TGSM
 		}, Matrix.zeros(this.size_ * 2, this.size_ * 2))
 
-		let j = 0
-		const DL = solve(joints.reduceRight((acc, joint, i) => {
-			const k = i * 2
-			const n = joint.fixtures.length
-			if (n == 2) {
-				acc.removeColumn(k)
-				acc.removeColumn(k)
-				acc.removeRow(k)
-				acc.removeRow(k)
-			} else if (n === 1) {
-				acc.removeColumn(k + 1)
-				acc.removeRow(k + 1)
-			}
-			return acc
-		}, K.clone()), joints.reduce((acc, joint, i) => {
-			const n = joint.fixtures.length
-			if (n == 0) {
-				acc.addRow(j++, [joint.external_force.x])
-				acc.addRow(j++, [joint.external_force.y])
-			}
-			else if (n === 1) {
-				acc.addRow(j++, [joint.external_force.x])
-			}
-			return acc
-		}, new Matrix(0, 1)))
+		try {
+			let j = 0
+			const DL = solve(joints.reduceRight((acc, joint, i) => {
+				const k = i * 2
+				const n = joint.fixtures.length
+				if (n == 2) {
+					acc.removeColumn(k)
+					acc.removeColumn(k)
+					acc.removeRow(k)
+					acc.removeRow(k)
+				} else if (n === 1) {
+					acc.removeColumn(k + 1)
+					acc.removeRow(k + 1)
+				}
+				return acc
+			}, K.clone()), joints.reduce((acc, joint, i) => {
+				const n = joint.fixtures.length
+				if (n == 0) {
+					acc.addRow(j++, [joint.externalForce.x])
+					acc.addRow(j++, [joint.externalForce.y])
+				}
+				else if (n === 1) {
+					acc.addRow(j++, [joint.externalForce.x])
+				}
+				return acc
+			}, new Matrix(0, 1)))
 
-		const D = joints.reduce((acc, joint, i) => {
-			const n = joint.fixtures.length
-			if (n == 2) {
-				acc.addRow(i * 2, [0])
-				acc.addRow(i * 2 + 1, [0])
-			} else if (n === 1) {
-				acc.addRow(i * 2 + 1, [0])
-			}
-			return acc
-		}, DL.clone())
-
-		const F = K.mmul(D)
-
-		const S = connections.reduce((acc, connection, i) => {
-			const p1 = 2 * connection[0]
-			const p2 = 2 * connection[1]
-
-			acc.addRow(i, [
-				new Matrix(
-					[
-						[-1, 1]
-					]
-				).mmul(
-					new Matrix([
-						[Math.cos(T.get(i, 0)), Math.sin(T.get(i, 0)), 0, 0],
-						[0, 0, Math.cos(T.get(i, 0)), Math.sin(T.get(i, 0))]
-					])
-				).mmul(
-					new Matrix([
-						[D.get(p1, 0)],
-						[D.get(p1 + 1, 0)],
-						[D.get(p2, 0)],
-						[D.get(p2 + 1, 0)]
-					])
-				).get(0, 0) / L.get(i, 0)]
-			)
-
-			return acc
-		}, Matrix.zeros(0, 1))
-
-		connections.forEach((connection, i) => {
-			const a = joints[connection[0]]
-			const b = joints[connection[1]]
-
-			const value = S.get(i, 0)
-
-			a.connections[b.id] = value
-			b.connections[a.id] = value
-		})
-
-		joints.forEach((joint, i) => {
-			if (joint.fixtures.length > 0) {
-				joint.external_force.add(new Vector2(F.get(i * 2, 0), F.get(i * 2 + 1, 0)))
-			}
-		})
-
-		// console.log(
-		// 	K.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-		// 	DL.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-		// 	D.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-		// 	F.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-		// 	S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-		// )
-
-		// console.timeEnd('computeForces')
-
+			const D = joints.reduce((acc, joint, i) => {
+				const n = joint.fixtures.length
+				if (n == 2) {
+					acc.addRow(i * 2, [0])
+					acc.addRow(i * 2 + 1, [0])
+				} else if (n === 1) {
+					acc.addRow(i * 2 + 1, [0])
+				}
+				return acc
+			}, DL.clone())
+	
+			const F = K.mmul(D)
+	
+			const S = connections.reduce((acc, connection, i) => {
+				const p1 = 2 * connection[0]
+				const p2 = 2 * connection[1]
+	
+				acc.addRow(i, [
+					new Matrix(
+						[
+							[-1, 1]
+						]
+					).mmul(
+						new Matrix([
+							[Math.cos(T.get(i, 0)), Math.sin(T.get(i, 0)), 0, 0],
+							[0, 0, Math.cos(T.get(i, 0)), Math.sin(T.get(i, 0))]
+						])
+					).mmul(
+						new Matrix([
+							[D.get(p1, 0)],
+							[D.get(p1 + 1, 0)],
+							[D.get(p2, 0)],
+							[D.get(p2 + 1, 0)]
+						])
+					).get(0, 0) / L.get(i, 0)]
+				)
+	
+				return acc
+			}, Matrix.zeros(0, 1))
+	
+			connections.forEach((connection, i) => {
+				const a = joints[connection[0]]
+				const b = joints[connection[1]]
+	
+				const value = S.get(i, 0)
+	
+				a.connections[b.id] = value
+				b.connections[a.id] = value
+			})
+	
+			joints.forEach((joint, i) => {
+				if (joint.fixtures.length > 0) {
+					joint.externalForce.set(F.get(i * 2, 0), F.get(i * 2 + 1, 0))
+				}
+			})
+	
+			// console.log(
+			// 	K.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			// 	DL.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			// 	D.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			// 	F.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			// 	S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			// )
+	
+			// console.timeEnd('computeForces')
+		} catch (e) {
+			return false
+		}
 		return true
 	}
 
@@ -376,7 +376,20 @@ export default class Truss {
 		return new Truss(this.joints.map((joint) => joint.clone()), this.connections, this.maxCompression, this.maxTension)
 	}
 
+	toJSON(): any {
+		return {
+			joints: this.joints.map((joint) => joint.toJSON()),
+			connections: this.connections,
+			maxCompression: this.maxCompression,
+			maxTension: this.maxTension
+		}
+	}
+
 	toString(): string {
 		return JSON.stringify(this.truss)
+	}
+
+	static fromJSON(json: any): Truss {
+		return new Truss(json.joints.map((joint: any) => Joint.fromJSON(joint)), json.connections, json.maxCompression, json.maxTension)
 	}
 }

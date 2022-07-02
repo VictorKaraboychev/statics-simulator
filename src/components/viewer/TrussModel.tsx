@@ -7,7 +7,7 @@ import { Line2 } from 'three/examples/jsm/lines/Line2'
 import Force from './Force'
 import { ThreeEvent } from '@react-three/fiber'
 import Joint from '../../utility/Joint'
-import { TrussConnectionDetailsType } from '../../types/truss'
+import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
 
 const TRUSS_COLORS: { [key: string]: Vector3 } = {
 	compression: new Vector3(0, 1, 0),
@@ -16,15 +16,13 @@ const TRUSS_COLORS: { [key: string]: Vector3 } = {
 
 interface TrussModelProps {
 	truss: Truss,
-	position: Vector3,
+	position?: Vector3,
 	enableForces?: boolean,
-	onJointClick?: (e: ThreeEvent<MouseEvent>, joint: Joint) => void,
+	onJointClick?: (e: ThreeEvent<MouseEvent>, joint: TrussJointDetailsType) => void,
 	onConnectionClick?: (e: ThreeEvent<MouseEvent>, a: Joint, b: Joint, details: TrussConnectionDetailsType) => void,
 }
 
 const TrussModel = (props: TrussModelProps) => {
-	const [truss, seTruss] = useState(props.truss)
-
 	// const jointID = useRef<string>('')
 	// const position = useRef(new Vector3(0, 0, 0))
 
@@ -32,11 +30,11 @@ const TrussModel = (props: TrussModelProps) => {
 
 	const scale = 20
 
-	const joints = truss.joints
+	const joints = props.truss.joints
 
 	return (
 		<group
-			position={props.position.multiplyScalar(scale)}
+			position={props.position ? props.position.multiplyScalar(scale) : undefined}
 			// onPointerMove={(e) => {
 			// 	if (jointID.current) {
 			// 		const joint = truss.getJoint(jointID.current)
@@ -69,8 +67,8 @@ const TrussModel = (props: TrussModelProps) => {
 					for (let j = i; j < joints.length; j++) {
 						const b = joints[j]
 						if (b.id in a.connections) {
-							const stress = truss.getStress(a.id, b.id)
-							const force = truss.getForce(a.id, b.id)
+							const stress = props.truss.getStress(a.id, b.id)
+							const force = props.truss.getForce(a.id, b.id)
 
 							const stressType = stress < 0 ? 'tension' : 'compression'
 							// const value = TRUSS_COLORS[stressType].clone().multiplyScalar(Math.abs(stress))
@@ -85,6 +83,7 @@ const TrussModel = (props: TrussModelProps) => {
 									onClick={(e) => {
 										e.stopPropagation()
 										props.onConnectionClick?.(e, a, b, {
+											id: `${i}-${j}`,
 											stress,
 											force,
 											length: a.distanceTo(b),
@@ -115,7 +114,7 @@ const TrussModel = (props: TrussModelProps) => {
 				})}
 			</group>
 			<group>
-				{joints.map(joint => {
+				{joints.map((joint, i) => {
 					const p = joint.position.clone()
 					return (
 						<mesh
@@ -127,7 +126,10 @@ const TrussModel = (props: TrussModelProps) => {
 							})}
 							onClick={(e) => {
 								e.stopPropagation()
-								props.onJointClick?.(e, joint)
+								props.onJointClick?.(e, {
+									id: i,
+									joint,
+								})
 							}}
 						/>
 					)
@@ -137,12 +139,11 @@ const TrussModel = (props: TrussModelProps) => {
 				<group>
 					{joints.reduce((acc, joint) => {
 						if (joint.fixed) {
-							const pos = joint.position.clone().multiplyScalar(scale)
 							acc.push(
 								<Force
 									key={joint.id}
-									force={new Vector3(joint.external_force.x, joint.external_force.y, 0)}
-									origin={new Vector3(pos.x, pos.y, 0)}
+									force={joint.externalForce}
+									origin={joint.position.clone().multiplyScalar(scale)}
 								/>
 							)
 						}

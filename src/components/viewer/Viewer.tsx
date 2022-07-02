@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Box, Button, Card, Popover, SxProps, Theme, Typography } from '@mui/material'
 import Truss from '../../utility/Truss'
 import Visualizer from './Visualizer'
 import { cost } from '../../utility/trussy/cost'
-import { TrussConnectionDetailsType, TrussDetailsType } from '../../types/truss'
+import { TrussConnectionDetailsType, TrussDetailsType, TrussJointDetailsType } from '../../types/truss'
 import TrussModel from './TrussModel'
-import { Vector3 } from 'three'
+import { ThreeEvent } from '@react-three/fiber'
+import Joint from '../../utility/Joint'
+import { saveAs } from 'file-saver'
+import Drop from '../common/Drop'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
@@ -13,23 +16,29 @@ interface ViewerProps {
 }
 
 const Viewer = (props: ViewerProps) => {
+	const [truss, setTruss] = useState(props.truss)
+
 	const [forcesEnabled, setForcesEnabled] = useState(false)
 	const [details, setDetails] = useState<TrussDetailsType | null>(null)
 
 	const [open, setOpen] = useState(false)
 	const [position, setPosition] = useState<{ left: number, top: number } | null>(null)
+
 	const [connectionDetails, setConnectionDetails] = useState<TrussConnectionDetailsType | null>(null)
+	const [jointDetails, setJointDetails] = useState<TrussJointDetailsType | null>(null)
+
+	const dropRef = useRef<{ open: () => void }>()
 
 	useEffect(() => {
-		props.truss.computeForces()
+		truss.computeForces()
 
-		const joints = props.truss.joints
-		const connections = props.truss.connections
+		const joints = truss.joints
+		const connections = truss.connections
 
-		const value = cost(props.truss)
+		const value = cost(truss)
 
-		let maxCompression = -Infinity
-		let maxTension = Infinity
+		let maxCompression = 0
+		let maxTension = 0
 
 		connections.forEach(c => {
 			const a = joints[c[0]]
@@ -48,145 +57,251 @@ const Viewer = (props: ViewerProps) => {
 			maxCompression,
 			maxTension,
 		})
-	}, [props.truss])
+	}, [truss])
+
+	const handleJointClick = (e: ThreeEvent<MouseEvent>, details: TrussJointDetailsType) => {
+		setJointDetails(details)
+		setConnectionDetails(null)
+		setPosition({
+			left: (e as any).x,
+			top: (e as any).y
+		})
+		setOpen(true)
+	}
+
+	const handleConnectionClick = (e: ThreeEvent<MouseEvent>, a: Joint, b: Joint, details: TrussConnectionDetailsType) => {
+		setConnectionDetails(details)
+		setJointDetails(null)
+		setPosition({
+			left: (e as any).x,
+			top: (e as any).y
+		})
+		setOpen(true)
+	}
+
+	const handleClose = () => {
+		setOpen(false)
+	}
+
+	const handleExport = () => {
+		const json = JSON.stringify(props.truss.toJSON())
+		const blob = new Blob([json], { type: 'application/json' })
+
+		saveAs(blob, 'truss.json')
+	}
+
+	const handleDrop = (files: File[]) => {
+		const file = files[0]
+		file.text().then((text) => {
+			const json = JSON.parse(text)
+			setTruss(Truss.fromJSON(json))
+		})
+	}
 
 	if (!details) return null
 
 	return (
-		<Box
-			component={'div'}
+		<Drop
 			sx={{
-				position: 'absolute',
-				display: 'flex',
-				flexDirection: 'column',
 				width: '100%',
 				height: '100%',
 			}}
+			reference={dropRef}
+			noClick={true}
+			noKeyboard={true}
+			hideBorder={true}
+			multiple={false}
+			onSubmit={handleDrop}
 		>
-			<Visualizer
+			<Box
+				component={'div'}
 				sx={{
-					zIndex: 10,
+					position: 'absolute',
+					display: 'flex',
+					flexDirection: 'column',
+					width: '100%',
+					height: '100%',
 				}}
 			>
-				<TrussModel
-					position={new Vector3(
-						0,
-						0,
-						0,
-					)}
-					truss={props.truss}
-					enableForces={forcesEnabled}
-					onConnectionClick={(e, a, b, details) => {
-						setConnectionDetails(details)
-						setPosition({
-							left: (e as any).x,
-							top: (e as any).y
-						})
-						setOpen(true)
+
+				<Visualizer
+					sx={{
+						zIndex: 10,
 					}}
-				/>
-			</Visualizer>
-			<Popover
-				sx={{
-					left: position?.left || 0,
-					top: position?.top || 0,
-				}}
-				open={open}
-				anchorEl={document.body}
-				onClose={() => setOpen(false)}
-			>
-				{connectionDetails && (
+				>
+					<TrussModel
+						truss={truss}
+						enableForces={forcesEnabled}
+						onJointClick={handleJointClick}
+						onConnectionClick={handleConnectionClick}
+					/>
+				</Visualizer>
+				<Popover
+					sx={{
+						left: position?.left || 0,
+						top: position?.top || 0,
+					}}
+					open={open}
+					anchorEl={document.body}
+					onClose={handleClose}
+				>
+					{connectionDetails && (
+						<Box
+							component={'div'}
+							sx={{
+								p: 2
+							}}
+						>
+							<Typography
+								sx={{
+									fontWeight: 'bold',
+								}}
+								variant={'body1'}
+							>
+								Connection Details
+							</Typography>
+							<Typography
+								variant={'body2'}
+							>
+								ID: {connectionDetails.id}
+							</Typography>
+							<Typography
+								variant={'body2'}
+							>
+								Force: {connectionDetails.force?.toFixed(0)}N
+							</Typography>
+							<Typography
+								variant={'body2'}
+							>
+								Stress: {Math.abs(connectionDetails.stress * 100).toFixed(0)}%
+							</Typography>
+							<Typography
+								variant={'body2'}
+							>
+								Length: {connectionDetails.length.toFixed(2)}m
+							</Typography>
+						</Box>
+					)}
+					{jointDetails && (
+						<Box
+							component={'div'}
+							sx={{
+								p: 2
+							}}
+						>
+							<Typography
+								sx={{
+									fontWeight: 'bold',
+								}}
+								variant={'body1'}
+							>
+								Joint Details
+							</Typography>
+							<Typography
+								variant={'body2'}
+							>
+								ID: {jointDetails.id}
+							</Typography>
+							<Typography
+								variant={'body2'}
+							>
+								Connections: {jointDetails.joint.connections_count}
+							</Typography>
+							<Typography
+								variant={'body2'}
+							>
+								Position: ({jointDetails.joint.position.toArray().map(x => x.toFixed(2)).join(', ')})
+							</Typography>
+							<Typography
+								variant={'body2'}
+							>
+								External Forces: ({jointDetails.joint.externalForce.toArray().map(x => x.toFixed(0)).join(', ')})N
+							</Typography>
+						</Box>
+					)}
+				</Popover>
+				<Card
+					sx={{
+						boxShadow: 5,
+						p: 2,
+					}}
+					variant={'outlined'}
+				>
 					<Box
 						component={'div'}
 						sx={{
-							p: 2
+							display: 'flex',
+							flexDirection: 'row',
 						}}
 					>
 						<Typography
 							sx={{
-								fontWeight: 'bold',
+								mr: 2,
 							}}
-							variant={'body1'}
+							color={'text.primary'}
 						>
-							Connection Details
+							Cost: ${details.cost.toFixed(2)}
 						</Typography>
 						<Typography
-							variant={'body2'}
+							sx={{
+								mr: 2,
+							}}
+							color={'text.primary'}
 						>
-							Force: {connectionDetails.force?.toFixed(0)}N
+							Max Compression: {details.maxCompression.toFixed(0)}N
 						</Typography>
 						<Typography
-							variant={'body2'}
+							sx={{
+								mr: 2,
+							}}
+							color={'text.primary'}
 						>
-							Stress: {Math.abs(connectionDetails.stress * 100).toFixed(0)}%
-						</Typography>
-						<Typography
-							variant={'body2'}
-						>
-							Length: {connectionDetails.length.toFixed(2)}m
+							Max Tension: {details.maxTension.toFixed(0)}N
 						</Typography>
 					</Box>
-				)}
-			</Popover>
-			<Card
-				sx={{
-					boxShadow: 5,
-					p: 2,
-				}}
-				variant={'outlined'}
-			>
-				<Box
-					component={'div'}
-					sx={{
-						display: 'flex',
-						flexDirection: 'row',
-					}}
-				>
-					<Typography
+					<Box
+						component={'div'}
 						sx={{
-							mr: 2,
+							display: 'flex',
+							flexDirection: 'row',
+							mt: 1,
 						}}
-						color={'text.primary'}
 					>
-						Cost: ${details.cost.toFixed(2)}
-					</Typography>
-					<Typography
-						sx={{
-							mr: 2,
-						}}
-						color={'text.primary'}
-					>
-						Max Compression: {details.maxCompression.toFixed(0)}N
-					</Typography>
-					<Typography
-						sx={{
-							mr: 2,
-						}}
-						color={'text.primary'}
-					>
-						Max Tension: {details.maxTension.toFixed(0)}N
-					</Typography>
-				</Box>
-				<Box
-					component={'div'}
-					sx={{
-						display: 'flex',
-						flexDirection: 'row',
-						mt: 1,
-					}}
-				>
-					<Button
-						sx={{
-							mr: 2,
-						}}
-						variant={'contained'}
-						onClick={() => setForcesEnabled(!forcesEnabled)}
-					>
-						{forcesEnabled ? 'Disable' : 'Enable'} Forces
-					</Button>
-				</Box>
-			</Card>
-		</Box>
+						<Button
+							sx={{
+								mr: 2,
+							}}
+							variant={'contained'}
+							onClick={() => setForcesEnabled(!forcesEnabled)}
+						>
+							{forcesEnabled ? 'Disable' : 'Enable'} Forces
+						</Button>
+						<Box
+							component={'div'}
+							sx={{
+								ml: 'auto',
+							}}
+						>
+							<Button
+								sx={{
+									mr: 2,
+								}}
+								variant={'contained'}
+								onClick={() => dropRef.current?.open()}
+							>
+								Import
+							</Button>
+							<Button
+								variant={'contained'}
+								onClick={handleExport}
+							>
+								Export
+							</Button>
+						</Box>
+					</Box>
+				</Card>
+			</Box>
+		</Drop>
 	)
 }
 
