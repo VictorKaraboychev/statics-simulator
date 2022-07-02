@@ -231,33 +231,31 @@ export default class Truss {
 	// }
 
 	computeForces(): boolean {
+		// console.time('computeForces')
+
 		const joints = this.joints
 		const connections = this.connections
 
-		const L = Matrix.columnVector(connections.map((connection) => {
+		const { L, T } = connections.reduce((acc, connection, i) => {
 			const a = joints[connection[0]]
 			const b = joints[connection[1]]
 
-			return a.distanceTo(b)
-		}))
-		const T = Matrix.columnVector(connections.map((connection) => {
-			const a = joints[connection[0]]
-			const b = joints[connection[1]]
+			acc.L.addRow(i, [a.distanceTo(b)])
+			acc.T.addRow(i, [a.angleTo(b)])
 
-			return a.angleTo(b)
-		}))
+			return acc
+		}, {
+			L: new Matrix(0, 1),
+			T: new Matrix(0, 1),
+		})
 
-		const K = connections.reduce((TGSM, connection) => {
-			const GSM = new Matrix(this.size_ * 2, this.size_ * 2).fill(0)
-
-			const a = joints[connection[0]]
-			const b = joints[connection[1]]
+		const K = connections.reduce((TGSM, connection, i) => {
+			const GSM = Matrix.zeros(this.size_ * 2, this.size_ * 2)
 
 			const p1 = 2 * connection[0]
 			const p2 = 2 * connection[1]
 
-			const angle = a.angleTo(b)
-			const length = a.distanceTo(b)
+			const angle = T.get(i, 0)
 
 			const C = Math.cos(angle)
 			const S = Math.sin(angle)
@@ -273,11 +271,11 @@ export default class Truss {
 			const M2 = M1.clone().multiply(-1)
 
 			GSM.setSubMatrix(M1, p1, p1).setSubMatrix(M2, p1, p2).setSubMatrix(M2, p2, p1).setSubMatrix(M1, p2, p2)
-			GSM.divide(length)
+			GSM.divide(L.get(i, 0))
 
 			TGSM.add(GSM)
 			return TGSM
-		}, new Matrix(this.size_ * 2, this.size_ * 2).fill(0))
+		}, Matrix.zeros(this.size_ * 2, this.size_ * 2))
 
 		let j = 0
 		const DL = solve(joints.reduceRight((acc, joint, i) => {
@@ -303,7 +301,7 @@ export default class Truss {
 				acc.addRow(j++, [joint.external_force.x])
 			}
 			return acc
-		}, Matrix.zeros(0, 1)))
+		}, new Matrix(0, 1)))
 
 		const D = joints.reduce((acc, joint, i) => {
 			const n = joint.fixtures.length
@@ -345,13 +343,32 @@ export default class Truss {
 			return acc
 		}, Matrix.zeros(0, 1))
 
-		console.log(
-			K.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			DL.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			D.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			F.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-		)
+		connections.forEach((connection, i) => {
+			const a = joints[connection[0]]
+			const b = joints[connection[1]]
+
+			const value = S.get(i, 0)
+
+			a.connections[b.id] = value
+			b.connections[a.id] = value
+		})
+
+		joints.forEach((joint, i) => {
+			if (joint.fixtures.length > 0) {
+				joint.external_force.add(new Vector2(F.get(i * 2, 0), F.get(i * 2 + 1, 0)))
+			}
+		})
+
+		// console.log(
+		// 	K.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+		// 	DL.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+		// 	D.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+		// 	F.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+		// 	S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+		// )
+
+		// console.timeEnd('computeForces')
+
 		return true
 	}
 

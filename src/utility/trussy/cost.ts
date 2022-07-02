@@ -1,9 +1,9 @@
-import Truss from "../Truss";
+import Truss from '../Truss'
 
-/*
-    @returns {number}
-    returns how much the bridge costs
-*/
+/**
+ * @returns {number}
+ * Returns how much the bridge costs
+ */
 export const cost = (truss: Truss): number => {
     const joints = truss.joints
     let cost = 0
@@ -12,7 +12,7 @@ export const cost = (truss: Truss): number => {
         for (let j = i; j < truss.size; j++) {
             const b = joints[j]
             if (b.id in a.connections) {
-                cost += a.position.distanceTo(b.position) * 15
+                cost += a.distanceTo(b) * 15
             }
         }
     }

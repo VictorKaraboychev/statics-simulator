@@ -1,5 +1,4 @@
 export default class GeneticAlgorithm<T> {
-	
 	public population_: { item: T, fitness: number } [] = []
 	public size_: number
 	public mutationRate: number

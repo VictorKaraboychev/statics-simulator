@@ -1,61 +1,33 @@
 import React from 'react'
-import { Box, ThemeProvider } from '@mui/material'
-import Visualizer from './components/viewer/Visualizer'
+import { Box } from '@mui/material'
 import Truss from './utility/Truss'
 import { Vector2 } from 'three'
 import GeneticAlgorithm from './utility/GeneticAlgorithm'
 import { randInt } from './utility/functions'
 import Joint, { FIXTURE } from './utility/Joint'
-import { cost }from './utility/trussy/cost'
+import { cost } from './utility/trussy/cost'
+import Viewer from './components/viewer/Viewer'
 
 function App() {
-
-	const constraints = {
-		minLength: 1,
-		maxCompression: 4000,
-		maxTension: 8000,
-	}
-
-	// const length =  1.6
-
-	// const startingTruss = new Truss([
-	// 	new Joint(new Vector2(0, 0), FIXTURE.Pin),
-	// 	new Joint(new Vector2(1 * length, 0)),
-	// 	new Joint(new Vector2(2 * length, 0), FIXTURE.Roller),
-	// 	new Joint(new Vector2(0.5 * length, Math.sqrt(3) / 2 * length)),
-		
-	// 	new Joint(new Vector2(1.5 * length, Math.sqrt(3) / 2 * length), undefined, new Vector2(0, -100)),
-		
-
-	// ], [
-	// 	[0, 1],
-	// 	[1, 3],
-	// 	[0, 3],
-	// 	[4, 1],
-	// 	[2, 4],
-	// 	[4, 3],
-	// 	[1, 2],
-	// ], 4000, 8000)
-
 	const spacing = -3;
 	const multiplier = 1;
 	const force = -(75000 / 4);
 	const offset = -3;
 
 	const bridge = new Truss([
-		new Joint(new Vector2(0, 0), [new Vector2(1, 0), new Vector2(0, 1)]),
+		new Joint(new Vector2(0, 0), FIXTURE.Pin),
 		new Joint(new Vector2(-spacing, 0), undefined, new Vector2(0, force)),
 		new Joint(new Vector2(-spacing * 2, 0), undefined, new Vector2(0, force)),
 		new Joint(new Vector2(-spacing * 3, 0), undefined, new Vector2(0, force)),
 		new Joint(new Vector2(-spacing * 4, 0), undefined, new Vector2(0, force)),
-		new Joint(new Vector2(15, 0), [new Vector2(0, 1)]), //5
+		new Joint(new Vector2(15, 0), FIXTURE.Roller), //5
 
 		new Joint(new Vector2(-spacing, offset)), //6
-		new Joint(new Vector2(7.5, offset)),
+		new Joint(new Vector2(7.5, offset - 2)),
 		new Joint(new Vector2(-spacing * 4, offset)), //8
 
 		new Joint(new Vector2(7.5, 0.5)), //9
-		
+
 
 		new Joint(new Vector2(7.5, -0.5)), //10
 
@@ -137,8 +109,8 @@ function App() {
 
 
 	// ], 4000 * multiplier, 8000 * multiplier)
-	
-	console.log('Forces Computed: ', bridge.computeForces())
+
+	// console.log('Forces Computed: ', bridge.computeForces())
 	// console.log('Cost: ', cost(startingTruss))
 
 	// const geneticAlgorithm = new GeneticAlgorithm({
@@ -187,7 +159,7 @@ function App() {
 	// 			const from = joints[i]
 	// 			for (let j = i; j < joints.length; j++) {
 	// 				const to = joints[j]
-					
+
 	// 				const force = item.getForce(from.id, to.id)
 	// 				if (force) {
 	// 					inefficiency += Math.abs((force > 0 ? constraints.maxCompression : constraints.maxTension) - force)
@@ -208,27 +180,21 @@ function App() {
 	// 	geneticAlgorithm.evolve()
 	// }
 
-	// const best = geneticAlgorithm.best.item
-
 	return (
-		<ThemeProvider
-			theme={{}}
+		<Box
+			component={'div'}
+			sx={{
+				display: 'flex',
+				width: '100vw',
+				height: '100vh',
+				alignItems: 'center',
+			}}
 		>
-			<Box
-				component={'div'}
-				sx={{
-					display: 'flex',
-					width: '100vw',
-					height: '100vh',
-					alignItems: 'center',
-				}}
-			>
-				<Visualizer
-					truss={bridge}
-				/>
-			</Box>
-		</ThemeProvider>
-  	)
+			<Viewer
+				truss={bridge}
+			/>
+		</Box>
+	)
 }
 
 export default App

@@ -1,5 +1,5 @@
-import { Vector2 } from "three"
-import { getUUID } from "./functions"
+import { Vector2 } from 'three'
+import { getUUID } from './functions'
 
 export const FIXTURE = {
 	Pin: [new Vector2(0, 1), new Vector2(1, 0)],
