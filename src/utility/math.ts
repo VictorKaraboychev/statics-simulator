@@ -1,4 +1,4 @@
-import { Range } from "../types/general"
+import { Range } from '../types/general'
 
 /**
  * Constrains a value within a given range.

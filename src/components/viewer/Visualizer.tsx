@@ -1,26 +1,18 @@
 import React from 'react'
+import { Box, SxProps, Theme } from '@mui/material'
 import { Canvas } from '@react-three/fiber'
-import { BackSide, MeshPhongMaterial, OrthographicCamera, /*PerspectiveCamera,*/ SphereGeometry, Vector3 } from 'three'
+import { MeshPhongMaterial, OrthographicCamera, PlaneGeometry, Vector3 } from 'three'
 import CameraController from './CameraController'
-import { Box, useTheme } from '@mui/material'
-import Truss from '../../utility/Truss'
-import TrussModel from './Truss'
 
 interface VisualizerProps {
-	truss: Truss
+	sx?: SxProps<Theme>
+	children?: React.ReactNode,
 }
 
 const Visualizer = (props: VisualizerProps) => {
-	const theme = useTheme()
-	const palette = theme.palette
-
-	// const camera = new PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 2000)
-	const camera = new OrthographicCamera(-window.innerWidth / 2, window.innerWidth / 2, window.innerHeight / 2, -window.innerHeight / 2, 1, 2000)
-	// camera.position.set(0, 100, 500)
-	camera.position.set(100, 0, 500)
+	const camera = new OrthographicCamera(-window.innerWidth / 2, window.innerWidth / 2, window.innerHeight / 2, -window.innerHeight / 2, 1, 5000)
+	camera.position.set(0, 0, 500)
 	camera.zoom = 2
-
-	const center = props.truss.center
 
 	return (
 		<Box
@@ -28,51 +20,42 @@ const Visualizer = (props: VisualizerProps) => {
 			sx={{
 				width: '100%',
 				height: '100%',
+				...props.sx,
 			}}
 		>
 			<Canvas
 				camera={camera}
 				shadows={true}
 				gl={{
-
 					alpha: false,
 					antialias: true
 				}}
-				onCreated={({ gl, scene, camera }) => {
-				}}
 			>
-				<CameraController 
+				<CameraController
 					target={new Vector3(0, 0, 0)}
 				/>
-				<fog attach={'fog'} args={[0xffffff, 750, 1000]} />
-
-				<TrussModel
-					position={new Vector3(
-						0,
-						0,
-						0,
-					)}
-					truss={props.truss}
-				/>
 				<mesh
-					geometry={new SphereGeometry(1000, 40, 40)}
+					geometry={new PlaneGeometry(4000, 4000, 40)}
 					material={new MeshPhongMaterial({
 						color: 0xffffff,
-						depthWrite: false,
-						side: BackSide
+						emissive: 0xffffff,
+						emissiveIntensity: 4,
 					})}
+					position={[0, 0, -50]}
+					rotation={[0, 0, Math.PI / 2]}
 				/>
 				<hemisphereLight
 					color={0x999999}
 					groundColor={0x444444}
 					intensity={1}
-					position={new Vector3(0, 50, 0)}
+					position={new Vector3(0, 50, 50)}
 				/>
 				<gridHelper
-					args={[2000, 100, '#000000']}
-					position={[0, 0, -1]}
+					args={[4000, 200, '#000000']}
+					position={[0, 0, -10]}
 					rotation={[Math.PI / 2, 0, 0]}
 				/>
+				{props.children}
 			</Canvas>
 		</Box>
 	)
