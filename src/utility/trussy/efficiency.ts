@@ -25,7 +25,7 @@ export const efficiency = (truss: Truss): number => {
 
     //arbitrary number to be added to inefficiency that factors in 
     //the fact that the truss over shoots the max and min forces
-    if (max > 1) close_one = 10 * (max - 1) 
+    if (max > 1) close_one = 10 * (max - 1)
     if (min < 0.9) close_one += 10 * (1 - min)
 
     return inefficiency * (max - min) + close_one

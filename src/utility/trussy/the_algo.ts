@@ -41,25 +41,25 @@ export const test_algo = (bridge: Truss): Truss => {
 			return (Math.random() > 0.5 ? item1 : item2).clone()
 		},
 		fitness: (item: Truss) => {
-			const success = meetsConstraints(item)
+			// const success = meetsConstraints(item)
 			
 			let fitness = 0
 
-			for(let i = 0; i < 4; i++) {
-				if (!success[i]) fitness -= 1000
-			}
+			// for(let i = 0; i < 4; i++) {
+			// 	if (!success[i]) fitness -= 1000
+			// }
 
-			if (item.computeForces()) fitness -= 1000
+			// if (item.computeForces()) fitness -= 100000
 
 			fitness -= cost(item)
-			fitness -= efficiency(item)
+			// fitness -= efficiency(item)
 		
 			return fitness
 		},
 		initialPopulation: [bridge.clone()]
 	})
 
-	for (let i = 0; i < 1000; i++) {
+	for (let i = 0; i < 1; i++) {
 		console.log("Generation: ", geneticAlgorithm.generation, "Best: ", geneticAlgorithm.best.item, "Worst: ", geneticAlgorithm.worst.item, "Avg Fitness: ", geneticAlgorithm.avgFitness)
 		geneticAlgorithm.evolve()
 	}

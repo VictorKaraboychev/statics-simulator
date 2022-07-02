@@ -231,7 +231,7 @@ export default class Truss {
 	// }
 
 	computeForces(): boolean {
-		// console.time('computeForces')
+		console.time('computeForces')
 
 		const joints = this.joints
 		const connections = this.connections
@@ -350,7 +350,7 @@ export default class Truss {
 				a.connections[b.id] = value
 				b.connections[a.id] = value
 			})
-	
+
 			joints.forEach((joint, i) => {
 				if (joint.fixtures.length > 0) {
 					joint.externalForce.set(F.get(i * 2, 0), F.get(i * 2 + 1, 0))
@@ -365,7 +365,7 @@ export default class Truss {
 			// 	S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
 			// )
 	
-			// console.timeEnd('computeForces')
+			console.timeEnd('computeForces')
 		} catch (e) {
 			return false
 		}
