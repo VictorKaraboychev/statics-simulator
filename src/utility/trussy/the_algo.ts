@@ -7,9 +7,9 @@ import { cost } from './cost'
 import { meetsConstraints } from './constraints'
 import { efficiency } from './efficiency'
 
-export const test_algo = (bridge: Truss): Truss => {
-    const geneticAlgorithm = new GeneticAlgorithm({
-		mutate: (item: Truss) => {
+export const test_algo = (bridge: Truss) => {
+    return new GeneticAlgorithm({
+		mutate: (item: Truss, i) => {
 			const mutationCount = randInt(0, item.size - 1)
 
 			for (let i = 0; i < mutationCount; i++) {
@@ -18,6 +18,7 @@ export const test_algo = (bridge: Truss): Truss => {
 
 				if (!joint.fixed) {
 					joint.position.add(new Vector2(Math.random() - 0.5, Math.random() - 0.5))
+					// joint.position.add(new Vector2(Math.random() / (Math.sqrt(i) + 1) - 0.5 / (Math.sqrt(i) + 1), Math.random() / (Math.sqrt(i) + 1) - 0.5 / (Math.sqrt(i) + 1)))
 				}
 			}
 
@@ -38,31 +39,42 @@ export const test_algo = (bridge: Truss): Truss => {
 			return item
 		},
 		crossover: (item1: Truss, item2: Truss) => {
-			return (Math.random() > 0.5 ? item1 : item2).clone()
+			const newTruss = item1.clone()
+
+			const joints2 = item2.joints
+
+			newTruss.joints.forEach((joint, i) => {
+				joint.position.add(joints2[i].position).divideScalar(2)
+			})
+
+			return newTruss
 		},
 		fitness: (item: Truss) => {
-			// const success = meetsConstraints(item)
-			
 			let fitness = 0
+			if (!item.computeForces()) fitness -= 100000
+
+			const [maxCompression, maxTension, minLength, maxLength] = meetsConstraints(item)
+			
+			if (minLength) fitness -= 100000
+			
 
 			// for(let i = 0; i < 4; i++) {
 			// 	if (!success[i]) fitness -= 1000
 			// }
 
-			// if (item.computeForces()) fitness -= 100000
-
-			fitness -= cost(item)
-			// fitness -= efficiency(item)
+			
+			fitness -= item.cost 
+			fitness -= efficiency(item) * 1000
 		
 			return fitness
 		},
 		initialPopulation: [bridge.clone()]
 	})
 
-	for (let i = 0; i < 1; i++) {
-		console.log("Generation: ", geneticAlgorithm.generation, "Best: ", geneticAlgorithm.best.item, "Worst: ", geneticAlgorithm.worst.item, "Avg Fitness: ", geneticAlgorithm.avgFitness)
-		geneticAlgorithm.evolve()
-	}
-
-	return geneticAlgorithm.best.item
+	// for (let i = 0; i < 100; i++) {
+	// 	console.log("Generation: ", geneticAlgorithm.generation, "Avg Fitness: ", geneticAlgorithm.avgFitness.toFixed(0)) // , "Best: ", geneticAlgorithm.best.item, "Worst: ", geneticAlgorithm.worst.item,
+	// 	geneticAlgorithm.evolve()
+	// }
+	// console.log (geneticAlgorithm.best.item)
+	// return geneticAlgorithm.best.item
 }

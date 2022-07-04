@@ -11,7 +11,10 @@ export default class Joint {
 	position: Vector2
 	fixtures: Vector2[]
 	externalForce: Vector2
-	connections: { [id: string]: number | null } // positive force is compression (toward the center of the joint) and negative force is tension (toward the outside of the joint)
+	connections: { [id: string]: {
+		force: null | number,
+		distance: null | number
+	} } // positive force is compression (toward the center of the joint) and negative force is tension (toward the outside of the joint)
 
 	constructor(position: Vector2, fixtures?: Vector2[], external_force?: Vector2) {
 		this.id = getUUID()
@@ -37,8 +40,17 @@ export default class Joint {
 		return Math.atan2(this.position.y - joint.position.y, this.position.x - joint.position.x)
 	}
 
-	distanceTo(joint: Joint): number {
-		return this.position.distanceTo(joint.position)
+	distance(joint: Joint): number {
+		// let distance = this.connections[joint.id].distance
+		// if (distance === null) {
+		// 	distance = Math.sqrt((this.position.x - joint.position.x) ** 2 + (this.position.y - joint.position.y) ** 2)
+			
+		// 	this.connections[joint.id] = {
+		// 		force: null,
+		// 		distance: distance
+		// 	}
+		// }
+		return Math.sqrt((this.position.x - joint.position.x) ** 2 + (this.position.y - joint.position.y) ** 2)
 	}
 
 	toJSON(): any {

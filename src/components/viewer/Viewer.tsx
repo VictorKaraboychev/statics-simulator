@@ -44,7 +44,7 @@ const Viewer = (props: ViewerProps) => {
 			const a = joints[c[0]]
 			const b = joints[c[1]]
 
-			const force = a.connections[b.id]
+			const force = a.connections[b.id].force
 
 			if (force) {
 				maxCompression = Math.max(maxCompression, force)

@@ -86,7 +86,7 @@ const TrussModel = (props: TrussModelProps) => {
 											id: `${i}-${j}`,
 											stress,
 											force,
-											length: a.distanceTo(b),
+											length: a.distance(b),
 										})
 									}}
 								>

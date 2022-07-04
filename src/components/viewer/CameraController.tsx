@@ -23,7 +23,7 @@ const CameraController = (props: CameraControllerProps) => {
 				MIDDLE: MOUSE.MIDDLE,
 				RIGHT: MOUSE.LEFT,
 			}
-			controls.minZoom = 1.5
+			controls.minZoom = 1
 
 			controls.update()
 			return controls.dispose

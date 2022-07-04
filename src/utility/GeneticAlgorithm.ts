@@ -7,11 +7,11 @@ export default class GeneticAlgorithm<T> {
 	private generation_: number
 
 	private fitness_: (item: T) => number
-	private mutate_: (item: T) => T
+	private mutate_: (item: T, generation: number) => T
 	private crossover_: (a: T, b: T) => T
 	
 	constructor(config: {
-		mutate: (item: T) => T
+		mutate: (item: T, generation: number) => T
 		crossover: (a: T, b: T) => T
 		fitness: (item: T) => number
 		initialPopulation: T[]
@@ -32,8 +32,6 @@ export default class GeneticAlgorithm<T> {
 	}
 
 	evolve(): GeneticAlgorithm<T> {
-		this.population_ = this.population_.sort((a, b) => b.fitness - a.fitness) // sort by fitness
-
 		this.population_ = this.population_.slice(0, this.size_ * this.passThroughRate) // pass through the best
 
 		while (this.population_.length < this.size_) { // add new items until we have the target size
@@ -42,11 +40,13 @@ export default class GeneticAlgorithm<T> {
 
 			let child = this.crossover_(a.item, b.item)
 			if (Math.random() < this.mutationRate) {
-				child = this.mutate_(child)
+				child = this.mutate_(child, this.generation_)
 			}
 
 			this.population_.push({ item: child, fitness: this.fitness_(child) })
 		}
+
+		this.population_ = this.population_.sort((a, b) => b.fitness - a.fitness) // sort by fitness
 
 		this.generation_++
 		return this
@@ -61,7 +61,14 @@ export default class GeneticAlgorithm<T> {
 	}
 
 	get avgFitness(): number {
-		return this.population_.reduce((acc, item) => acc + item.fitness, 0) / this.population_.length
+		const count = Math.floor(this.size_ * this.passThroughRate)
+
+		let fitness = 0
+		for (let i = 0; i < count; i++) {
+			fitness += this.population_[i].fitness
+		}
+
+		return fitness / count
 	}
 
 	get generation(): number {

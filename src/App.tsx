@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import { Box } from '@mui/material'
 import Truss from './utility/Truss'
 import { Vector2 } from 'three'
@@ -8,67 +8,164 @@ import Joint, { FIXTURE } from './utility/Joint'
 import Viewer from './components/viewer/Viewer'
 
 import { test_algo } from './utility/trussy/the_algo'
+import { delay } from './utility/math'
 
 function App() {
-	const spacing = -3;
-	const multiplier = 1;
-	const force = -(75000 / 4);
-	const offset = -3;
+    const bridge = new Truss([
+        new Joint(new Vector2(0, 0), [new Vector2(1, 0), new Vector2(0, 1)]),
+        new Joint(new Vector2(2.5, 0), undefined, new Vector2(0, -15000)),
+        new Joint(new Vector2(5, 0), undefined, new Vector2(0, -15000)),
+        new Joint(new Vector2(7.5, 0), undefined, new Vector2(0, -15000)),
+        new Joint(new Vector2(10, 0), undefined, new Vector2(0, -15000)),
+        new Joint(new Vector2(12.5, 0), undefined, new Vector2(0, -15000)),
+        new Joint(new Vector2(15, 0), [new Vector2(0, 1)]), // 6
 
-	const bridge = new Truss([
-		new Joint(new Vector2(0, 0), FIXTURE.Pin),
-		new Joint(new Vector2(-spacing, 0), undefined, new Vector2(0, force)),
-		new Joint(new Vector2(-spacing * 2, 0), undefined, new Vector2(0, force)),
-		new Joint(new Vector2(-spacing * 3, 0), undefined, new Vector2(0, force)),
-		new Joint(new Vector2(-spacing * 4, 0), undefined, new Vector2(0, force)),
-		new Joint(new Vector2(15, 0), FIXTURE.Roller), //5
+        new Joint(new Vector2(1.25, -3)),
+        new Joint(new Vector2(3.75, -3)),
+        new Joint(new Vector2(6.25, -3)),
+        new Joint(new Vector2(8.75, -3)),
+        new Joint(new Vector2(11.25, -3)),
+        new Joint(new Vector2(13.75, -3)), // 12
 
-		new Joint(new Vector2(-spacing, -offset)), //6
-		new Joint(new Vector2(7.5, -offset + 3)),
-		new Joint(new Vector2(-spacing * 4, -offset)), //8
+        new Joint(new Vector2(2.5, -6)),
+        new Joint(new Vector2(5, -6)),
+        new Joint(new Vector2(7.5, -6)),
+        new Joint(new Vector2(10, -6)),
+        new Joint(new Vector2(12.5, -6)), // 17
 
-		new Joint(new Vector2(7.5, -0.5)), //9
+        new Joint(new Vector2(0, -1.5)),
+        new Joint(new Vector2(1, -1.5)), // 19
 
-		new Joint(new Vector2(7.5, 0.5)), //10
+        new Joint(new Vector2(14, -1.5)),
+        new Joint(new Vector2(15, -1.5)), // 21
 
-		new Joint(new Vector2(7.5, 3)), //11
-	], [
-		[0, 1],
-		[1, 2],
+        // new Joint(new Vector2(3.75, -9)),
+        // new Joint(new Vector2(6.25, -9)),
+        // new Joint(new Vector2(8.75, -9)), 
+        // new Joint(new Vector2(11.25, -9)), // 21
+
+        // new Joint(new Vector2(5, 12)),
+        // new Joint(new Vector2(7.5, 12)),
+        // new Joint(new Vector2(10, 12)), // 24
+
+        // new Joint(new Vector2(6.25, 15)),
+        // new Joint(new Vector2(8.75, 15)), // 26
+
+        // new Joint(new Vector2(7.5, 18)), // 27
+    ], [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+        [3, 4],
+		[4, 5],
+        [5, 6],
+
+        [7, 8],
+        [8, 9],
+        [9, 10],
+        [10, 11],
+        [11, 12],
+
+        [13, 14],
+        [14, 15],
+        [15, 16],
+        [16, 17],
+
+        // [18, 19],
+        // [18, 19],
+		// [19, 20],
+		// [20, 21],
+
+		// [22, 23],
+		// [23, 24],
+
+		// [25, 26],
+
+		// [0, 7],
+        [0, 18],
+        [0, 19],
+        [18, 19],
+        [7, 18],
+        [7, 19],
+		[1, 7],
+		[1, 8],
+		[2, 8],
 		[2, 9],
-		[2, 10],
 		[3, 9],
 		[3, 10],
-		[9, 10],
+		[4, 10],
+		[4, 11],
+		[5, 11],
+		[5, 12],
+		// [6, 12],
+        [6, 20],
+        [6, 21],
+        [20, 21],
+        [12, 20],
+        [12, 21],
 
-		[3, 4],
-		[4, 5],
 
-		[6, 7],
-		[7, 8],
+		[7, 13],
+		[8, 13],
+		[8, 14],
+		[9, 14],
+		[9, 15],
+		[10, 15],
+		[10, 16],
+		[11, 16],
+		[11, 17],
+		[12, 17],
 
-		[0, 6],
-		[1, 6],
-		[2, 6],
 
-		[2, 11],
-		[3, 11],
 
-		[3, 8],
-		[4, 8],
-		[5, 8],
+		// [13, 18],
+		// [14, 18],
+		// [14, 19],
+		// [15, 19],
+		// [15, 20],
+		// [16, 20],
+		// [16, 21],
+		// [17, 21],
 
-		[6, 11],
-		[7, 11],
-		[8, 11],
+		// [18, 22],
+		// [19, 22],
+		// [19, 23],
+		// [20, 23],
+		// [20, 24],
+		// [21, 24],
 
-	], 4000 * multiplier, 8000 * multiplier)
+		// [22, 25],
+		// [23, 25],
+		// [23, 26],
+		// [24, 26],
 
-    const [display, setDisplay] = React.useState(bridge)
+		// [25, 27],
+		// [26, 27],
 
-    React.useEffect(() => {
-        setDisplay(test_algo(bridge))
-    }, [])
+    ], 4000, 8000)
+
+    // const computeRef = useRef(false)
+    // const [display, setDisplay] = useState<Truss | null>(null)
+
+    // useEffect(() => { 
+    //     (async () => {
+    //         if (!computeRef.current) {
+    //             const gen = test_algo(bridge)
+    //             console.log(gen)
+    //             for (let i = 0; i < 200; i++) {
+    //                 gen.evolve()
+    //                 console.log("Generation: ", gen.generation, "Avg Fitness: ", gen.avgFitness.toFixed(0))
+    //                 if (i % 10 === 0) {
+    //                     setDisplay(gen.best.item.clone())
+    //                     // await delay(2000)
+    //                 }
+    //             }
+    //             computeRef.current = true
+    //         }
+    //     })()
+    // }, [])
+
+    // if (!display) return null
     
 	return (
 		<Box
@@ -81,7 +178,7 @@ function App() {
 			}}
 		>
 			<Viewer
-				truss={display}
+				truss={bridge}
 			/>
 		</Box>
 	)
