@@ -9,15 +9,15 @@ export default class Truss {
 	private maxCompression: number = 0
 	private maxTension: number = 0
 
-	private connections_: [number, number][] = []
+	private connections_: [number, number, number | 1][] = []
 
-	constructor(joints: Joint[], connections: [number, number][], maxCompression?: number, maxTension?: number) {
+	constructor(joints: Joint[], connections: [number, number, number | 1][], maxCompression?: number, maxTension?: number) {
 		joints.forEach((joint, i) => {
-			connections.forEach(([a, b]) => {
+			connections.forEach(([a, b, c]) => {
 				if (a === i) {
-					joint.connections[joints[b].id] = { force: null, distance: null }
+					joint.connections[joints[b].id] = { force: null, multiplier: c }
 				} else if (b === i) {
-					joint.connections[joints[a].id] = { force: null, distance: null }
+					joint.connections[joints[a].id] = { force: null, multiplier: c }
 				}
 			})
 			this.truss[joint.id] = joint
@@ -58,7 +58,7 @@ export default class Truss {
 		return Object.values(this.truss)
 	}
 
-	get connections(): [number, number][] {
+	get connections(): [number, number, number | 1][] {
 		// const connections: [number, number][] = []
 		// const joints = this.joints
 
@@ -117,9 +117,9 @@ export default class Truss {
 	}
 
 	getStress(fromId: string, toId: string): number {
-		const force = this.truss[fromId].connections[toId].force
+		const connection = this.truss[fromId].connections[toId]
+		const force = (connection.force || 0) / (connection.multiplier || 1)
 
-		if (force === null) return 0
 		if (force > 0) return force / this.maxCompression
 		if (force < 0) return force / this.maxTension
 		return 0
