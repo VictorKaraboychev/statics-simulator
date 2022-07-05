@@ -1,3 +1,6 @@
+import { Vector2 } from "three"
+import { round } from "./math"
+
 /**
  * Creates a deep copy of an object.
  * @param object  Object to copy.
@@ -21,3 +24,7 @@ export const equals = <T>(a: T, b: T): boolean => JSON.stringify(a) === JSON.str
 export const last = <T>(array: T[]): T => array[array.length - 1]
 
 export const randInt = (min: number, max: number): number => Math.floor(Math.random() * (max - min + 1)) + min
+
+export const roundVector2 = (vector: Vector2, decimals: number): Vector2 => {
+	return new Vector2(round(vector.x, decimals), round(vector.y, decimals))
+}

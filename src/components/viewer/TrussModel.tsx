@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react'
-import { Color, MeshPhongMaterial, SphereGeometry, Vector2, Vector3 } from 'three'
+import React from 'react'
+import { Color, MeshPhongMaterial, SphereGeometry, Vector3 } from 'three'
 import Truss from '../../utility/Truss'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
@@ -8,11 +8,7 @@ import Force from './Force'
 import { ThreeEvent } from '@react-three/fiber'
 import Joint from '../../utility/Joint'
 import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
-
-const TRUSS_COLORS: { [key: string]: Vector3 } = {
-	compression: new Vector3(0, 1, 0),
-	tension: new Vector3(1, 0, 0)
-}
+import { TRUSS_COLORS } from '../../config/TrussConfig'
 
 interface TrussModelProps {
 	truss: Truss,
@@ -23,40 +19,12 @@ interface TrussModelProps {
 }
 
 const TrussModel = (props: TrussModelProps) => {
-	// const jointID = useRef<string>('')
-	// const position = useRef(new Vector3(0, 0, 0))
-
-	// const debounceRef = useRef<number>(0)
-
 	const scale = 20
-
 	const joints = props.truss.joints
 
 	return (
 		<group
 			position={props.position ? props.position.multiplyScalar(scale) : undefined}
-			// onPointerMove={(e) => {
-			// 	if (jointID.current) {
-			// 		const joint = truss.getJoint(jointID.current)
-			// 		const delta = e.point.sub(position.current).divideScalar(scale)
-
-			// 		joint.position.add(new Vector2(delta.x, delta.y))
-
-			// 		// if (debounceRef.current) clearTimeout(debounceRef.current)
-			// 		// debounceRef.current = setTimeout(() => {
-			// 		// 	truss.computeForces()
-			// 		// 	seTruss(truss)
-			// 		// }, 250)
-
-			// 		console.log(delta, joint.position)
-			// 	}
-			// }}
-			// onPointerUp={(e) => {
-			// 	jointID.current = ''
-			// 	const newTruss = truss.clone()
-			// 	newTruss.computeForces()
-			// 	seTruss(newTruss)
-			// }}
 		>
 			<group
 				position={[0, 0, -2]}
@@ -74,8 +42,7 @@ const TrussModel = (props: TrussModelProps) => {
 							// const value = TRUSS_COLORS[stressType].clone().multiplyScalar(Math.abs(stress))
 							// console.log(stress)
 
-							const value = Math.abs(stress) >= 1 ? TRUSS_COLORS[stressType] : new Vector3(0, 0, 0)
-							const color = new Color().fromArray(value.toArray())
+							const color = new Color(Math.abs(stress) >= 1 ? TRUSS_COLORS[stressType] : '#000000')
 
 							members.push(
 								<group

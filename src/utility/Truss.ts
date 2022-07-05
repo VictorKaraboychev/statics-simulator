@@ -1,5 +1,6 @@
-import Matrix, { solve, inverse, linearDependencies } from "ml-matrix"
-import { Vector2, Vector3 } from "three"
+import Matrix, { solve } from "ml-matrix"
+import { Vector2 } from "three"
+import { TrussJSONType } from "../types/truss"
 import Joint from "./Joint"
 
 export default class Truss {
@@ -385,10 +386,10 @@ export default class Truss {
 	}
 
 	clone(): Truss {
-		return new Truss(this.joints.map((joint) => joint.clone()), this.connections, this.maxCompression, this.maxTension)
+		return new Truss(this.joints.map((joint) => joint.clone()), [ ...this.connections ], this.maxCompression, this.maxTension)
 	}
 
-	toJSON(): any {
+	toJSON(): TrussJSONType {
 		return {
 			joints: this.joints.map((joint) => joint.toJSON()),
 			connections: this.connections,
@@ -401,7 +402,12 @@ export default class Truss {
 		return JSON.stringify(this.truss)
 	}
 
-	static fromJSON(json: any): Truss {
-		return new Truss(json.joints.map((joint: any) => Joint.fromJSON(joint)), json.connections, json.maxCompression, json.maxTension)
+	static fromJSON(json: TrussJSONType): Truss {
+		return new Truss(
+			json.joints.map((joint) => Joint.fromJSON(joint)),
+			json.connections,
+			json.maxCompression,
+			json.maxTension
+		)
 	}
 }
