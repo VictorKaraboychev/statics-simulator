@@ -87,6 +87,7 @@ const TrussModel = (props: TrussModelProps) => {
 											stress,
 											force,
 											length: a.distance(b),
+											multiplier: a.connections[b.id].multiplier || 1,
 										})
 									}}
 								>

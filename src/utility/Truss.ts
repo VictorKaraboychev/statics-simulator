@@ -76,8 +76,8 @@ export default class Truss {
 
 	get cost(): number {
 		const joints = this.joints
-		return this.connections.reduce((acc, c) => {
-			acc += joints[c[0]].distance(joints[c[1]]) * 15
+		return this.connections.reduce((acc, [a, b, c]) => {
+			acc += joints[a].distance(joints[b]) * 15 * c
 			return acc
 		}, this.size_ * 5)
 	}

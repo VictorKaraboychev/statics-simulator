@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Box, Button, Card, Popover, SxProps, Theme, Typography } from '@mui/material'
 import Truss from '../../utility/Truss'
 import Visualizer from './Visualizer'
-import { cost } from '../../utility/trussy/cost'
 import { TrussConnectionDetailsType, TrussDetailsType, TrussJointDetailsType } from '../../types/truss'
 import TrussModel from './TrussModel'
 import { ThreeEvent } from '@react-three/fiber'
@@ -35,7 +34,7 @@ const Viewer = (props: ViewerProps) => {
 		const joints = truss.joints
 		const connections = truss.connections
 
-		const value = cost(truss)
+		const value = truss.cost
 
 		let maxCompression = 0
 		let maxTension = 0
@@ -168,12 +167,12 @@ const Viewer = (props: ViewerProps) => {
 							<Typography
 								variant={'body2'}
 							>
-								Force: {connectionDetails.force?.toFixed(0)}N
+								Force: {Math.ceil(connectionDetails.force || 0)?.toFixed(0)}N
 							</Typography>
 							<Typography
 								variant={'body2'}
 							>
-								Stress: {Math.abs(connectionDetails.stress * 100).toFixed(0)}%
+								Stress: {Math.abs(connectionDetails.stress * 100).toFixed(0)}%{connectionDetails.multiplier > 1 && ` ×${connectionDetails.multiplier}`}
 							</Typography>
 							<Typography
 								variant={'body2'}

@@ -17,4 +17,5 @@ export type TrussConnectionDetailsType = {
 	force: number | null,
 	stress: number,
 	length: number,
+	multiplier: number,
 }
