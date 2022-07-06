@@ -35,11 +35,8 @@ const Viewer = (props: ViewerProps) => {
 		let maxCompression = 0
 		let maxTension = 0
 
-		connections.forEach(c => {
-			const a = joints[c[0]]
-			const b = joints[c[1]]
-
-			const force = a.connections[b.id].force
+		connections.forEach(([a, b]) => {
+			const force = joints[a].connections[joints[b].id].force
 
 			if (force) {
 				maxCompression = Math.max(maxCompression, force)
@@ -59,7 +56,7 @@ const Viewer = (props: ViewerProps) => {
 		setConnectionDetails(null)
 	}
 
-	const handleConnectionClick = (e: ThreeEvent<MouseEvent>, a: Joint, b: Joint, details: TrussConnectionDetailsType) => {
+	const handleConnectionClick = (e: ThreeEvent<MouseEvent>, details: TrussConnectionDetailsType) => {
 		setConnectionDetails(details)
 		setJointDetails(null)
 	}
@@ -67,7 +64,6 @@ const Viewer = (props: ViewerProps) => {
 	const handleExport = () => {
 		const json = JSON.stringify(truss.toJSON())
 		const blob = new Blob([json], { type: 'application/json' })
-
 		saveAs(blob, 'truss.json')
 	}
 

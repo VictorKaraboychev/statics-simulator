@@ -10,7 +10,7 @@ export type TrussDetailsType = {
 
 export type TrussJointDetailsType = {
 	id: number,
-	joint: Joint
+	joint: Joint,
 }
 
 export type TrussConnectionDetailsType = {
@@ -19,6 +19,8 @@ export type TrussConnectionDetailsType = {
 	stress: number,
 	length: number,
 	multiplier: number,
+	a: Joint,
+	b: Joint,
 }
 
 export type TrussJSONType = {
