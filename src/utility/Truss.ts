@@ -10,9 +10,9 @@ export default class Truss {
 	private maxCompression: number = 0
 	private maxTension: number = 0
 
-	private connections_: [number, number, number | 1][] = []
+	private connections_: [number, number, number][] = []
 
-	constructor(joints: Joint[], connections: [number, number, number | 1][], maxCompression?: number, maxTension?: number) {
+	constructor(joints: Joint[], connections: [number, number, number][], maxCompression?: number, maxTension?: number) {
 		joints.forEach((joint, i) => {
 			connections.forEach(([a, b, c]) => {
 				if (a === i) {
@@ -59,20 +59,20 @@ export default class Truss {
 		return Object.values(this.truss)
 	}
 
-	get connections(): [number, number, number | 1][] {
-		// const connections: [number, number][] = []
-		// const joints = this.joints
+	get connections(): [number, number, number][] {
+		const connections: [number, number, number][] = []
+		const joints = this.joints
 
-		// for (let i = 0; i < this.size_; i++) {
-		// 	const a = joints[i]
-		// 	for (let j = i; j < this.size_; j++) {
-		// 		const b = joints[j]
-		// 		if (b.id in a.connections) {
-		// 			connections.push([i, j])
-		// 		}
-		// 	}
-		// }
-		return this.connections_
+		for (let i = 0; i < this.size_; i++) {
+			const a = joints[i]
+			for (let j = i; j < this.size_; j++) {
+				const b = joints[j]
+				if (b.id in a.connections) {
+					connections.push([i, j, a.connections[b.id].multiplier || 1])
+				}
+			}
+		}
+		return connections
 	}
 
 	get cost(): number {
@@ -95,13 +95,24 @@ export default class Truss {
 	}
 
 	removeJoint(id: string): Truss {
-		// const joint = this.truss[id]
 		this.getConnections(id).forEach((connection) => {
 			delete connection.connections[id]
 		})
 		delete this.truss[id]
 
 		this.size_--
+		return this
+	}
+
+	addConnection(fromId: string, toId: string, multiplier: number = 1): Truss {
+		this.truss[fromId].connections[toId] = { force: null, multiplier }
+		this.truss[toId].connections[fromId] = { force: null, multiplier }
+		return this
+	}
+
+	removeConnection(fromId: string, toId: string): Truss {
+		delete this.truss[fromId].connections[toId]
+		delete this.truss[toId].connections[fromId]
 		return this
 	}
 

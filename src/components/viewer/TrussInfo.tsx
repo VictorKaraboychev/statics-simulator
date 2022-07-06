@@ -3,9 +3,9 @@ import { Box, Button, Card, TextField, Typography } from '@mui/material'
 import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
 import Truss from '../../utility/Truss'
 import { Vector2 } from 'three'
-import { useEventEffect, useReliantState } from '../../utility/hooks'
+import { useEventEffect, usePersistentState, useReliantState } from '../../utility/hooks'
 import { roundVector2 } from '../../utility/functions'
-import { DEFAULT_PRECISION } from '../../config/GlobalConfig'
+import { DEFAULT_PRECISION, MAX_UNDO_STATES } from '../../config/GlobalConfig'
 
 interface TrussInfoProps {
 	truss: Truss
@@ -15,6 +15,8 @@ interface TrussInfoProps {
 }
 
 const TrussInfo = (props: TrussInfoProps) => {
+	const [undo, setUndo] = usePersistentState<Truss[]>('truss_undo', [], 'local')
+
 	const [position, setPosition] = useReliantState<Vector2>(props.jointDetails?.joint.position || new Vector2(0, 0), [props.jointDetails])
 	const [externalForce, setExternalForce] = useReliantState<Vector2>(props.jointDetails?.joint.externalForce || new Vector2(0, 0), [props.jointDetails])
 
@@ -31,6 +33,14 @@ const TrussInfo = (props: TrussInfoProps) => {
 		(connectionDetails && connectionDetails.multiplier !== multiplier)
 	)
 
+	const submit = () => {
+		if (undo.length >= MAX_UNDO_STATES) undo.shift()
+		undo.push(props.truss.clone())
+
+		setUndo([ ...undo ])
+		props.onSubmit?.(props.truss)
+	}
+
 	const handleSubmit = () => {
 		if (jointDetails && joint) {
 			joint.position = roundVector2(position, DEFAULT_PRECISION)
@@ -44,11 +54,13 @@ const TrussInfo = (props: TrussInfoProps) => {
 			return
 		}
 
-		props.onSubmit?.(props.truss)
+		submit()
 	}
 
 	useEventEffect((e: KeyboardEvent) => {
-		if (!jointDetails) return
+		if (!jointDetails && !connectionDetails) return
+
+		console.log(e.key)
 
 		let movement = 0.1
 		if (e.shiftKey) movement *= 0.01
@@ -57,6 +69,26 @@ const TrussInfo = (props: TrussInfoProps) => {
 		switch (e.key) {
 			case 'Enter':
 				handleSubmit()
+			break
+			case 'Delete':
+				if (joint) {
+					props.truss.removeJoint(joint.id)
+				} else if (connectionDetails) {
+					const [a, b] = connectionDetails.id.split('-').map(Number)
+					props.truss.removeConnection(joints[a].id, joints[b].id)
+				} else {
+					break
+				}
+				submit()
+			break
+			case 'z':
+				if (e.ctrlKey) {
+					if (undo.length) {
+						const truss = undo.pop() as Truss
+						setUndo([ ...undo ])
+						props.onSubmit?.(truss)
+					}
+				}
 			break
 			case 'ArrowUp':
 				if (!e.ctrlKey) break
@@ -79,7 +111,7 @@ const TrussInfo = (props: TrussInfoProps) => {
 				handleSubmit()
 			break
 		}
-	}, 'keydown', [position, externalForce, multiplier])
+	}, 'keydown')
 
 	if (!connectionDetails && !jointDetails) return null
 

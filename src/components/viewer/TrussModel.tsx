@@ -6,7 +6,6 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { Line2 } from 'three/examples/jsm/lines/Line2'
 import Force from './Force'
 import { ThreeEvent } from '@react-three/fiber'
-import Joint from '../../utility/Joint'
 import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
 import { TRUSS_COLORS } from '../../config/TrussConfig'
 import { useReliantState } from '../../utility/hooks'
@@ -146,7 +145,7 @@ const TrussModel = (props: TrussModelProps) => {
 							/>
 							{selectedJoint === i && (
 								<mesh
-									geometry={new SphereGeometry(6, 16, 16)}
+									geometry={new SphereGeometry(6.5, 16, 16)}
 									material={new MeshPhongMaterial({
 										color: palette.primary.main,
 										side: BackSide,
