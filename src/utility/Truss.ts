@@ -1,14 +1,20 @@
+<<<<<<< Updated upstream
 import Matrix, { solve, inverse, linearDependencies } from "ml-matrix"
 import { Vector2, Vector3 } from "three"
+=======
+import Matrix, { solve } from "ml-matrix"
+import { Vector2 } from "three"
+import { TrussJSONType, TrussStressConstraints } from "../types/truss"
+>>>>>>> Stashed changes
 import Joint from "./Joint"
 
 export default class Truss {
-	private truss: { [key: string]: Joint } = {}
+	private truss: Joint[] = []
 	private size_: number
 
-	private maxCompression: number = 0
-	private maxTension: number = 0
+	private connections_: Set<[number, number, number]> = new Set()
 
+<<<<<<< Updated upstream
 	private connections_: [number, number, number | 1][] = []
 
 	constructor(joints: Joint[], connections: [number, number, number | 1][], maxCompression?: number, maxTension?: number) {
@@ -27,6 +33,18 @@ export default class Truss {
 
 		this.maxCompression = maxCompression ?? 0
 		this.maxTension = maxTension ?? 0
+=======
+	constructor(joints: Joint[], connections: [number, number, number][]) {
+		for (let i = 0; i < joints.length; i++) {
+			const joint = joints[i]
+			for (let j = 0; j < connections.length; j++) {
+				const [a, b, c] = connections[j]
+				joint.connections[a === i ? b : a] = { force: null, multiplier: c }
+			}
+			this.truss[i] = joint
+		}
+		this.connections_ = new Set(connections)
+>>>>>>> Stashed changes
 		this.size_ = joints.length
 	}
 
@@ -58,6 +76,7 @@ export default class Truss {
 		return Object.values(this.truss)
 	}
 
+<<<<<<< Updated upstream
 	get connections(): [number, number, number | 1][] {
 		// const connections: [number, number][] = []
 		// const joints = this.joints
@@ -72,6 +91,23 @@ export default class Truss {
 		// 	}
 		// }
 		return this.connections_
+=======
+	get connections(): [number, number, number][] {
+		const connections: [number, number, number][] = []
+		const joints = this.joints
+
+		for (let i = 0; i < this.size_; i++) {
+			const a = joints[i]
+			for (let j = i; j < this.size_; j++) {
+				const b = joints[j]
+				console.log(a.id, b.id)
+				if (b.id in a.connections) {
+					connections.push([i, j, a.connections[b.id].multiplier || 1])
+				}
+			}
+		}
+		return connections
+>>>>>>> Stashed changes
 	}
 
 	get cost(): number {
@@ -93,8 +129,12 @@ export default class Truss {
 		return this
 	}
 
+<<<<<<< Updated upstream
 	removeJoint(id: string): Truss {
 		// const joint = this.truss[id]
+=======
+	removeJoint(id: number): Truss {
+>>>>>>> Stashed changes
 		this.getConnections(id).forEach((connection) => {
 			delete connection.connections[id]
 		})
@@ -104,145 +144,44 @@ export default class Truss {
 		return this
 	}
 
+<<<<<<< Updated upstream
 	getJoint(id: string): Joint {
+=======
+	addConnection(fromId: number, toId: number, multiplier: number = 1): Truss {
+		this.truss[fromId].connections[toId] = { force: null, multiplier }
+		this.truss[toId].connections[fromId] = { force: null, multiplier }
+		return this
+	}
+
+	removeConnection(fromId: number, toId: number): Truss {
+		delete this.truss[fromId].connections[toId]
+		delete this.truss[toId].connections[fromId]
+		return this
+	}
+
+	getJoint(id: number): Joint {
+>>>>>>> Stashed changes
 		return this.truss[id]
 	}
 
-	getConnections(id: string): Joint[] {
-		return Object.keys(this.truss[id].connections).map((key) => this.truss[key])
+	getConnections(id: number): Joint[] {
+		return Object.keys(this.truss[id].connections).map((key) => this.truss[Number(key)])
 	}
 
-	getForce(fromId: string, toId: string): number | null {
+	getForce(fromId: number, toId: number): number | null {
 		return this.truss[fromId].connections[toId].force
 	}
 
-	getStress(fromId: string, toId: string): number {
+	getStress(fromId: number, toId: number, constraints: TrussStressConstraints): number {
 		const connection = this.truss[fromId].connections[toId]
 		const force = (connection.force || 0) / (connection.multiplier || 1)
 
-		if (force > 0) return force / this.maxCompression
-		if (force < 0) return force / this.maxTension
+		if (force > 0) return force / constraints.maxCompression
+		if (force < 0) return force / constraints.maxTension
 		return 0
 	}
 
-	// computeFixtureForces(): boolean {
-	// 	let f = 0
-	// 	const fixtures = new Matrix(3, 3)
-	// 	const netForce = Matrix.columnVector(this.joints.reduce((acc, joint) => {
-	// 		if (joint.fixtures.length > 0) {
-	// 			for (let i = 0; i < joint.fixtures.length; i++) {
-	// 				const fixture = joint.fixtures[i]
-	// 				fixtures.setColumn(f, [
-	// 					fixture.x,
-	// 					fixture.y,
-	// 					fixture.clone().cross(joint.position)
-	// 				])
-	// 				f++
-	// 			}
-	// 		}
-
-	// 		return acc.add(new Vector3(
-	// 			joint.externalForce.x,
-	// 			joint.externalForce.y,
-	// 			joint.externalForce.clone().cross(joint.position) // moment
-	// 		))
-	// 	}, new Vector3(0, 0, 0)).toArray())
-
-	// 	if (f !== 3) return false
-
-	// 	const isDefined = fixtures.reducedEchelonForm().diagonal().every((v) => v !== 0)
-	// 	if (!isDefined) return false
-
-	// 	const solution = solve(fixtures, netForce)
-	// 	f = 0
-	// 	this.joints.forEach((joint, i) => {
-	// 		if (joint.fixtures.length > 0) {
-	// 			joint.fixtures.forEach((fixture, j) => {
-	// 				joint.externalForce.sub(fixture.clone().setLength(solution.get(f, 0)))
-	// 				f++
-	// 			})
-	// 		}
-	// 	})
-
-	// 	return true
-	// }
-
-	// computeForces(): boolean {
-	// 	this.joints.forEach((joint) => joint.computed = false)
-
-	// 	// evaluate the forces on each fixture
-	// 	if (this.computeFixtureForces() === false) return false
-
-	// 	// evaluate the forces on each joint (method of joints)
-
-	// 	const queue: Joint[] = this.joints.filter((joint) => {
-	// 		return joint.degrees_of_freedom <= 1
-	// 	})
-
-	// 	if (queue.length === 0) return false
-	// 	let i = 0
-
-	// 	while (queue.length > 0 && i < 2 * this.size_) {
-	// 		const joint = queue.shift()!
-	// 		// console.log(i, joint.id, joint.connections_count, joint.degrees_of_freedom)
-
-	// 		if (joint.degrees_of_freedom <= 1) {
-	// 			if (!joint.computed) {
-	// 				const connections = this.getConnections(joint.id)
-
-	// 				let f = 0
-	// 				const connectionForces = new Matrix(2, 0)
-	// 				// net force is the sum of the external force and the forces exerted by the connections
-	// 				const netForce = Matrix.columnVector(connections.reduce((acc, connection) => {
-	// 					const angle = connection.angleTo(joint)
-
-	// 					// unknown force
-	// 					if (connection.connections[joint.id] === null) {
-
-	// 						connectionForces.addColumn(f, [
-	// 							Math.cos(angle),
-	// 							Math.sin(angle)
-	// 						])
-	// 						f++
-	// 						return acc
-	// 					}
-
-	// 					// known force
-	// 					const force = connection.connections[joint.id] as number
-	// 					return acc.sub(new Vector2(Math.cos(angle) * force, Math.sin(angle) * force))
-	// 				}, joint.external_force.clone()).toArray())
-
-	// 				if (f === 0) break
-	// 				if (f < 3) {
-	// 					const solution = solve(connectionForces, netForce)
-
-	// 					f = 0
-	// 					connections.forEach((connection) => {
-	// 						if (joint.connections[connection.id] === null) {
-	// 							const force = solution.get(f, 0)
-	// 							joint.connections[connection.id] = force
-	// 							this.getJoint(connection.id).connections[joint.id] = force
-	// 							f++
-	// 							queue.push(connection)
-	// 						}
-	// 					})
-	// 					joint.computed = true
-	// 					i--
-	// 				} else {
-	// 					// console.log(joint.id, connectionForces, netForce, queue.length)
-	// 					queue.push(joint)
-	// 					i++
-	// 				}
-	// 			}
-	// 		} else {
-	// 			queue.push(joint)
-	// 			i++
-	// 		}
-	// 	}
-	// 	return i < 2 * this.size_
-	// }
-
-	computeForces(): boolean {
+	compute(): boolean {
 		// console.time('computeForces')
 
 		const joints = this.joints
@@ -352,22 +291,24 @@ export default class Truss {
 	
 				return acc
 			}, Matrix.zeros(0, 1))
-	
-			connections.forEach((connection, i) => {
-				const a = joints[connection[0]]
-				const b = joints[connection[1]]
+
+			for (let i = 0; i < connections.length; i++) {
+				const [a, b] = connections[i]
+				const aJ = joints[a]
+				const bJ = joints[b]
 	
 				const value = S.get(i, 0)
 	
-				a.connections[b.id].force = value
-				b.connections[a.id].force = value
-			})
+				aJ.connections[bJ.id].force = value
+				bJ.connections[aJ.id].force = value
+			}
 
-			joints.forEach((joint, i) => {
+			for (let i = 0; i < joints.length; i++) {
+				const joint = joints[i]
 				if (joint.fixtures.length > 0) {
 					joint.externalForce.set(F.get(i * 2, 0), F.get(i * 2 + 1, 0))
 				}
-			})
+			}
 	
 			// console.log(
 			// 	K.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
@@ -385,15 +326,17 @@ export default class Truss {
 	}
 
 	clone(): Truss {
+<<<<<<< Updated upstream
 		return new Truss(this.joints.map((joint) => joint.clone()), this.connections, this.maxCompression, this.maxTension)
+=======
+		return new Truss(this.joints.map((joint) => joint.clone()), [ ...this.connections ])
+>>>>>>> Stashed changes
 	}
 
 	toJSON(): any {
 		return {
 			joints: this.joints.map((joint) => joint.toJSON()),
 			connections: this.connections,
-			maxCompression: this.maxCompression,
-			maxTension: this.maxTension
 		}
 	}
 
@@ -401,7 +344,15 @@ export default class Truss {
 		return JSON.stringify(this.truss)
 	}
 
+<<<<<<< Updated upstream
 	static fromJSON(json: any): Truss {
 		return new Truss(json.joints.map((joint: any) => Joint.fromJSON(joint)), json.connections, json.maxCompression, json.maxTension)
+=======
+	static fromJSON(json: TrussJSONType): Truss {
+		return new Truss(
+			json.joints.map((joint) => Joint.fromJSON(joint)),
+			json.connections,
+		)
+>>>>>>> Stashed changes
 	}
 }

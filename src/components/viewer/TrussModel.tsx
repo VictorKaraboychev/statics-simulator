@@ -8,11 +8,18 @@ import Force from './Force'
 import { ThreeEvent } from '@react-three/fiber'
 import Joint from '../../utility/Joint'
 import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
+<<<<<<< Updated upstream
 
 const TRUSS_COLORS: { [key: string]: Vector3 } = {
 	compression: new Vector3(0, 1, 0),
 	tension: new Vector3(1, 0, 0)
 }
+=======
+import { TRUSS_COLORS } from '../../config/TrussConfig'
+import { useReliantState } from '../../utility/hooks'
+import { useTheme } from '@mui/material'
+import useCustomState from '../../state/state'
+>>>>>>> Stashed changes
 
 interface TrussModelProps {
 	truss: Truss,
@@ -23,8 +30,14 @@ interface TrussModelProps {
 }
 
 const TrussModel = (props: TrussModelProps) => {
+<<<<<<< Updated upstream
 	// const jointID = useRef<string>('')
 	// const position = useRef(new Vector3(0, 0, 0))
+=======
+	const { value: TRUSS_CONSTRAINTS } = useCustomState.truss_constraints()
+
+	const { palette } = useTheme()
+>>>>>>> Stashed changes
 
 	// const debounceRef = useRef<number>(0)
 
@@ -67,9 +80,15 @@ const TrussModel = (props: TrussModelProps) => {
 					for (let j = i; j < joints.length; j++) {
 						const b = joints[j]
 						if (b.id in a.connections) {
+<<<<<<< Updated upstream
 							const stress = props.truss.getStress(a.id, b.id)
 							const force = props.truss.getForce(a.id, b.id)
 
+=======
+							const id = `${i}-${j}`
+
+							const stress = props.truss.getStress(a.id, b.id, TRUSS_CONSTRAINTS)
+>>>>>>> Stashed changes
 							const stressType = stress < 0 ? 'tension' : 'compression'
 							// const value = TRUSS_COLORS[stressType].clone().multiplyScalar(Math.abs(stress))
 							// console.log(stress)
@@ -82,6 +101,7 @@ const TrussModel = (props: TrussModelProps) => {
 									key={`${a.id}-${b.id}`}
 									onClick={(e) => {
 										e.stopPropagation()
+<<<<<<< Updated upstream
 										props.onConnectionClick?.(e, a, b, {
 											id: `${i}-${j}`,
 											stress,
@@ -89,6 +109,21 @@ const TrussModel = (props: TrussModelProps) => {
 											length: a.distance(b),
 											multiplier: a.connections[b.id].multiplier || 1,
 										})
+=======
+										props.onConnectionClick?.(e,
+											{
+												id: id,
+												stress,
+												force: props.truss.getForce(a.id, b.id),
+												length: a.distance(b),
+												multiplier: a.connections[b.id].multiplier || 1,
+												a,
+												b,
+											}
+										)
+										setSelectedConnection(id)
+										setSelectedJoint(-1)
+>>>>>>> Stashed changes
 									}}
 								>
 									<primitive

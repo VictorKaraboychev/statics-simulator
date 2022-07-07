@@ -3,7 +3,6 @@ import { Vector2 } from 'three'
 import GeneticAlgorithm from "../GeneticAlgorithm"
 import Truss from "../Truss"
 import { randInt } from "../functions"
-import { cost } from './cost'
 import { meetsConstraints } from './constraints'
 import { efficiency } from './efficiency'
 
@@ -51,7 +50,7 @@ export const test_algo = (bridge: Truss) => {
 		},
 		fitness: (item: Truss) => {
 			let fitness = 0
-			if (!item.computeForces()) fitness -= 100000
+			if (!item.compute()) fitness -= 100000
 
 			const [maxCompression, maxTension, minLength, maxLength] = meetsConstraints(item)
 			

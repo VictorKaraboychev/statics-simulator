@@ -1,6 +1,8 @@
 # statics-simulator
-Simple Truss Simulator and Optimizer
+Truss Simulator and Optimizer
 
-Simulates the forces on each member of a truss structure based on the constraints provided using the Method of Joints.
+Simulates the forces on each member of a truss structure based on the constraints provided using Finite Element Analysis.
 
-Basic implimentation of a Genetic Algorithm used for omptimizing the truss structure.
+ThreeJS used for rendering the truss and for editing.
+
+Basic implementation of a Genetic Algorithm used for optimizing the truss structure.

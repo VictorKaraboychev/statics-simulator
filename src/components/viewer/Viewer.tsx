@@ -5,7 +5,6 @@ import Visualizer from './Visualizer'
 import { TrussConnectionDetailsType, TrussDetailsType, TrussJointDetailsType } from '../../types/truss'
 import TrussModel from './TrussModel'
 import { ThreeEvent } from '@react-three/fiber'
-import Joint from '../../utility/Joint'
 import { saveAs } from 'file-saver'
 import Drop from '../common/Drop'
 
@@ -28,35 +27,59 @@ const Viewer = (props: ViewerProps) => {
 
 	const dropRef = useRef<{ open: () => void }>()
 
+<<<<<<< Updated upstream
 	useEffect(() => {
 		truss.computeForces()
 
 		const joints = truss.joints
 		const connections = truss.connections
+=======
+	// useEffect(() => {
+	// 	const joints = truss.joints
+	// 	const connections = truss.connections
+>>>>>>> Stashed changes
 
-		const value = truss.cost
+	// 	const value = truss.cost
 
-		let maxCompression = 0
-		let maxTension = 0
+	// 	let maxCompression = 0
+	// 	let maxTension = 0
 
+<<<<<<< Updated upstream
 		connections.forEach(c => {
 			const a = joints[c[0]]
 			const b = joints[c[1]]
 
 			const force = a.connections[b.id].force
+=======
+	// 	connections.forEach(([a, b]) => {
+	// 		const force = joints[a].connections[joints[b].id].force
+>>>>>>> Stashed changes
 
-			if (force) {
-				maxCompression = Math.max(maxCompression, force)
-				maxTension = Math.min(maxTension, force)
-			}
-		})
+	// 		if (force) {
+	// 			maxCompression = Math.max(maxCompression, force)
+	// 			maxTension = Math.min(maxTension, force)
+	// 		}
+	// 	})
 
+<<<<<<< Updated upstream
 		setDetails({
 			cost: value,
 			maxCompression,
 			maxTension,
 		})
 	}, [truss])
+=======
+	// 	setDetails({
+	// 		cost: value,
+	// 		maxCompression,
+	// 		maxTension,
+	// 	})
+	// }, [])
+
+	const handleVisualizerClick = (e: ThreeEvent<MouseEvent>) => {
+
+	}
+>>>>>>> Stashed changes
 
 	const handleJointClick = (e: ThreeEvent<MouseEvent>, details: TrussJointDetailsType) => {
 		setJointDetails(details)
@@ -83,9 +106,14 @@ const Viewer = (props: ViewerProps) => {
 	}
 
 	const handleExport = () => {
+<<<<<<< Updated upstream
 		const json = JSON.stringify(props.truss.toJSON())
 		const blob = new Blob([json], { type: 'application/json' })
 
+=======
+		const json = JSON.stringify(truss.toJSON())
+		const blob = new Blob([ json ], { type: 'application/json' })
+>>>>>>> Stashed changes
 		saveAs(blob, 'truss.json')
 	}
 
@@ -97,7 +125,7 @@ const Viewer = (props: ViewerProps) => {
 		})
 	}
 
-	if (!details) return null
+	// if (!details) return null
 
 	return (
 		<Drop
@@ -127,6 +155,7 @@ const Viewer = (props: ViewerProps) => {
 					sx={{
 						zIndex: 10,
 					}}
+					onClick={handleVisualizerClick}
 				>
 					<TrussModel
 						truss={truss}
@@ -233,7 +262,7 @@ const Viewer = (props: ViewerProps) => {
 							flexDirection: 'row',
 						}}
 					>
-						<Typography
+						{/* <Typography
 							sx={{
 								mr: 2,
 							}}
@@ -256,7 +285,7 @@ const Viewer = (props: ViewerProps) => {
 							color={'text.primary'}
 						>
 							Max Tension: {details.maxTension.toFixed(0)}N
-						</Typography>
+						</Typography> */}
 					</Box>
 					<Box
 						component={'div'}
