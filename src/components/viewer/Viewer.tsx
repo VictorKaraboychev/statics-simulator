@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Box, Button, Card, Popover, SxProps, Theme, Typography } from '@mui/material'
+import { Box, Button, Card, SxProps, Theme, Typography } from '@mui/material'
 import Truss from '../../utility/Truss'
 import Visualizer from './Visualizer'
 import { TrussConnectionDetailsType, TrussDetailsType, TrussJointDetailsType } from '../../types/truss'
@@ -7,53 +7,35 @@ import TrussModel from './TrussModel'
 import { ThreeEvent } from '@react-three/fiber'
 import { saveAs } from 'file-saver'
 import Drop from '../common/Drop'
+import TrussInfo from './TrussInfo'
+import useCustomState from '../../state/state'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
-	truss: Truss,
 }
 
 const Viewer = (props: ViewerProps) => {
-	const [truss, setTruss] = useState(props.truss)
+	const { value: truss, set: setTruss } = useCustomState.current_truss()
 
 	const [forcesEnabled, setForcesEnabled] = useState(false)
 	const [details, setDetails] = useState<TrussDetailsType | null>(null)
-
-	const [open, setOpen] = useState(false)
-	const [position, setPosition] = useState<{ left: number, top: number } | null>(null)
 
 	const [connectionDetails, setConnectionDetails] = useState<TrussConnectionDetailsType | null>(null)
 	const [jointDetails, setJointDetails] = useState<TrussJointDetailsType | null>(null)
 
 	const dropRef = useRef<{ open: () => void }>()
 
-<<<<<<< Updated upstream
-	useEffect(() => {
-		truss.computeForces()
-
-		const joints = truss.joints
-		const connections = truss.connections
-=======
 	// useEffect(() => {
 	// 	const joints = truss.joints
 	// 	const connections = truss.connections
->>>>>>> Stashed changes
 
 	// 	const value = truss.cost
 
 	// 	let maxCompression = 0
 	// 	let maxTension = 0
 
-<<<<<<< Updated upstream
-		connections.forEach(c => {
-			const a = joints[c[0]]
-			const b = joints[c[1]]
-
-			const force = a.connections[b.id].force
-=======
 	// 	connections.forEach(([a, b]) => {
 	// 		const force = joints[a].connections[joints[b].id].force
->>>>>>> Stashed changes
 
 	// 		if (force) {
 	// 			maxCompression = Math.max(maxCompression, force)
@@ -61,14 +43,6 @@ const Viewer = (props: ViewerProps) => {
 	// 		}
 	// 	})
 
-<<<<<<< Updated upstream
-		setDetails({
-			cost: value,
-			maxCompression,
-			maxTension,
-		})
-	}, [truss])
-=======
 	// 	setDetails({
 	// 		cost: value,
 	// 		maxCompression,
@@ -79,41 +53,20 @@ const Viewer = (props: ViewerProps) => {
 	const handleVisualizerClick = (e: ThreeEvent<MouseEvent>) => {
 
 	}
->>>>>>> Stashed changes
 
 	const handleJointClick = (e: ThreeEvent<MouseEvent>, details: TrussJointDetailsType) => {
 		setJointDetails(details)
 		setConnectionDetails(null)
-		setPosition({
-			left: (e as any).x,
-			top: (e as any).y
-		})
-		setOpen(true)
 	}
 
-	const handleConnectionClick = (e: ThreeEvent<MouseEvent>, a: Joint, b: Joint, details: TrussConnectionDetailsType) => {
+	const handleConnectionClick = (e: ThreeEvent<MouseEvent>, details: TrussConnectionDetailsType) => {
 		setConnectionDetails(details)
 		setJointDetails(null)
-		setPosition({
-			left: (e as any).x,
-			top: (e as any).y
-		})
-		setOpen(true)
-	}
-
-	const handleClose = () => {
-		setOpen(false)
 	}
 
 	const handleExport = () => {
-<<<<<<< Updated upstream
-		const json = JSON.stringify(props.truss.toJSON())
-		const blob = new Blob([json], { type: 'application/json' })
-
-=======
 		const json = JSON.stringify(truss.toJSON())
 		const blob = new Blob([ json ], { type: 'application/json' })
->>>>>>> Stashed changes
 		saveAs(blob, 'truss.json')
 	}
 
@@ -132,6 +85,7 @@ const Viewer = (props: ViewerProps) => {
 			sx={{
 				width: '100%',
 				height: '100%',
+				...props.sx
 			}}
 			reference={dropRef}
 			noClick={true}
@@ -164,90 +118,12 @@ const Viewer = (props: ViewerProps) => {
 						onConnectionClick={handleConnectionClick}
 					/>
 				</Visualizer>
-				<Popover
-					sx={{
-						left: position?.left || 0,
-						top: position?.top || 0,
-					}}
-					open={open}
-					anchorEl={document.body}
-					onClose={handleClose}
-				>
-					{connectionDetails && (
-						<Box
-							component={'div'}
-							sx={{
-								p: 2
-							}}
-						>
-							<Typography
-								sx={{
-									fontWeight: 'bold',
-								}}
-								variant={'body1'}
-							>
-								Connection Details
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								ID: {connectionDetails.id}
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								Force: {Math.ceil(connectionDetails.force || 0)?.toFixed(0)}N
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								Stress: {Math.abs(connectionDetails.stress * 100).toFixed(0)}%{connectionDetails.multiplier > 1 && ` ×${connectionDetails.multiplier}`}
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								Length: {connectionDetails.length.toFixed(2)}m
-							</Typography>
-						</Box>
-					)}
-					{jointDetails && (
-						<Box
-							component={'div'}
-							sx={{
-								p: 2
-							}}
-						>
-							<Typography
-								sx={{
-									fontWeight: 'bold',
-								}}
-								variant={'body1'}
-							>
-								Joint Details
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								ID: {jointDetails.id}
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								Connections: {jointDetails.joint.connections_count}
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								Position: ({jointDetails.joint.position.toArray().map(x => x.toFixed(2)).join(', ')})
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								External Forces: ({jointDetails.joint.externalForce.toArray().map(x => x.toFixed(0)).join(', ')})N
-							</Typography>
-						</Box>
-					)}
-				</Popover>
+				<TrussInfo
+					truss={truss}
+					connectionDetails={connectionDetails}
+					jointDetails={jointDetails}
+					onSubmit={setTruss}
+				/>
 				<Card
 					sx={{
 						boxShadow: 5,

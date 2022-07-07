@@ -1,10 +1,5 @@
 import { Vector2 } from 'three'
-<<<<<<< Updated upstream
-import { getUUID } from './functions'
-=======
 import { JointJSONType } from '../types/joint'
->>>>>>> Stashed changes
-
 export const FIXTURE = {
 	Pin: [new Vector2(0, 1), new Vector2(1, 0)],
 	Roller: [new Vector2(0, 1)]
@@ -46,12 +41,12 @@ export default class Joint {
 		return Math.sqrt((this.position.x - joint.position.x) ** 2 + (this.position.y - joint.position.y) ** 2)
 	}
 
-	toJSON(): any {
+	toJSON(): JointJSONType {
 		return {
 			id: this.id,
 			position: this.position.toArray(),
-			fixtures: this.fixtures.map((f) => f.toArray()),
-			externalForce: this.fixtures.length === 0 ? this.externalForce.toArray() : [0, 0],
+			fixtures: this.fixtures.length > 0 ? this.fixtures.map((f) => f.toArray()) : undefined,
+			externalForce: !this.externalForce.equals(new Vector2(0, 0)) ? this.externalForce.toArray() : undefined,
 		}
 	}
 
@@ -66,11 +61,6 @@ export default class Joint {
 		return copy
 	}
 
-<<<<<<< Updated upstream
-	static fromJSON(json: any): Joint {
-		const joint = new Joint(new Vector2(json.position[0], json.position[1]), json.fixtures.map((f: number[]) => new Vector2(f[0], f[1])), new Vector2(json.externalForce[0], json.externalForce[1]))
-		return joint
-=======
 	static fromJSON(json: JointJSONType): Joint {
 		return new Joint(
 			json.id,
@@ -78,6 +68,5 @@ export default class Joint {
 			json.fixtures?.map((f: number[]) => new Vector2(f[0], f[1])),
 			json.externalForce ? new Vector2(json.externalForce[0], json.externalForce[1]) : undefined
 		)
->>>>>>> Stashed changes
 	}
 }

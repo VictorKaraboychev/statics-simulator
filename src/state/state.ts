@@ -69,6 +69,7 @@ const useGlobalState = {
 		const { value: json, initial: initialJSON, set: setJSON, load, reset } = createGlobalPersistentState(atoms.current_truss)
 
 		const value = Truss.fromJSON(json)
+
 		value.compute()
 
 		const set = (newValue: Truss, save = true) => setJSON(newValue.toJSON(), save)

@@ -1,5 +1,6 @@
 import { Vector2 } from "three"
 import Joint from "../utility/Joint"
+import { JointJSONType } from "./joint"
 
 export type TrussStressConstraints = {
 	maxCompression: number
@@ -14,7 +15,7 @@ export type TrussDetailsType = {
 
 export type TrussJointDetailsType = {
 	id: number,
-	joint: Joint
+	joint: Joint,
 }
 
 export type TrussConnectionDetailsType = {
@@ -23,8 +24,6 @@ export type TrussConnectionDetailsType = {
 	stress: number,
 	length: number,
 	multiplier: number,
-<<<<<<< Updated upstream
-=======
 	a: Joint,
 	b: Joint,
 }
@@ -32,5 +31,4 @@ export type TrussConnectionDetailsType = {
 export type TrussJSONType = {
 	joints: JointJSONType[],
 	connections: [number, number, number][]
->>>>>>> Stashed changes
 }

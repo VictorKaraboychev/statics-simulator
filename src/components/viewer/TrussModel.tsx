@@ -1,75 +1,41 @@
-import React, { useRef, useState } from 'react'
-import { Color, MeshPhongMaterial, SphereGeometry, Vector2, Vector3 } from 'three'
+import React from 'react'
+import { BackSide, Color, MeshPhongMaterial, SphereGeometry, Vector3 } from 'three'
 import Truss from '../../utility/Truss'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { Line2 } from 'three/examples/jsm/lines/Line2'
 import Force from './Force'
 import { ThreeEvent } from '@react-three/fiber'
-import Joint from '../../utility/Joint'
 import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
-<<<<<<< Updated upstream
-
-const TRUSS_COLORS: { [key: string]: Vector3 } = {
-	compression: new Vector3(0, 1, 0),
-	tension: new Vector3(1, 0, 0)
-}
-=======
 import { TRUSS_COLORS } from '../../config/TrussConfig'
 import { useReliantState } from '../../utility/hooks'
 import { useTheme } from '@mui/material'
 import useCustomState from '../../state/state'
->>>>>>> Stashed changes
 
 interface TrussModelProps {
 	truss: Truss,
+	selectedJoint?: number,
+	selectedConnection?: number,
 	position?: Vector3,
 	enableForces?: boolean,
 	onJointClick?: (e: ThreeEvent<MouseEvent>, joint: TrussJointDetailsType) => void,
-	onConnectionClick?: (e: ThreeEvent<MouseEvent>, a: Joint, b: Joint, details: TrussConnectionDetailsType) => void,
+	onConnectionClick?: (e: ThreeEvent<MouseEvent>, connection: TrussConnectionDetailsType) => void,
 }
 
 const TrussModel = (props: TrussModelProps) => {
-<<<<<<< Updated upstream
-	// const jointID = useRef<string>('')
-	// const position = useRef(new Vector3(0, 0, 0))
-=======
 	const { value: TRUSS_CONSTRAINTS } = useCustomState.truss_constraints()
 
 	const { palette } = useTheme()
->>>>>>> Stashed changes
 
-	// const debounceRef = useRef<number>(0)
+	const [selectedJoint, setSelectedJoint] = useReliantState(props.selectedJoint || -1, [props.selectedJoint])
+	const [selectedConnection, setSelectedConnection] = useReliantState(props.selectedConnection || '', [props.selectedConnection])
 
 	const scale = 20
-
 	const joints = props.truss.joints
 
 	return (
 		<group
 			position={props.position ? props.position.multiplyScalar(scale) : undefined}
-			// onPointerMove={(e) => {
-			// 	if (jointID.current) {
-			// 		const joint = truss.getJoint(jointID.current)
-			// 		const delta = e.point.sub(position.current).divideScalar(scale)
-
-			// 		joint.position.add(new Vector2(delta.x, delta.y))
-
-			// 		// if (debounceRef.current) clearTimeout(debounceRef.current)
-			// 		// debounceRef.current = setTimeout(() => {
-			// 		// 	truss.computeForces()
-			// 		// 	seTruss(truss)
-			// 		// }, 250)
-
-			// 		console.log(delta, joint.position)
-			// 	}
-			// }}
-			// onPointerUp={(e) => {
-			// 	jointID.current = ''
-			// 	const newTruss = truss.clone()
-			// 	newTruss.computeForces()
-			// 	seTruss(newTruss)
-			// }}
 		>
 			<group
 				position={[0, 0, -2]}
@@ -80,36 +46,27 @@ const TrussModel = (props: TrussModelProps) => {
 					for (let j = i; j < joints.length; j++) {
 						const b = joints[j]
 						if (b.id in a.connections) {
-<<<<<<< Updated upstream
-							const stress = props.truss.getStress(a.id, b.id)
-							const force = props.truss.getForce(a.id, b.id)
-
-=======
 							const id = `${i}-${j}`
 
 							const stress = props.truss.getStress(a.id, b.id, TRUSS_CONSTRAINTS)
->>>>>>> Stashed changes
 							const stressType = stress < 0 ? 'tension' : 'compression'
 							// const value = TRUSS_COLORS[stressType].clone().multiplyScalar(Math.abs(stress))
 							// console.log(stress)
 
-							const value = Math.abs(stress) >= 1 ? TRUSS_COLORS[stressType] : new Vector3(0, 0, 0)
-							const color = new Color().fromArray(value.toArray())
+							const color = new Color(Math.abs(stress) >= 1 ? TRUSS_COLORS[stressType] : '#000000')
+
+							const aPos = a.position.clone().multiplyScalar(scale).toArray()
+							const bPos = b.position.clone().multiplyScalar(scale).toArray()
+
+							const selected = selectedConnection === id
 
 							members.push(
 								<group
-									key={`${a.id}-${b.id}`}
+									key={id}
+									position={[0, 0, selected ? 1 : 0]}
 									onClick={(e) => {
 										e.stopPropagation()
-<<<<<<< Updated upstream
-										props.onConnectionClick?.(e, a, b, {
-											id: `${i}-${j}`,
-											stress,
-											force,
-											length: a.distance(b),
-											multiplier: a.connections[b.id].multiplier || 1,
-										})
-=======
+
 										props.onConnectionClick?.(e,
 											{
 												id: id,
@@ -123,15 +80,14 @@ const TrussModel = (props: TrussModelProps) => {
 										)
 										setSelectedConnection(id)
 										setSelectedJoint(-1)
->>>>>>> Stashed changes
 									}}
 								>
 									<primitive
 										object={new Line2(
 											new LineGeometry().setPositions([
-												...a.position.clone().multiplyScalar(scale).toArray(),
+												...aPos,
 												0,
-												...b.position.clone().multiplyScalar(scale).toArray(),
+												...bPos,
 												0,
 											]),
 											new LineMaterial({
@@ -141,33 +97,66 @@ const TrussModel = (props: TrussModelProps) => {
 											}),
 										)}
 									/>
+									{selected && (
+										<primitive
+											object={new Line2(
+												new LineGeometry().setPositions([
+													...aPos,
+													-0.5,
+													...bPos,
+													-0.5,
+												]),
+												new LineMaterial({
+													color: new Color(palette.primary.main).getHex(),
+													linewidth: 5 * Math.min(Math.abs(stress), 1) + 4,
+													worldUnits: true,
+												}),
+											)}
+										/>
+									)}
 								</group>
 							)
 						}
 					}
-
 					return members
 				})}
 			</group>
 			<group>
 				{joints.map((joint, i) => {
 					const p = joint.position.clone()
+
 					return (
-						<mesh
+						<group
 							key={joint.id}
-							position={new Vector3(p.x, p.y, 0).multiplyScalar(scale)}
-							geometry={new SphereGeometry(5, 16, 16)}
-							material={new MeshPhongMaterial({
-								color: joint.fixed ? '#000000' : '#ffffff',
-							})}
+							position={new Vector3(p.x, p.y, 0.5).multiplyScalar(scale)}
 							onClick={(e) => {
 								e.stopPropagation()
 								props.onJointClick?.(e, {
 									id: i,
 									joint,
 								})
+								setSelectedJoint(i)
+								setSelectedConnection('')
 							}}
-						/>
+						>
+							<mesh
+								geometry={new SphereGeometry(5, 16, 16)}
+								material={new MeshPhongMaterial({
+									color: joint.fixed ? '#000000' : '#ffffff',
+								})}
+							/>
+							{selectedJoint === i && (
+								<mesh
+									geometry={new SphereGeometry(6.5, 16, 16)}
+									material={new MeshPhongMaterial({
+										color: palette.primary.main,
+										side: BackSide,
+										emissive: palette.primary.main,
+									})}
+								/>
+							)}
+						</group>
+
 					)
 				})}
 			</group>
@@ -187,7 +176,7 @@ const TrussModel = (props: TrussModelProps) => {
 						return acc
 					}, [] as React.ReactNode[])}
 				</group>
-			)}	
+			)}
 		</group>
 	)
 }

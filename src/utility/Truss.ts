@@ -1,11 +1,6 @@
-<<<<<<< Updated upstream
-import Matrix, { solve, inverse, linearDependencies } from "ml-matrix"
-import { Vector2, Vector3 } from "three"
-=======
 import Matrix, { solve } from "ml-matrix"
 import { Vector2 } from "three"
 import { TrussJSONType, TrussStressConstraints } from "../types/truss"
->>>>>>> Stashed changes
 import Joint from "./Joint"
 
 export default class Truss {
@@ -14,26 +9,6 @@ export default class Truss {
 
 	private connections_: Set<[number, number, number]> = new Set()
 
-<<<<<<< Updated upstream
-	private connections_: [number, number, number | 1][] = []
-
-	constructor(joints: Joint[], connections: [number, number, number | 1][], maxCompression?: number, maxTension?: number) {
-		joints.forEach((joint, i) => {
-			connections.forEach(([a, b, c]) => {
-				if (a === i) {
-					joint.connections[joints[b].id] = { force: null, multiplier: c }
-				} else if (b === i) {
-					joint.connections[joints[a].id] = { force: null, multiplier: c }
-				}
-			})
-			this.truss[joint.id] = joint
-		})
-
-		this.connections_ = connections
-
-		this.maxCompression = maxCompression ?? 0
-		this.maxTension = maxTension ?? 0
-=======
 	constructor(joints: Joint[], connections: [number, number, number][]) {
 		for (let i = 0; i < joints.length; i++) {
 			const joint = joints[i]
@@ -44,7 +19,6 @@ export default class Truss {
 			this.truss[i] = joint
 		}
 		this.connections_ = new Set(connections)
->>>>>>> Stashed changes
 		this.size_ = joints.length
 	}
 
@@ -76,22 +50,6 @@ export default class Truss {
 		return Object.values(this.truss)
 	}
 
-<<<<<<< Updated upstream
-	get connections(): [number, number, number | 1][] {
-		// const connections: [number, number][] = []
-		// const joints = this.joints
-
-		// for (let i = 0; i < this.size_; i++) {
-		// 	const a = joints[i]
-		// 	for (let j = i; j < this.size_; j++) {
-		// 		const b = joints[j]
-		// 		if (b.id in a.connections) {
-		// 			connections.push([i, j])
-		// 		}
-		// 	}
-		// }
-		return this.connections_
-=======
 	get connections(): [number, number, number][] {
 		const connections: [number, number, number][] = []
 		const joints = this.joints
@@ -100,14 +58,12 @@ export default class Truss {
 			const a = joints[i]
 			for (let j = i; j < this.size_; j++) {
 				const b = joints[j]
-				console.log(a.id, b.id)
 				if (b.id in a.connections) {
 					connections.push([i, j, a.connections[b.id].multiplier || 1])
 				}
 			}
 		}
 		return connections
->>>>>>> Stashed changes
 	}
 
 	get cost(): number {
@@ -129,12 +85,7 @@ export default class Truss {
 		return this
 	}
 
-<<<<<<< Updated upstream
-	removeJoint(id: string): Truss {
-		// const joint = this.truss[id]
-=======
 	removeJoint(id: number): Truss {
->>>>>>> Stashed changes
 		this.getConnections(id).forEach((connection) => {
 			delete connection.connections[id]
 		})
@@ -144,9 +95,6 @@ export default class Truss {
 		return this
 	}
 
-<<<<<<< Updated upstream
-	getJoint(id: string): Joint {
-=======
 	addConnection(fromId: number, toId: number, multiplier: number = 1): Truss {
 		this.truss[fromId].connections[toId] = { force: null, multiplier }
 		this.truss[toId].connections[fromId] = { force: null, multiplier }
@@ -160,7 +108,6 @@ export default class Truss {
 	}
 
 	getJoint(id: number): Joint {
->>>>>>> Stashed changes
 		return this.truss[id]
 	}
 
@@ -326,14 +273,10 @@ export default class Truss {
 	}
 
 	clone(): Truss {
-<<<<<<< Updated upstream
-		return new Truss(this.joints.map((joint) => joint.clone()), this.connections, this.maxCompression, this.maxTension)
-=======
 		return new Truss(this.joints.map((joint) => joint.clone()), [ ...this.connections ])
->>>>>>> Stashed changes
 	}
 
-	toJSON(): any {
+	toJSON(): TrussJSONType {
 		return {
 			joints: this.joints.map((joint) => joint.toJSON()),
 			connections: this.connections,
@@ -344,15 +287,10 @@ export default class Truss {
 		return JSON.stringify(this.truss)
 	}
 
-<<<<<<< Updated upstream
-	static fromJSON(json: any): Truss {
-		return new Truss(json.joints.map((joint: any) => Joint.fromJSON(joint)), json.connections, json.maxCompression, json.maxTension)
-=======
 	static fromJSON(json: TrussJSONType): Truss {
 		return new Truss(
 			json.joints.map((joint) => Joint.fromJSON(joint)),
 			json.connections,
 		)
->>>>>>> Stashed changes
 	}
 }

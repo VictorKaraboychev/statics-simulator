@@ -123,7 +123,6 @@ const TrussInfo = (props: TrussInfoProps) => {
 	// 	}
 
 	// }, 'mousedown')
-
 	if (!connectionDetails && !jointDetails) return null
 
 	return (
