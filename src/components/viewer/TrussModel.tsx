@@ -6,13 +6,14 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { Line2 } from 'three/examples/jsm/lines/Line2'
 import Force from './Force'
 import { ThreeEvent } from '@react-three/fiber'
-import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
+import { TrussConnectionDetailsType, TrussConstraintsType, TrussJointDetailsType } from '../../types/truss'
 import { TRUSS_COLORS } from '../../config/TrussConfig'
 import { useReliantState } from '../../utility/hooks'
 import { useTheme } from '@mui/material'
 
 interface TrussModelProps {
 	truss: Truss,
+	constraints: TrussConstraintsType,
 	selectedJoint?: number,
 	selectedConnection?: number,
 	position?: Vector3,
@@ -45,7 +46,7 @@ const TrussModel = (props: TrussModelProps) => {
 						if (b.id in a.connections) {
 							const id = `${i}-${j}`
 
-							const stress = props.truss.getStress(a.id, b.id)
+							const stress = props.truss.getStress(a.id, b.id, props.constraints)
 							const force = props.truss.getForce(a.id, b.id)
 
 							const stressType = stress < 0 ? 'tension' : 'compression'

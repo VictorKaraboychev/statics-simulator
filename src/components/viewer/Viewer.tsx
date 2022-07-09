@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Box, Button, Card, SxProps, Theme, Typography } from '@mui/material'
+import { Box, Button, Card, SxProps, TextField, Theme, Typography } from '@mui/material'
 import Truss from '../../utility/Truss'
 import Visualizer from './Visualizer'
 import { TrussConnectionDetailsType, TrussDetailsType, TrussJointDetailsType } from '../../types/truss'
@@ -10,6 +10,9 @@ import { saveAs } from 'file-saver'
 import Drop from '../common/Drop'
 import TrussInfo from './TrussInfo'
 import useCustomState from '../../state/state'
+import TooltipButton from '../common/TooltipButton'
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
+import PauseIcon from '@mui/icons-material/Pause'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
@@ -17,39 +20,18 @@ interface ViewerProps {
 
 const Viewer = (props: ViewerProps) => {
 	const { value: truss, set: setTruss } = useCustomState.current_truss()
+	const { value: TRUSS_CONSTRAINTS, set: setTrussConstraints } = useCustomState.truss_constraints()
+	const { value: IS_GEN_RUNNING, set: setIsGenRunning } = useCustomState.is_gen_running()
+	const { value: GENERATION } = useCustomState.generation()
 
 	const [forcesEnabled, setForcesEnabled] = useState(false)
-	const [details, setDetails] = useState<TrussDetailsType | null>(null)
 
 	const [connectionDetails, setConnectionDetails] = useState<TrussConnectionDetailsType | null>(null)
 	const [jointDetails, setJointDetails] = useState<TrussJointDetailsType | null>(null)
 
 	const dropRef = useRef<{ open: () => void }>()
 
-	useEffect(() => {
-		const joints = truss.joints
-		const connections = truss.connections
-
-		const value = truss.cost
-
-		let maxCompression = 0
-		let maxTension = 0
-
-		connections.forEach(([a, b]) => {
-			const force = joints[a].connections[joints[b].id].force
-
-			if (force) {
-				maxCompression = Math.max(maxCompression, force)
-				maxTension = Math.min(maxTension, force)
-			}
-		})
-
-		setDetails({
-			cost: value,
-			maxCompression,
-			maxTension,
-		})
-	}, [])
+	const maxForces = truss.getMaxForces()
 
 	const handleJointClick = (e: ThreeEvent<MouseEvent>, details: TrussJointDetailsType) => {
 		setJointDetails(details)
@@ -74,8 +56,6 @@ const Viewer = (props: ViewerProps) => {
 			setTruss(Truss.fromJSON(json))
 		})
 	}
-
-	if (!details) return null
 
 	return (
 		<Drop
@@ -109,6 +89,7 @@ const Viewer = (props: ViewerProps) => {
 				>
 					<TrussModel
 						truss={truss}
+						constraints={TRUSS_CONSTRAINTS}
 						enableForces={forcesEnabled}
 						onJointClick={handleJointClick}
 						onConnectionClick={handleConnectionClick}
@@ -122,11 +103,24 @@ const Viewer = (props: ViewerProps) => {
 				/>
 				<Card
 					sx={{
+						position: 'relative',
+						display: 'flex',
+						flexDirection: 'column',
 						boxShadow: 5,
-						p: 2,
+						px: 2,
+						pt: 2,
+						pb: 4,
 					}}
 					variant={'outlined'}
 				>
+					<Typography
+						sx={{
+							fontWeight: 'bold',
+						}}
+						variant={'h5'}
+					>
+						Generation: {GENERATION}
+					</Typography>
 					<Box
 						component={'div'}
 						sx={{
@@ -140,7 +134,7 @@ const Viewer = (props: ViewerProps) => {
 							}}
 							color={'text.primary'}
 						>
-							Cost: ${details.cost.toFixed(2)}
+							Cost: ${truss.getCost(5, 15).toFixed(2)}
 						</Typography>
 						<Typography
 							sx={{
@@ -148,7 +142,7 @@ const Viewer = (props: ViewerProps) => {
 							}}
 							color={'text.primary'}
 						>
-							Max Compression: {details.maxCompression.toFixed(0)}N
+							Max Compression: {maxForces.maxCompression.toFixed(0)}N
 						</Typography>
 						<Typography
 							sx={{
@@ -156,7 +150,7 @@ const Viewer = (props: ViewerProps) => {
 							}}
 							color={'text.primary'}
 						>
-							Max Tension: {details.maxTension.toFixed(0)}N
+							Max Tension: {maxForces.maxTension.toFixed(0)}N
 						</Typography>
 					</Box>
 					<Box
@@ -164,9 +158,22 @@ const Viewer = (props: ViewerProps) => {
 						sx={{
 							display: 'flex',
 							flexDirection: 'row',
-							mt: 1,
+							mt: 2,
 						}}
 					>
+						<TooltipButton
+							sx={{
+								mr: 2,
+								backgroundColor: 'primary.main',
+								'&:hover': {
+									backgroundColor: 'primary.dark',
+								}
+							}}
+							label={IS_GEN_RUNNING ? 'Stop' : 'Run'}
+							onClick={() => setIsGenRunning(!IS_GEN_RUNNING)}
+						>
+							{IS_GEN_RUNNING ? <PauseIcon/> : <PlayArrowIcon/>}
+						</TooltipButton>
 						<Button
 							sx={{
 								mr: 2,
@@ -176,6 +183,42 @@ const Viewer = (props: ViewerProps) => {
 						>
 							{forcesEnabled ? 'Disable' : 'Enable'} Forces
 						</Button>
+						<Box
+							component={'div'}
+							sx={{
+								display: 'flex',
+								flexDirection: 'row',
+								alignItems: 'center',
+							}}
+						>
+							<TextField
+								sx={{
+									mr: 2,
+								}}
+								type={'number'}
+								label={'Max Compression'}
+								value={TRUSS_CONSTRAINTS.maxCompression}
+								size={'small'}
+								variant={'outlined'}
+								onChange={(e) => setTrussConstraints({
+									maxCompression: Number(e.target.value),
+									maxTension: TRUSS_CONSTRAINTS.maxTension
+								})}							
+							/>
+							<TextField
+								sx={{
+								}}
+								type={'number'}
+								label={'Max Tension'}
+								value={TRUSS_CONSTRAINTS.maxTension}
+								size={'small'}
+								variant={'outlined'}
+								onChange={(e) => setTrussConstraints({
+									maxCompression: TRUSS_CONSTRAINTS.maxCompression,
+									maxTension: Number(e.target.value)
+								})}
+							/>
+						</Box>
 						<Box
 							component={'div'}
 							sx={{

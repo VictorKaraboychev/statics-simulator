@@ -26,6 +26,9 @@ export type TrussConnectionDetailsType = {
 export type TrussJSONType = {
 	joints: JointJSONType[],
 	connections: [number, number, number][]
+}
+
+export type TrussConstraintsType = {
 	maxCompression: number,
-	maxTension: number
+	maxTension: number,
 }

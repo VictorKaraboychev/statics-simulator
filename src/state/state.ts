@@ -69,7 +69,7 @@ const useGlobalState = {
 		const { value: json, initial: initialJSON, set: setJSON, load, reset } = createGlobalPersistentState(atoms.current_truss)
 
 		const value = Truss.fromJSON(json)
-		value.computeForces()
+		value.compute()
 
 		const set = (newValue: Truss, save = true) => setJSON(newValue.toJSON(), save)
 
@@ -82,6 +82,9 @@ const useGlobalState = {
 
 		return { value: json.map(Truss.fromJSON), initial: initialJSON.map(Truss.fromJSON), set, load, reset }
 	},
+	truss_constraints: () => createGlobalPersistentState(atoms.truss_constraints),
+	is_gen_running: () => createGlobalState(atoms.is_gen_running),
+	generation: () => createGlobalState(atoms.generation),
 }
 
 export default useGlobalState

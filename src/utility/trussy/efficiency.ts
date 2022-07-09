@@ -1,7 +1,8 @@
 
+import { TrussConstraintsType } from "../../types/truss"
 import Truss from "../Truss"
 
-export const efficiency = (truss: Truss): number => {
+export const efficiency = (truss: Truss, constraints: TrussConstraintsType): number => {
     // let max = 0
     // let min = 1000000
     // let close_one = 0
@@ -12,7 +13,7 @@ export const efficiency = (truss: Truss): number => {
 
     for (let i = 0; i < connections.length; i++) {
         const [a, b] = connections[i]
-        const stress = truss.getStress(joints[a].id, joints[b].id)
+        const stress = truss.getStress(joints[a].id, joints[b].id, constraints)
 
         max = Math.max(stress, max)
     }

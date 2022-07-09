@@ -60,8 +60,6 @@ const TrussInfo = (props: TrussInfoProps) => {
 	useEventEffect((e: KeyboardEvent) => {
 		if (!jointDetails && !connectionDetails) return
 
-		console.log(e.key)
-
 		let movement = 0.1
 		if (e.shiftKey) movement *= 0.01
 		if (e.altKey) movement *= 0.1

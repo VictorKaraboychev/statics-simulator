@@ -1,18 +1,13 @@
 import Matrix, { solve } from "ml-matrix"
 import { Vector2 } from "three"
-import { TrussJSONType } from "../types/truss"
+import { TrussConstraintsType, TrussJSONType } from "../types/truss"
 import Joint from "./Joint"
 
 export default class Truss {
 	private truss: { [key: string]: Joint } = {}
 	private size_: number
 
-	private maxCompression: number = 0
-	private maxTension: number = 0
-
-	private connections_: [number, number, number][] = []
-
-	constructor(joints: Joint[], connections: [number, number, number][], maxCompression?: number, maxTension?: number) {
+	constructor(joints: Joint[], connections: [number, number, number][]) {
 		joints.forEach((joint, i) => {
 			connections.forEach(([a, b, c]) => {
 				if (a === i) {
@@ -24,10 +19,6 @@ export default class Truss {
 			this.truss[joint.id] = joint
 		})
 
-		this.connections_ = connections
-
-		this.maxCompression = maxCompression ?? 0
-		this.maxTension = maxTension ?? 0
 		this.size_ = joints.length
 	}
 
@@ -75,12 +66,29 @@ export default class Truss {
 		return connections
 	}
 
-	get cost(): number {
+	getCost(jointCost: number, connectionCost: number): number {
 		const joints = this.joints
-		return this.connections.reduce((acc, [a, b, c]) => {
-			acc += joints[a].distance(joints[b]) * 15 * c
+		return this.connections.reduce((acc, [a, b, multiplier]) => {
+			acc += joints[a].distance(joints[b]) * connectionCost * multiplier
 			return acc
-		}, this.size_ * 5)
+		}, this.size_ * jointCost)
+	}
+
+	getMaxForces(): { maxCompression: number, maxTension: number } {
+		const joints = this.joints
+		let maxCompression = 0
+		let maxTension = 0
+
+		this.connections.forEach(([a, b]) => {
+			const force = joints[a].connections[joints[b].id].force
+
+			if (force) {
+				maxCompression = Math.max(maxCompression, force)
+				maxTension = Math.min(maxTension, force)
+			}
+		})
+
+		return { maxCompression, maxTension }
 	}
 
 	addJoint(joint: Joint, connections: number[]): Truss {
@@ -128,135 +136,16 @@ export default class Truss {
 		return this.truss[fromId].connections[toId].force
 	}
 
-	getStress(fromId: string, toId: string): number {
+	getStress(fromId: string, toId: string, constraints: TrussConstraintsType): number {
 		const connection = this.truss[fromId].connections[toId]
 		const force = (connection.force || 0) / (connection.multiplier || 1)
 
-		if (force > 0) return force / this.maxCompression
-		if (force < 0) return force / this.maxTension
+		if (force > 0) return force / constraints.maxCompression
+		if (force < 0) return force / constraints.maxTension
 		return 0
 	}
 
-	// computeFixtureForces(): boolean {
-	// 	let f = 0
-	// 	const fixtures = new Matrix(3, 3)
-	// 	const netForce = Matrix.columnVector(this.joints.reduce((acc, joint) => {
-	// 		if (joint.fixtures.length > 0) {
-	// 			for (let i = 0; i < joint.fixtures.length; i++) {
-	// 				const fixture = joint.fixtures[i]
-	// 				fixtures.setColumn(f, [
-	// 					fixture.x,
-	// 					fixture.y,
-	// 					fixture.clone().cross(joint.position)
-	// 				])
-	// 				f++
-	// 			}
-	// 		}
-
-	// 		return acc.add(new Vector3(
-	// 			joint.externalForce.x,
-	// 			joint.externalForce.y,
-	// 			joint.externalForce.clone().cross(joint.position) // moment
-	// 		))
-	// 	}, new Vector3(0, 0, 0)).toArray())
-
-	// 	if (f !== 3) return false
-
-	// 	const isDefined = fixtures.reducedEchelonForm().diagonal().every((v) => v !== 0)
-	// 	if (!isDefined) return false
-
-	// 	const solution = solve(fixtures, netForce)
-	// 	f = 0
-	// 	this.joints.forEach((joint, i) => {
-	// 		if (joint.fixtures.length > 0) {
-	// 			joint.fixtures.forEach((fixture, j) => {
-	// 				joint.externalForce.sub(fixture.clone().setLength(solution.get(f, 0)))
-	// 				f++
-	// 			})
-	// 		}
-	// 	})
-
-	// 	return true
-	// }
-
-	// computeForces(): boolean {
-	// 	this.joints.forEach((joint) => joint.computed = false)
-
-	// 	// evaluate the forces on each fixture
-	// 	if (this.computeFixtureForces() === false) return false
-
-	// 	// evaluate the forces on each joint (method of joints)
-
-	// 	const queue: Joint[] = this.joints.filter((joint) => {
-	// 		return joint.degrees_of_freedom <= 1
-	// 	})
-
-	// 	if (queue.length === 0) return false
-	// 	let i = 0
-
-	// 	while (queue.length > 0 && i < 2 * this.size_) {
-	// 		const joint = queue.shift()!
-	// 		// console.log(i, joint.id, joint.connections_count, joint.degrees_of_freedom)
-
-	// 		if (joint.degrees_of_freedom <= 1) {
-	// 			if (!joint.computed) {
-	// 				const connections = this.getConnections(joint.id)
-
-	// 				let f = 0
-	// 				const connectionForces = new Matrix(2, 0)
-	// 				// net force is the sum of the external force and the forces exerted by the connections
-	// 				const netForce = Matrix.columnVector(connections.reduce((acc, connection) => {
-	// 					const angle = connection.angleTo(joint)
-
-	// 					// unknown force
-	// 					if (connection.connections[joint.id] === null) {
-
-	// 						connectionForces.addColumn(f, [
-	// 							Math.cos(angle),
-	// 							Math.sin(angle)
-	// 						])
-	// 						f++
-	// 						return acc
-	// 					}
-
-	// 					// known force
-	// 					const force = connection.connections[joint.id] as number
-	// 					return acc.sub(new Vector2(Math.cos(angle) * force, Math.sin(angle) * force))
-	// 				}, joint.external_force.clone()).toArray())
-
-	// 				if (f === 0) break
-	// 				if (f < 3) {
-	// 					const solution = solve(connectionForces, netForce)
-
-	// 					f = 0
-	// 					connections.forEach((connection) => {
-	// 						if (joint.connections[connection.id] === null) {
-	// 							const force = solution.get(f, 0)
-	// 							joint.connections[connection.id] = force
-	// 							this.getJoint(connection.id).connections[joint.id] = force
-	// 							f++
-	// 							queue.push(connection)
-	// 						}
-	// 					})
-	// 					joint.computed = true
-	// 					i--
-	// 				} else {
-	// 					// console.log(joint.id, connectionForces, netForce, queue.length)
-	// 					queue.push(joint)
-	// 					i++
-	// 				}
-	// 			}
-	// 		} else {
-	// 			queue.push(joint)
-	// 			i++
-	// 		}
-	// 	}
-	// 	return i < 2 * this.size_
-	// }
-
-	computeForces(): boolean {
-		// console.time('computeForces')
-
+	compute(): boolean {
 		const joints = this.joints
 		const connections = this.connections
 
@@ -397,15 +286,13 @@ export default class Truss {
 	}
 
 	clone(): Truss {
-		return new Truss(this.joints.map((joint) => joint.clone()), [ ...this.connections ], this.maxCompression, this.maxTension)
+		return new Truss(this.joints.map((joint) => joint.clone()), [ ...this.connections ])
 	}
 
 	toJSON(): TrussJSONType {
 		return {
 			joints: this.joints.map((joint) => joint.toJSON()),
 			connections: this.connections,
-			maxCompression: this.maxCompression,
-			maxTension: this.maxTension
 		}
 	}
 
@@ -417,8 +304,6 @@ export default class Truss {
 		return new Truss(
 			json.joints.map((joint) => Joint.fromJSON(joint)),
 			json.connections,
-			json.maxCompression,
-			json.maxTension
 		)
 	}
 }

@@ -1,13 +1,12 @@
 import { Vector2 } from 'three'
-
 import GeneticAlgorithm from "../GeneticAlgorithm"
 import Truss from "../Truss"
 import { randInt } from "../functions"
-import { cost } from './cost'
 import { meetsConstraints } from './constraints'
 import { efficiency } from './efficiency'
+import { TrussConstraintsType } from '../../types/truss'
 
-export const test_algo = (bridge: Truss) => {
+export const getGeneticAlgorithm = (bridge: Truss, constraints: TrussConstraintsType) => {
     return new GeneticAlgorithm({
 		mutate: (item: Truss, i) => {
 			const mutationCount = randInt(0, item.size - 1)
@@ -51,7 +50,7 @@ export const test_algo = (bridge: Truss) => {
 		},
 		fitness: (item: Truss) => {
 			let fitness = 0
-			if (!item.computeForces()) fitness -= 100000
+			if (!item.compute()) fitness -= 100000
 
 			const [maxCompression, maxTension, minLength, maxLength] = meetsConstraints(item)
 			
@@ -63,18 +62,11 @@ export const test_algo = (bridge: Truss) => {
 			// }
 
 			
-			fitness -= item.cost 
-			fitness -= efficiency(item) * 1000
+			fitness -= item.getCost(5, 15) 
+			fitness -= efficiency(item, constraints) * 1000
 		
 			return fitness
 		},
 		initialPopulation: [bridge.clone()]
 	})
-
-	// for (let i = 0; i < 100; i++) {
-	// 	console.log("Generation: ", geneticAlgorithm.generation, "Avg Fitness: ", geneticAlgorithm.avgFitness.toFixed(0)) // , "Best: ", geneticAlgorithm.best.item, "Worst: ", geneticAlgorithm.worst.item,
-	// 	geneticAlgorithm.evolve()
-	// }
-	// console.log (geneticAlgorithm.best.item)
-	// return geneticAlgorithm.best.item
 }
