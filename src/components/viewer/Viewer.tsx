@@ -196,7 +196,7 @@ const Viewer = (props: ViewerProps) => {
 									mr: 2,
 								}}
 								type={'number'}
-								label={'Max Compression'}
+								label={'Max Compression (N)'}
 								value={TRUSS_CONSTRAINTS.maxCompression}
 								size={'small'}
 								variant={'outlined'}
@@ -209,7 +209,7 @@ const Viewer = (props: ViewerProps) => {
 								sx={{
 								}}
 								type={'number'}
-								label={'Max Tension'}
+								label={'Max Tension (N)'}
 								value={TRUSS_CONSTRAINTS.maxTension}
 								size={'small'}
 								variant={'outlined'}
