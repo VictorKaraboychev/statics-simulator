@@ -1,5 +1,10 @@
+export type PopulationType<T> = {
+	item: T,
+	fitness: number
+}
+
 export default class GeneticAlgorithm<T> {
-	public population_: { item: T, fitness: number } [] = []
+	public population_: PopulationType<T>[] = []
 	public size_: number
 	public mutationRate: number
 	public passThroughRate: number
@@ -32,7 +37,12 @@ export default class GeneticAlgorithm<T> {
 	}
 
 	evolve(): GeneticAlgorithm<T> {
-		this.population_ = this.population_.slice(0, this.size_ * this.passThroughRate) // pass through the best
+		// this.population_ = this.population_.slice(0, this.size_ * this.passThroughRate) // pass through the best
+
+		while (this.population_.length > this.size_ * this.passThroughRate) {
+			const i = Math.floor(this.population_.length - (Math.random() * Math.sqrt(this.population_.length))**2)
+			this.population_.splice(i, 1)
+		}
 
 		while (this.population_.length < this.size_) { // add new items until we have the target size
 			const a = this.population_[Math.floor(Math.random() * this.population_.length)]

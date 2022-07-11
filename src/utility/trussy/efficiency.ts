@@ -14,12 +14,17 @@ export const efficiency = (truss: Truss, constraints: TrussConstraintsType): num
     for (let i = 0; i < connections.length; i++) {
         const [a, b] = connections[i]
         const stress = truss.getStress(joints[a].id, joints[b].id, constraints)
-
         max = Math.max(stress, max)
     }
 
+    if (!isFinite(max)) {
+        console.log(truss)
+    }
+
+    // const { maxCompression, maxTension } = truss.getMaxForces()
+
     // let inefficiency = truss.connections.reduce((acc, [a, b]) => {
-    //     const stress = truss.getStress(joints[a].id, joints[b].id)
+    //     const stress = truss.getStress(joints[a].id, joints[b].id, constraints)
 
     //     acc += Math.abs(stress)
     //     // if (force) {
@@ -37,5 +42,5 @@ export const efficiency = (truss: Truss, constraints: TrussConstraintsType): num
     // if (max > 1) close_one = 10 * (max - 1)
     // if (min < 0.9) close_one += 10 * (1 - min)
 
-    return max// * (max - min) + close_one
+    return max //(maxCompression / constraints.maxCompression) - (maxTension / constraints.maxTension) // * (max - min) + close_one
 }

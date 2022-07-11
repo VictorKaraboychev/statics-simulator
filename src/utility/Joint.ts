@@ -14,7 +14,7 @@ export default class Joint {
 	externalForce: Vector2
 	connections: { [id: string]: {
 		force: null | number,
-		multiplier: null | number,
+		multiplier: number,
 	} } // positive force is compression (toward the center of the joint) and negative force is tension (toward the outside of the joint)
 
 	constructor(position: Vector2, fixtures?: Vector2[], external_force?: Vector2) {

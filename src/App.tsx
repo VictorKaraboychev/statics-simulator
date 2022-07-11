@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Box } from '@mui/material'
 import Viewer from './components/viewer/Viewer'
 import { getGeneticAlgorithm } from './utility/trussy/the_algo'
@@ -12,19 +12,24 @@ const App = () => {
     const { value: IS_GEN_RUNNING } = useCustomState.is_gen_running()
     const { set: setGeneration } = useCustomState.generation()
 
-    const geneticAlgorithm = useRef(getGeneticAlgorithm(truss, TRUSS_CONSTRAINTS))
+    const [refresh, setRefresh] = useState(false)
 
-    // useEffect(() => {
-    //     if (IS_GEN_RUNNING) {
-    //         const gen = geneticAlgorithm.current
-    //         for (let i = 0; i < 10; i++) {
-    //             gen.evolve()
-    //             console.log('Generation:', gen.generation, 'Best:', gen.best.fitness)
-    //         }
-    //         setGeneration(gen.generation)
-    //         setTruss(gen.best.item)
-    //     }
-    // }, [truss, IS_GEN_RUNNING])
+    const geneticAlgorithm = useRef(getGeneticAlgorithm(truss, { maxCompression: 8000, maxTension: 12000 }))
+
+    useEffect(() => {
+        if (IS_GEN_RUNNING) {
+            const gen = geneticAlgorithm.current
+            
+            gen.evolve()
+            console.log('Generation:', gen.generation, 'Best:', gen.best)
+
+            setGeneration(gen.generation)
+            setTruss(gen.best.item)
+            setTimeout(() => {
+                setRefresh(!refresh)
+            }, 200)
+        }
+    }, [IS_GEN_RUNNING, refresh])
 
 	return (
 		<Box

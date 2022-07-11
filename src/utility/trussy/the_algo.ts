@@ -16,9 +16,23 @@ export const getGeneticAlgorithm = (bridge: Truss, constraints: TrussConstraints
 				const joint = item.joints[mutation]
 
 				if (!joint.fixed) {
-					joint.position.add(new Vector2(Math.random() - 0.5, Math.random() - 0.5))
+					joint.position.add(new Vector2((Math.random() - 0.5) / 2, (Math.random() - 0.5) / 2))
 					// joint.position.add(new Vector2(Math.random() / (Math.sqrt(i) + 1) - 0.5 / (Math.sqrt(i) + 1), Math.random() / (Math.sqrt(i) + 1) - 0.5 / (Math.sqrt(i) + 1)))
 				}
+			}
+
+			const joints = item.joints
+			const connections = item.connections
+			const mutationMultiplier = randInt(0, connections.length - 1)
+
+			for (let i = 0; i < mutationMultiplier; i++) {
+				const mutation = randInt(0, connections.length - 1)
+				
+				const value = randInt(1, 4)
+
+				const [a, b] = connections[mutation]
+				joints[a].connections[joints[b].id].multiplier = value
+				joints[b].connections[joints[a].id].multiplier = value
 			}
 
 			// if (Math.random() < 0.02) {
@@ -38,32 +52,31 @@ export const getGeneticAlgorithm = (bridge: Truss, constraints: TrussConstraints
 			return item
 		},
 		crossover: (item1: Truss, item2: Truss) => {
-			const newTruss = item1.clone()
+			// const newTruss = item1.clone()
 
-			const joints2 = item2.joints
+			// const joints2 = item2.joints
 
-			newTruss.joints.forEach((joint, i) => {
-				joint.position.add(joints2[i].position).divideScalar(2)
-			})
+			// newTruss.joints.forEach((joint, i) => {
+			// 	joint.position.add(joints2[i].position).divideScalar(2)
+			// })
 
-			return newTruss
+			// return newTruss
+			return Math.random() < 0.5 ? item1 : item2
 		},
 		fitness: (item: Truss) => {
-			let fitness = 0
-			if (!item.compute()) fitness -= 100000
+			let fitness = item.compute() ? 0 : -100000
 
-			const [maxCompression, maxTension, minLength, maxLength] = meetsConstraints(item)
+			// const [maxCompression, maxTension, minLength, maxLength] = meetsConstraints(item)
 			
-			if (minLength) fitness -= 100000
+			// if (minLength) fitness -= 100000
 			
 
 			// for(let i = 0; i < 4; i++) {
 			// 	if (!success[i]) fitness -= 1000
 			// }
-
 			
 			fitness -= item.getCost(5, 15) 
-			fitness -= efficiency(item, constraints) * 1000
+			fitness -= efficiency(item, constraints) * 100
 		
 			return fitness
 		},
