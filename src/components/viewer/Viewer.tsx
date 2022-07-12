@@ -84,8 +84,6 @@ const Viewer = (props: ViewerProps) => {
 
 		switch (key) {
 			case 'Delete':
-				if (!shift) break
-
 				selectedJoints.forEach((id) => {
 					truss.removeJoint(joints[id].id)
 				})
@@ -108,7 +106,7 @@ const Viewer = (props: ViewerProps) => {
 					setUndo([ ...undo ])
 				}
 			break
-			case 't':
+			case 'a':
 				if (selectedJoints.size == 2) {
 					const [a, b] = [...selectedJoints].sort((a, b) => a - b)
 
