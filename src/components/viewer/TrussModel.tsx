@@ -12,6 +12,7 @@ import { useTheme } from '@mui/material'
 
 interface TrussModelProps {
 	truss: Truss,
+	scale: number,
 	constraints: TrussConstraintsType,
 	selectedJoints?: Set<number>,
 	selectedConnections?: Set<string>,
@@ -24,7 +25,7 @@ interface TrussModelProps {
 const TrussModel = (props: TrussModelProps) => {
 	const { palette } = useTheme()
 
-	const scale = 20
+	const scale = props.scale
 	const joints = props.truss.joints
 
 	return (

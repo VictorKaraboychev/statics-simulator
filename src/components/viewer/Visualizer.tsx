@@ -1,12 +1,13 @@
 import React from 'react'
 import { Box, SxProps, Theme } from '@mui/material'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, ThreeEvent } from '@react-three/fiber'
 import { MeshPhongMaterial, OrthographicCamera, PlaneGeometry, Vector3 } from 'three'
 import CameraController from './CameraController'
 
 interface VisualizerProps {
 	sx?: SxProps<Theme>
 	children?: React.ReactNode,
+	onClick?: (e: ThreeEvent<MouseEvent>) => void
 }
 
 const Visualizer = (props: VisualizerProps) => {
@@ -43,6 +44,7 @@ const Visualizer = (props: VisualizerProps) => {
 					})}
 					position={[0, 0, -50]}
 					rotation={[0, 0, Math.PI / 2]}
+					onClick={props.onClick}
 				/>
 				<hemisphereLight
 					color={0x999999}

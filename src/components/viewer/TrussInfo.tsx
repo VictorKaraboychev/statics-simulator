@@ -16,15 +16,16 @@ interface TrussInfoProps {
 }
 
 const TrussInfo = (props: TrussInfoProps) => {
-	const [position, setPosition] = useReliantState<Vector2>(props.jointDetails?.joint.position || new Vector2(0, 0), [props.jointDetails])
-	const [externalForce, setExternalForce] = useReliantState<Vector2>(props.jointDetails?.joint.externalForce || new Vector2(0, 0), [props.jointDetails])
+	const joints = props.truss.joints
+
+	const [position, setPosition] = useReliantState<Vector2>(props.jointDetails ? joints[props.jointDetails?.id].position : new Vector2(0, 0), [props.jointDetails, props.truss])
+	const [externalForce, setExternalForce] = useReliantState<Vector2>(props.jointDetails ? joints[props.jointDetails?.id].externalForce : new Vector2(0, 0), [props.jointDetails, props.truss])
 
 	const [multiplier, setMultiplier] = useReliantState<number>(props.connectionDetails?.multiplier || 1, [props.connectionDetails])
 
 	const connectionDetails = props.connectionDetails
 	const jointDetails = props.jointDetails
 
-	const joints = props.truss.joints
 	const joint = jointDetails ? joints[jointDetails.id] : null
 
 	const canSubmit = Boolean(
@@ -50,25 +51,9 @@ const TrussInfo = (props: TrussInfoProps) => {
 
 	useEventEffect((e: KeyboardEvent) => {
 		if (!jointDetails && !connectionDetails) return
-
-		let movement = 0.1
-		if (e.shiftKey) movement *= 0.01
-		if (e.altKey) movement *= 0.1
-
 		switch (e.key) {
 			case 'Enter':
 				handleSubmit()
-			break
-			case 'Delete':
-				if (joint) {
-					props.truss.removeJoint(joint.id)
-				} else if (connectionDetails) {
-					const [a, b] = connectionDetails.id.split('-').map(Number)
-					props.truss.removeConnection(joints[a].id, joints[b].id)
-				} else {
-					break
-				}
-				props.onSubmit?.(props.truss)
 			break
 		}
 	}, 'keydown')

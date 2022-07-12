@@ -13,8 +13,10 @@ import TooltipButton from '../common/TooltipButton'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
 import { useEventEffect, usePersistentState } from '../../utility/hooks'
-import { DEFAULT_PRECISION, MAX_UNDO_STATES } from '../../config/GlobalConfig'
+import { DEFAULT_PRECISION, MAX_UNDO_STATES, TRUSS_SCALE } from '../../config/GlobalConfig'
 import { round } from '../../utility/math'
+import { Vector2 } from 'three'
+import Joint from '../../utility/Joint'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
@@ -46,9 +48,27 @@ const Viewer = (props: ViewerProps) => {
 	const submit = (t: Truss) => {
 		if (undo.length >= MAX_UNDO_STATES) undo.shift()
 		undo.push(t.toJSON())
-		
+
 		setUndo([ ...undo ])
 		setTruss(t.clone())
+	}
+
+
+	const handleMouseClick = (e: ThreeEvent<MouseEvent>) => {
+		if ((e as any).altKey) {
+			const { x, y } = e.point.clone().divideScalar(TRUSS_SCALE)
+
+			console.log('Adding joint at', x, y)
+
+			truss.addJoint(
+				new Joint(new Vector2(
+					round(x, DEFAULT_PRECISION),
+					round(y, DEFAULT_PRECISION),
+				))
+			)
+
+			submit(truss)
+		}
 	}
 
 	useEventEffect((e: KeyboardEvent) => {
@@ -58,7 +78,7 @@ const Viewer = (props: ViewerProps) => {
 
 		switch (e.key) {
 			case 'Delete':
-				if (!e.ctrlKey) break
+				if (!e.shiftKey) break
 
 				selectedJoints.forEach((id) => {
 					truss.removeJoint(joints[id].id)
@@ -67,14 +87,27 @@ const Viewer = (props: ViewerProps) => {
 					const [a, b] = id.split('-').map(Number)
 					truss.removeConnection(joints[a].id, joints[b].id)
 				})
+
+				setSelectedJoints(new Set())
+				setSelectedConnections(new Set())
+				setJointDetails(null)
+				setConnectionDetails(null)
+
 				submit(truss)
 			break
 			case 'z':
-				if (e.ctrlKey) {
-					if (undo.length > 0) {
-						setTruss(Truss.fromJSON(undo.pop() as TrussJSONType))
-						setUndo([ ...undo ])
-					}
+				if (!e.ctrlKey) break
+				if (undo.length > 0) {
+					setTruss(Truss.fromJSON(undo.pop() as TrussJSONType))
+					setUndo([ ...undo ])
+				}
+			break
+			case 't':
+				if (selectedJoints.size == 2) {
+					const [a, b] = [...selectedJoints].sort((a, b) => a - b)
+
+					truss.addConnection(joints[a].id, joints[b].id)
+					submit(truss)
 				}
 			break
 			case 'ArrowUp':
@@ -132,7 +165,6 @@ const Viewer = (props: ViewerProps) => {
 
 		setSelectedJoints(selectedJoints)
 		setSelectedConnections(selectedConnections)
-
 		setJointDetails(details)
 		setConnectionDetails(null)
 	}
@@ -143,7 +175,6 @@ const Viewer = (props: ViewerProps) => {
 		selectedJoints.clear()
 
 		if (!(e as any).ctrlKey) selectedConnections.clear()
-		selectedConnections.add(i)
 		if (selectedConnections.has(i)) {
 			selectedConnections.delete(i)
 		} else {
@@ -152,7 +183,6 @@ const Viewer = (props: ViewerProps) => {
 
 		setSelectedJoints(selectedJoints)
 		setSelectedConnections(selectedConnections)
-
 		setJointDetails(null)
 		setConnectionDetails(details)
 	}
@@ -211,9 +241,11 @@ const Viewer = (props: ViewerProps) => {
 					sx={{
 						zIndex: 10,
 					}}
+					onClick={handleMouseClick}
 				>
 					<TrussModel
 						truss={truss}
+						scale={TRUSS_SCALE}
 						constraints={TRUSS_CONSTRAINTS}
 						enableForces={forcesEnabled}
 						selectedJoints={selectedJoints}

@@ -91,7 +91,7 @@ export default class Truss {
 		return { maxCompression, maxTension }
 	}
 
-	addJoint(joint: Joint, connections: number[]): Truss {
+	addJoint(joint: Joint, connections: number[] = []): Truss {
 		connections.forEach((connection) => {
 			joint.connections[this.joints[connection].id].force = null
 			this.joints[connection].connections[joint.id].force = null
