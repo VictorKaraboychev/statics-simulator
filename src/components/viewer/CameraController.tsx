@@ -19,9 +19,9 @@ const CameraController = (props: CameraControllerProps) => {
 			controls.panSpeed = 0.8
 
 			controls.mouseButtons = {
-				LEFT: MOUSE.RIGHT,
-				MIDDLE: MOUSE.MIDDLE,
-				RIGHT: MOUSE.LEFT,
+				LEFT: MOUSE.PAN,
+				MIDDLE: 0, //MOUSE.MIDDLE,
+				RIGHT: 0,
 			}
 			controls.minZoom = 1
 

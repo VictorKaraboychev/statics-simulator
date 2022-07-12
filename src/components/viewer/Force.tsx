@@ -1,6 +1,6 @@
-import { useTheme } from '@mui/material'
 import React from 'react'
-import { Vector3, Vector2, ArrowHelper, Color } from 'three'
+import { useTheme } from '@mui/material'
+import { Vector3, Vector2, Color, ConeBufferGeometry, MeshBasicMaterial } from 'three'
 import { Line2 } from 'three/examples/jsm/lines/Line2'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
@@ -20,27 +20,25 @@ const Force = (props: ForceProps) => {
 	return (
 		<group>
 			<primitive
-				object={new ArrowHelper(
-					force, 
-					origin, 
-					40,
-					color, 
-					15, 
-					10
-				)}
-			/>
-			<primitive
 				object={new Line2(
 					new LineGeometry().setPositions([
 						...origin.toArray(),
 						...origin.clone().add(force).toArray(),
 					]),
 					new LineMaterial({
-						color: color,
+						color,
 						linewidth: 2,
 						worldUnits: true,
 					}),
 				)}
+			/>
+			<mesh
+				geometry={new ConeBufferGeometry(5, 12, 5)}
+				material={new MeshBasicMaterial({
+					color,
+				})}
+				position={origin.clone().add(force)}
+				rotation={[0, 0, Math.atan2(force.y, force.x) - Math.PI / 2]}
 			/>
 		</group>
 
