@@ -61,22 +61,19 @@ export const getGeneticAlgorithm = (bridge: Truss, constraints: TrussConstraints
 			// })
 
 			// return newTruss
-			return Math.random() < 0.5 ? item1 : item2
+			return (Math.random() < 0.5 ? item1 : item2).clone()
 		},
 		fitness: (item: Truss) => {
 			let fitness = item.compute() ? 0 : -100000
 
-			// const [maxCompression, maxTension, minLength, maxLength] = meetsConstraints(item)
-			
-			// if (minLength) fitness -= 100000
-			
+			const meet = meetsConstraints(item)
 
-			// for(let i = 0; i < 4; i++) {
-			// 	if (!success[i]) fitness -= 1000
-			// }
-			
+
+			for(let i = 0; i < 4; i++) {
+				fitness -= meet[i] * 1000000
+			}
 			fitness -= item.getCost(5, 15) 
-			fitness -= efficiency(item, constraints) * 100
+			// fitness -= efficiency(item, constraints) * 10
 		
 			return fitness
 		},

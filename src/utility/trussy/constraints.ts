@@ -1,8 +1,8 @@
 import Truss from '../Truss'
 
 const constraints = {
-	maxCompression: 4,
-	maxTension: 8,
+	maxCompression: 8000,
+	maxTension: 12000,
 	minLength: 1,
 	maxLength: 15,
 }
@@ -16,9 +16,9 @@ const constraints = {
  *		maxLength: 15,
  *	}
  */
-export const meetsConstraints = (truss: Truss): boolean[] => {
+export const meetsConstraints = (truss: Truss): number[] => {
 	// cases: [maxCompression, maxTension, minLength, maxLength]
-	const cases: boolean[] = [true, true, true, true]
+	const cases: number[] = [0, 0, 0, 0]
 
 	const joints = truss.joints
 	const connections = truss.connections
@@ -29,11 +29,13 @@ export const meetsConstraints = (truss: Truss): boolean[] => {
 		const p1 = joints[a]
 		const p2 = joints[b]
 
+		// console.log(p1.connections[p2.id].force)
+
 		const distance = p1.distance(p2)
-		if (constraints.minLength && distance < constraints.minLength) cases[0] = false
-		if (constraints.maxLength && distance > constraints.maxLength) cases[1] = false
-		if (constraints.maxCompression && p1.connections[p2.id].force! > constraints.maxCompression) cases[2] = false
-		if (constraints.maxTension && p1.connections[p2.id].force! < -constraints.maxTension) cases[3] = false
+		if (constraints.minLength && distance < constraints.minLength) cases[0] += 1
+		if (constraints.maxLength && distance > constraints.maxLength) cases[1] += 1
+		if (constraints.maxCompression && p1.connections[p2.id].force! > constraints.maxCompression * p1.connections[p2.id].multiplier) cases[2] += 1
+		if (constraints.maxTension && p1.connections[p2.id].force! < -constraints.maxTension * p1.connections[p2.id].multiplier ) cases[3] += 1
 	}
 
 	return cases

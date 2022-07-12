@@ -27,7 +27,7 @@ const App = () => {
             setTruss(gen.best.item)
             setTimeout(() => {
                 setRefresh(!refresh)
-            }, 200)
+            }, 50)
         }
     }, [IS_GEN_RUNNING, refresh])
 

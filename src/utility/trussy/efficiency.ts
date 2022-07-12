@@ -6,6 +6,7 @@ export const efficiency = (truss: Truss, constraints: TrussConstraintsType): num
     // let max = 0
     // let min = 1000000
     // let close_one = 0
+    let inefficiency = 0
     const joints = truss.joints
     const connections = truss.connections
 
@@ -15,10 +16,6 @@ export const efficiency = (truss: Truss, constraints: TrussConstraintsType): num
         const [a, b] = connections[i]
         const stress = truss.getStress(joints[a].id, joints[b].id, constraints)
         max = Math.max(stress, max)
-    }
-
-    if (!isFinite(max)) {
-        console.log(truss)
     }
 
     // const { maxCompression, maxTension } = truss.getMaxForces()
@@ -42,5 +39,5 @@ export const efficiency = (truss: Truss, constraints: TrussConstraintsType): num
     // if (max > 1) close_one = 10 * (max - 1)
     // if (min < 0.9) close_one += 10 * (1 - min)
 
-    return max //(maxCompression / constraints.maxCompression) - (maxTension / constraints.maxTension) // * (max - min) + close_one
+    return inefficiency
 }
