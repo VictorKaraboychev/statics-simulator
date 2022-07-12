@@ -8,25 +8,21 @@ import Force from './Force'
 import { ThreeEvent } from '@react-three/fiber'
 import { TrussConnectionDetailsType, TrussConstraintsType, TrussJointDetailsType } from '../../types/truss'
 import { TRUSS_COLORS } from '../../config/TrussConfig'
-import { useReliantState } from '../../utility/hooks'
 import { useTheme } from '@mui/material'
 
 interface TrussModelProps {
 	truss: Truss,
 	constraints: TrussConstraintsType,
-	selectedJoint?: number,
-	selectedConnection?: number,
+	selectedJoints?: Set<number>,
+	selectedConnections?: Set<string>,
 	position?: Vector3,
 	enableForces?: boolean,
-	onJointClick?: (e: ThreeEvent<MouseEvent>, joint: TrussJointDetailsType) => void,
-	onConnectionClick?: (e: ThreeEvent<MouseEvent>, connection: TrussConnectionDetailsType) => void,
+	onJointClick?: (e: ThreeEvent<MouseEvent>, i: number, details: TrussJointDetailsType) => void,
+	onConnectionClick?: (e: ThreeEvent<MouseEvent>, i: string, details: TrussConnectionDetailsType) => void,
 }
 
 const TrussModel = (props: TrussModelProps) => {
 	const { palette } = useTheme()
-
-	const [selectedJoint, setSelectedJoint] = useReliantState(props.selectedJoint || -1, [props.selectedJoint])
-	const [selectedConnection, setSelectedConnection] = useReliantState(props.selectedConnection || '', [props.selectedConnection])
 
 	const scale = 20
 	const joints = props.truss.joints
@@ -58,28 +54,25 @@ const TrussModel = (props: TrussModelProps) => {
 							const aPos = a.position.clone().multiplyScalar(scale).toArray()
 							const bPos = b.position.clone().multiplyScalar(scale).toArray()
 
-							const selected = selectedConnection === id
+							const selected = props.selectedConnections?.has(id)
 
 							members.push(
 								<group
 									key={id}
 									position={[0, 0, selected ? 1 : 0]}
-									onClick={(e) => {
-										e.stopPropagation()
-										props.onConnectionClick?.(e,
-											{
-												id: id,
-												stress,
-												force,
-												length: a.distance(b),
-												multiplier: a.connections[b.id].multiplier || 1,
-												a,
-												b,
-											}
-										)
-										setSelectedConnection(id)
-										setSelectedJoint(-1)
-									}}
+									onClick={(e) => props.onConnectionClick?.(
+										e,
+										id,
+										{
+											id: id,
+											stress,
+											force,
+											length: a.distance(b),
+											multiplier: a.connections[b.id].multiplier || 1,
+											a,
+											b,
+										}
+									)}
 								>
 									<primitive
 										object={new Line2(
@@ -128,15 +121,14 @@ const TrussModel = (props: TrussModelProps) => {
 						<group
 							key={joint.id}
 							position={new Vector3(p.x, p.y, 0.5).multiplyScalar(scale)}
-							onClick={(e) => {
-								e.stopPropagation()
-								props.onJointClick?.(e, {
+							onClick={(e) => props.onJointClick?.(
+								e,
+								i,
+								{
 									id: i,
-									joint,
-								})
-								setSelectedJoint(i)
-								setSelectedConnection('')
-							}}
+									joint: joints[i],
+								}
+							)}
 						>
 							<mesh
 								geometry={new SphereGeometry(5, 16, 16)}
@@ -144,7 +136,7 @@ const TrussModel = (props: TrussModelProps) => {
 									color: joint.fixed ? '#000000' : '#ffffff',
 								})}
 							/>
-							{selectedJoint === i && (
+							{props.selectedJoints?.has(i) && (
 								<mesh
 									geometry={new SphereGeometry(6.5, 16, 16)}
 									material={new MeshPhongMaterial({

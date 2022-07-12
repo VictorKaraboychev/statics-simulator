@@ -3,9 +3,10 @@ import { Box, Button, Card, TextField, Typography } from '@mui/material'
 import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
 import Truss from '../../utility/Truss'
 import { Vector2 } from 'three'
-import { useEventEffect, usePersistentState, useReliantState } from '../../utility/hooks'
+import { useEventEffect, useReliantState } from '../../utility/hooks'
 import { roundVector2 } from '../../utility/functions'
-import { DEFAULT_PRECISION, MAX_UNDO_STATES } from '../../config/GlobalConfig'
+import { DEFAULT_PRECISION } from '../../config/GlobalConfig'
+import { round } from '../../utility/math'
 
 interface TrussInfoProps {
 	truss: Truss
@@ -15,8 +16,6 @@ interface TrussInfoProps {
 }
 
 const TrussInfo = (props: TrussInfoProps) => {
-	const [undo, setUndo] = usePersistentState<Truss[]>('truss_undo', [], 'local')
-
 	const [position, setPosition] = useReliantState<Vector2>(props.jointDetails?.joint.position || new Vector2(0, 0), [props.jointDetails])
 	const [externalForce, setExternalForce] = useReliantState<Vector2>(props.jointDetails?.joint.externalForce || new Vector2(0, 0), [props.jointDetails])
 
@@ -33,14 +32,6 @@ const TrussInfo = (props: TrussInfoProps) => {
 		(connectionDetails && connectionDetails.multiplier !== multiplier)
 	)
 
-	const submit = () => {
-		if (undo.length >= MAX_UNDO_STATES) undo.shift()
-		undo.push(props.truss.clone())
-
-		setUndo([ ...undo ])
-		props.onSubmit?.(props.truss)
-	}
-
 	const handleSubmit = () => {
 		if (jointDetails && joint) {
 			joint.position = roundVector2(position, DEFAULT_PRECISION)
@@ -54,7 +45,7 @@ const TrussInfo = (props: TrussInfoProps) => {
 			return
 		}
 
-		submit()
+		props.onSubmit?.(props.truss)
 	}
 
 	useEventEffect((e: KeyboardEvent) => {
@@ -77,36 +68,7 @@ const TrussInfo = (props: TrussInfoProps) => {
 				} else {
 					break
 				}
-				submit()
-			break
-			case 'z':
-				if (e.ctrlKey) {
-					if (undo.length) {
-						const truss = undo.pop() as Truss
-						setUndo([ ...undo ])
-						props.onSubmit?.(truss)
-					}
-				}
-			break
-			case 'ArrowUp':
-				if (!e.ctrlKey) break
-				setPosition(roundVector2(position.add(new Vector2(0, movement)), DEFAULT_PRECISION))
-				handleSubmit()
-			break
-			case 'ArrowDown':
-				if (!e.ctrlKey) break
-				setPosition(roundVector2(position.add(new Vector2(0, -movement)), DEFAULT_PRECISION))
-				handleSubmit()
-			break
-			case 'ArrowLeft':
-				if (!e.ctrlKey) break
-				setPosition(roundVector2(position.add(new Vector2(-movement, 0)), DEFAULT_PRECISION))
-				handleSubmit()
-			break
-			case 'ArrowRight':
-				if (!e.ctrlKey) break
-				setPosition(roundVector2(position.add(new Vector2(movement, 0)), DEFAULT_PRECISION))
-				handleSubmit()
+				props.onSubmit?.(props.truss)
 			break
 		}
 	}, 'keydown')
@@ -241,7 +203,7 @@ const TrussInfo = (props: TrussInfoProps) => {
 								}}
 								type={'number'}
 								label={'X'}
-								value={position.x}
+								value={round(position.x, 5)}
 								size={'small'}
 								variant={'outlined'}
 								onChange={(e) => setPosition(new Vector2(Number(e.target.value), position.y))}
@@ -251,7 +213,7 @@ const TrussInfo = (props: TrussInfoProps) => {
 								}}
 								type={'number'}
 								label={'Y'}
-								value={position.y}
+								value={round(position.y, 5)}
 								size={'small'}
 								variant={'outlined'}
 								onChange={(e) => setPosition(new Vector2(position.x, Number(e.target.value)))}
@@ -283,7 +245,7 @@ const TrussInfo = (props: TrussInfoProps) => {
 								}}
 								type={'number'}
 								label={'X'}
-								value={externalForce.x}
+								value={round(externalForce.x, 5)}
 								size={'small'}
 								variant={'outlined'}
 								onChange={(e) => setExternalForce(new Vector2(Number(e.target.value), externalForce.y))}
@@ -293,7 +255,7 @@ const TrussInfo = (props: TrussInfoProps) => {
 								}}
 								type={'number'}
 								label={'Y'}
-								value={externalForce.y}
+								value={round(externalForce.y, 5)}
 								size={'small'}
 								variant={'outlined'}
 								onChange={(e) => setExternalForce(new Vector2(externalForce.x, Number(e.target.value)))}
