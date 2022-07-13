@@ -45,6 +45,8 @@ const Viewer = (props: ViewerProps) => {
 		undo.push(t.toJSON())
 
 		setUndo([ ...undo ])
+
+		t.setDistributedForce(TRUSS_CONSTRAINTS.distributedForce)
 		setTruss(t.clone())
 	}
 

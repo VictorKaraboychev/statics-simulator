@@ -128,6 +128,7 @@ const TrussModel = (props: TrussModelProps) => {
 						<group
 							key={joint.id}
 							position={new Vector3(p.x, p.y, 0.5).multiplyScalar(scale)}
+							rotation={[0, 0, joint.fixtures.length === 1 ? Math.PI / 4 : 0]}
 							onClick={(e) => props.onJointClick?.(
 								e,
 								i,

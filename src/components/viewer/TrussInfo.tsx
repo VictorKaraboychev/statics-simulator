@@ -294,7 +294,8 @@ const TrussInfo = (props: TrussInfoProps) => {
 								value={round(externalForce.x, 5)}
 								size={'small'}
 								variant={'outlined'}
-								disabled={(joint?.fixtures.length ?? 0) > 0}
+								// disabled={(joint?.fixtures.length ?? 0) > 0}
+								disabled={true}
 								onChange={(e) => setExternalForce(new Vector2(Number(e.target.value), externalForce.y))}
 							/>
 							<TextField
@@ -305,7 +306,8 @@ const TrussInfo = (props: TrussInfoProps) => {
 								value={round(externalForce.y, 5)}
 								size={'small'}
 								variant={'outlined'}
-								disabled={(joint?.fixtures.length ?? 0) > 0}
+								// disabled={(joint?.fixtures.length ?? 0) > 0}
+								disabled={true}
 								onChange={(e) => setExternalForce(new Vector2(externalForce.x, Number(e.target.value)))}
 							/>
 						</Box>
