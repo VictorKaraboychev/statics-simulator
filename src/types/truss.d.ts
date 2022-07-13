@@ -31,4 +31,5 @@ export type TrussJSONType = {
 export type TrussConstraintsType = {
 	maxCompression: number,
 	maxTension: number,
+	distributedForce: number,
 }

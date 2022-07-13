@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Button, Card, TextField, Typography } from '@mui/material'
+import { Box, Button, Card, Checkbox, FormControlLabel, TextField, Typography } from '@mui/material'
 import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
 import Truss from '../../utility/Truss'
 import { Vector2 } from 'three'
@@ -7,6 +7,7 @@ import { useEventEffect, useReliantState } from '../../utility/hooks'
 import { roundVector2 } from '../../utility/functions'
 import { DEFAULT_PRECISION } from '../../config/GlobalConfig'
 import { round } from '../../utility/math'
+import { FIXTURE } from '../../utility/Joint'
 
 interface TrussInfoProps {
 	truss: Truss
@@ -180,6 +181,66 @@ const TrussInfo = (props: TrussInfoProps) => {
 								variant={'body2'}
 								noWrap={true}
 							>
+								Fixed:
+							</Typography>
+							<FormControlLabel
+								sx={{
+									width: '100%'
+								}}
+								label={'Pin'}
+								control={
+									<Checkbox
+										checked={joint?.fixtures.length == 2}
+										onChange={(e) => {
+											if (!joint) return
+											if (e.currentTarget.checked) {
+												joint.fixtures = FIXTURE.Pin
+											} else {
+												joint.fixtures = []
+											}
+											props.onSubmit?.(props.truss)
+										}}
+									/>
+								}
+							/>
+							<FormControlLabel 
+								sx={{
+									width: '100%'
+								}}
+								label={'Roller'}
+								control={
+									<Checkbox
+										checked={joint?.fixtures.length == 1}
+										onChange={(e) => {
+											if (!joint) return
+											if (e.currentTarget.checked) {
+												joint.fixtures = FIXTURE.Roller
+											} else {
+												joint.fixtures = []
+											}
+											props.onSubmit?.(props.truss)
+										}}
+									/>
+								}
+							/>
+						</Box>
+						<Box
+							component={'div'}
+							sx={{
+								display: 'flex',
+								flexDirection: 'row',
+								alignItems: 'center',
+								mb: 1,
+							}}
+						>
+							<Typography
+								sx={{
+									mr: 'auto',
+									minWidth: 125,
+								}}
+								variant={'body2'}
+								noWrap={true}
+							>
 								Position:
 							</Typography>
 							<TextField
@@ -233,6 +294,7 @@ const TrussInfo = (props: TrussInfoProps) => {
 								value={round(externalForce.x, 5)}
 								size={'small'}
 								variant={'outlined'}
+								disabled={(joint?.fixtures.length ?? 0) > 0}
 								onChange={(e) => setExternalForce(new Vector2(Number(e.target.value), externalForce.y))}
 							/>
 							<TextField
@@ -243,6 +305,7 @@ const TrussInfo = (props: TrussInfoProps) => {
 								value={round(externalForce.y, 5)}
 								size={'small'}
 								variant={'outlined'}
+								disabled={(joint?.fixtures.length ?? 0) > 0}
 								onChange={(e) => setExternalForce(new Vector2(externalForce.x, Number(e.target.value)))}
 							/>
 						</Box>

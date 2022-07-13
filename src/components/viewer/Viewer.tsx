@@ -50,7 +50,7 @@ const Viewer = (props: ViewerProps) => {
 
 
 	const handleMouseClick = (e: ThreeEvent<MouseEvent>) => {
-		if ((e as any).altKey) {
+		if ((e as any).shiftKey) {
 			const { x, y } = e.point.clone().divideScalar(TRUSS_SCALE)
 
 			console.log('Adding joint at', x, y)
@@ -65,10 +65,12 @@ const Viewer = (props: ViewerProps) => {
 			submit(truss)
 		}
 
-		setSelectedJoints(new Set())
-		setSelectedConnections(new Set())
-		setJointDetails(null)
-		setConnectionDetails(null)
+		if (!(e as any).ctrlKey) {
+			setSelectedJoints(new Set())
+			setSelectedConnections(new Set())
+			setJointDetails(null)
+			setConnectionDetails(null)
+		}
 	}
 
 	useEventEffect((e: KeyboardEvent) => {
@@ -84,6 +86,7 @@ const Viewer = (props: ViewerProps) => {
 
 		switch (key) {
 			case 'Delete':
+				if (!ctrl) break
 				selectedJoints.forEach((id) => {
 					truss.removeJoint(joints[id].id)
 				})
@@ -104,14 +107,6 @@ const Viewer = (props: ViewerProps) => {
 				if (undo.length > 0) {
 					setTruss(Truss.fromJSON(undo.pop() as TrussJSONType))
 					setUndo([ ...undo ])
-				}
-			break
-			case 'a':
-				if (selectedJoints.size == 2) {
-					const [a, b] = [...selectedJoints].sort((a, b) => a - b)
-
-					truss.addConnection(joints[a].id, joints[b].id)
-					submit(truss)
 				}
 			break
 			case 'ArrowUp':
@@ -204,7 +199,14 @@ const Viewer = (props: ViewerProps) => {
 
 		selectedConnections.clear()
 
-		if (!(e as any).ctrlKey) selectedJoints.clear()
+		if (!(e as any).ctrlKey) {
+			if ((e as any).shiftKey && selectedJoints.size == 1) {
+				const [a, b] = [i, selectedJoints.values().next().value].sort((a, b) => a - b)
+				truss.addConnection(joints[a].id, joints[b].id)
+				submit(truss)
+			}
+			selectedJoints.clear()
+		}
 		if (selectedJoints.has(i)) {
 			selectedJoints.delete(i)
 		} else {

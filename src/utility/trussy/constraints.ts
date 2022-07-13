@@ -31,7 +31,7 @@ export const meetsConstraints = (truss: Truss): number[] => {
 
 		// console.log(p1.connections[p2.id].force)
 
-		const distance = p1.distance(p2)
+		const distance = p1.distanceTo(p2)
 		if (constraints.minLength && distance < constraints.minLength) cases[0] += 1
 		if (constraints.maxLength && distance > constraints.maxLength) cases[1] += 1
 		if (constraints.maxCompression && p1.connections[p2.id].force! > constraints.maxCompression * p1.connections[p2.id].multiplier) cases[2] += 1

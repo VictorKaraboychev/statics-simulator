@@ -1,5 +1,5 @@
 import React from 'react'
-import { BackSide, Color, MeshPhongMaterial, SphereGeometry, Vector3 } from 'three'
+import { BackSide, BoxGeometry, BufferGeometry, Color, ConeBufferGeometry, MeshPhongMaterial, SphereGeometry, TetrahedronBufferGeometry, TetrahedronGeometry, Vector3 } from 'three'
 import Truss from '../../utility/Truss'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
@@ -68,7 +68,7 @@ const TrussModel = (props: TrussModelProps) => {
 											id: id,
 											stress,
 											force,
-											length: a.distance(b),
+											length: a.distanceTo(b),
 											multiplier: a.connections[b.id].multiplier || 1,
 											a,
 											b,
@@ -118,6 +118,12 @@ const TrussModel = (props: TrussModelProps) => {
 				{joints.map((joint, i) => {
 					const p = joint.position.clone()
 
+					let geometry: { main: BufferGeometry, selected: BufferGeometry } = { main: new SphereGeometry(5, 16, 16), selected: new SphereGeometry(6.5, 16, 16) }
+
+					if (joint.fixtures.length > 0) {
+						geometry = { main: new BoxGeometry(10, 10, 10), selected: new BoxGeometry(13, 13, 13) }
+					}
+
 					return (
 						<group
 							key={joint.id}
@@ -132,14 +138,14 @@ const TrussModel = (props: TrussModelProps) => {
 							)}
 						>
 							<mesh
-								geometry={new SphereGeometry(5, 16, 16)}
+								geometry={geometry.main}
 								material={new MeshPhongMaterial({
-									color: joint.fixed ? '#000000' : '#ffffff',
+									color: joint.fixed ? '#999999' :'#ffffff',
 								})}
 							/>
 							{props.selectedJoints?.has(i) && (
 								<mesh
-									geometry={new SphereGeometry(6.5, 16, 16)}
+									geometry={geometry.selected}
 									material={new MeshPhongMaterial({
 										color: palette.primary.main,
 										side: BackSide,

@@ -29,10 +29,6 @@ export default class Joint {
 		return Object.keys(this.connections).length
 	}
 
-	get degrees_of_freedom(): number {
-		return Object.values(this.connections).reduce((acc: number, v) => acc + (v === null ? 1 : -1), 0) - (Math.abs(this.externalForce.x) > 0 ? 1 : 0) - (Math.abs(this.externalForce.y) > 0 ? 1 : 0) 
-	}
-
 	get fixed(): boolean {
 		return this.externalForce.x !== 0 || this.externalForce.y !== 0
 	}
@@ -41,7 +37,7 @@ export default class Joint {
 		return Math.atan2(this.position.y - joint.position.y, this.position.x - joint.position.x)
 	}
 
-	distance(joint: Joint): number {
+	distanceTo(joint: Joint): number {
 		return Math.sqrt((this.position.x - joint.position.x) ** 2 + (this.position.y - joint.position.y) ** 2)
 	}
 

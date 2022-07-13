@@ -69,7 +69,7 @@ export default class Truss {
 	getCost(jointCost: number, connectionCost: number): number {
 		const joints = this.joints
 		return this.connections.reduce((acc, [a, b, multiplier]) => {
-			acc += joints[a].distance(joints[b]) * connectionCost * multiplier
+			acc += joints[a].distanceTo(joints[b]) * connectionCost * multiplier
 			return acc
 		}, this.size_ * jointCost)
 	}
@@ -145,6 +145,26 @@ export default class Truss {
 		return 0
 	}
 
+	setDistributedForce(distributedForce: number) {
+		const floor = this.joints.reduce((acc, joint) => {
+			joint.externalForce = new Vector2(0, 0)
+			if (joint.position.y === 0) acc.push(joint)
+			return acc
+		}, [] as Joint[])
+
+		for (let i = 0; i < floor.length; i++) {
+			const a = floor[i]
+			if (a.fixtures.length === 0) {
+				for (let j = 0; j < floor.length; j++) {
+					const b = floor[j]
+					if (a.connections[b.id]) {
+						a.externalForce.y -= distributedForce * (a.distanceTo(b) / 2)
+					}
+				}
+			}
+		}
+	}
+
 	compute(): boolean {
 		const joints = this.joints
 		const connections = this.connections
@@ -153,7 +173,7 @@ export default class Truss {
 			const a = joints[connection[0]]
 			const b = joints[connection[1]]
 
-			acc.L.addRow(i, [a.distance(b)])
+			acc.L.addRow(i, [a.distanceTo(b)])
 			acc.T.addRow(i, [a.angleTo(b)])
 
 			return acc

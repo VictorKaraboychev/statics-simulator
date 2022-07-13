@@ -14,7 +14,7 @@ const App = () => {
 
     const [refresh, setRefresh] = useState(false)
 
-    const geneticAlgorithm = useRef(getGeneticAlgorithm(truss, { maxCompression: 8000, maxTension: 12000 }))
+    const geneticAlgorithm = useRef(getGeneticAlgorithm(truss, { maxCompression: 8000, maxTension: 12000, distributedForce: 5000 }))
 
     useEffect(() => {
         if (IS_GEN_RUNNING) {
