@@ -1,128 +1,37 @@
-import React, { useState } from 'react'
-import { Box, Button, Card, TextField, Typography } from '@mui/material'
+import React from 'react'
+import { Box, Button, Card, Typography } from '@mui/material'
 import TooltipButton from '../common/TooltipButton'
 import useCustomState from '../../state/state'
 import Truss from '../../utility/Truss'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
-import SettingsIcon from '@mui/icons-material/Settings'
 import PublishIcon from '@mui/icons-material/Publish'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import RestoreIcon from '@mui/icons-material/Restore'
-import Dialog from '../common/Dialog'
-import VERSION from '../../version.json'
+import GpsFixedIcon from '@mui/icons-material/GpsFixed'
+import Settings from '../Settings'
 
 interface ViewerInfoBarProps {
 	truss: Truss,
 	forcesEnabled: boolean,
 	onToggleForces?: () => void,
 	onResetMultipliers: () => void,
+	onSetMultipliers: () => void,
 	onImport?: () => void,
 	onExport?: () => void,
 	onSubmit?: (truss: Truss) => void,
 }
 
 const ViewerInfoBar = (props: ViewerInfoBarProps) => {
-	const { value: TRUSS_CONSTRAINTS, set: setTrussConstraints } = useCustomState.truss_constraints()
 	const { value: IS_GEN_RUNNING, set: setIsGenRunning } = useCustomState.is_gen_running()
 	const { value: GENERATION } = useCustomState.generation()
-
-	const [optionsOpen, setOptionsOpen] = useState(false)
+	const { value: COST_VISIBLE } = useCustomState.cost_visible()
 
 	const truss = props.truss
 	const maxForces = truss.getMaxForces()
 
 	return (
 		<>
-			<Dialog
-				title={'Options'}
-				open={optionsOpen}
-				setOpen={setOptionsOpen}
-			>
-				<Box
-					component={'div'}
-					sx={{
-						display: 'flex',
-						flexDirection: 'column',
-					}}
-				>
-					<Box
-						component={'div'}
-						sx={{
-							display: 'flex',
-							flexDirection: 'row',
-							alignItems: 'center',
-							mb: 2,
-						}}
-					>
-						<TextField
-							sx={{
-								mr: 2,
-							}}
-							type={'number'}
-							label={'Max Compression (N)'}
-							value={TRUSS_CONSTRAINTS.maxCompression}
-							size={'small'}
-							variant={'outlined'}
-							onChange={(e) => setTrussConstraints({
-								maxCompression: Number(e.target.value),
-								maxTension: TRUSS_CONSTRAINTS.maxTension,
-								distributedForce: TRUSS_CONSTRAINTS.distributedForce,
-							})}
-						/>
-						<TextField
-							sx={{
-							}}
-							type={'number'}
-							label={'Max Tension (N)'}
-							value={TRUSS_CONSTRAINTS.maxTension}
-							size={'small'}
-							variant={'outlined'}
-							onChange={(e) => setTrussConstraints({
-								maxCompression: TRUSS_CONSTRAINTS.maxCompression,
-								maxTension: Number(e.target.value),
-								distributedForce: TRUSS_CONSTRAINTS.distributedForce,
-							})}
-						/>
-					</Box>
-					<TextField
-							sx={{
-								mb: 2,
-							}}
-							type={'number'}
-							label={'Distributed Force (N/m)'}
-							value={TRUSS_CONSTRAINTS.distributedForce}
-							size={'small'}
-							variant={'outlined'}
-							onChange={(e) => {
-								const force = Number(e.target.value)
-								truss.setDistributedForce(force)
-								props.onSubmit?.(truss)
-								setTrussConstraints({
-									maxCompression: TRUSS_CONSTRAINTS.maxCompression,
-									maxTension: TRUSS_CONSTRAINTS.maxTension,			
-									distributedForce: force,
-								})}
-							}
-						/>
-					<Typography
-						variant={'body2'}
-						color={'text.primary'}
-					>
-						Version: {VERSION.version}
-					</Typography>
-					<Typography
-						variant={'body2'}
-						color={'text.primary'}
-					>
-						Date Updated: {new Date(VERSION.date).toLocaleString(undefined, {
-							day: 'numeric',
-							month: 'short',
-							year: 'numeric',
-						})}
-					</Typography>
-				</Box>
-			</Dialog>
 			<Card
 				sx={{
 					position: 'relative',
@@ -153,6 +62,12 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 					<Typography
 						sx={{
 							mr: 2,
+							backgroundColor: COST_VISIBLE ? 'background.default' : '#000000',
+							borderRadius: 1,
+							"&:hover": {
+								backgroundColor: 'background.default',
+							},
+							transition: 'background-color 0.2s ease-in-out',
 						}}
 						color={'text.primary'}
 					>
@@ -180,6 +95,7 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 					sx={{
 						display: 'flex',
 						flexDirection: 'row',
+						alignItems: 'center',
 						mt: 2,
 					}}
 				>
@@ -200,8 +116,10 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 					<Button
 						sx={{
 							mr: 2,
+							width: 150,
 						}}
 						variant={'contained'}
+						size={'small'}
 						onClick={props.onToggleForces}
 					>
 						{props.forcesEnabled ? 'Disable' : 'Enable'} Forces
@@ -219,6 +137,20 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 						onClick={props.onResetMultipliers}
 					>
 						<RestoreIcon />
+					</TooltipButton>
+					<TooltipButton
+						sx={{
+							mr: 2,
+							my: 'auto',
+							backgroundColor: 'primary.main',
+							'&:hover': {
+								backgroundColor: 'primary.dark',
+							}
+						}}
+						label={'Set Multipliers'}
+						onClick={props.onSetMultipliers}
+					>
+						<GpsFixedIcon />
 					</TooltipButton>
 					<Box
 						component={'div'}
@@ -252,21 +184,12 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 						>
 							<FileDownloadIcon />
 						</TooltipButton>
-						<TooltipButton
-							sx={{
-								backgroundColor: 'primary.main',
-								'&:hover': {
-									backgroundColor: 'primary.dark',
-								}
-							}}
-							label={'Options'}
-							size={'large'}
-							onClick={() => setOptionsOpen(true)}
-						>
-							<SettingsIcon />
-					</TooltipButton>
 					</Box>
-					
+					<Settings
+						sx={{
+							
+						}}
+					/>
 				</Box>
 			</Card>
 		</>

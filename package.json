@@ -6,7 +6,8 @@
         "dev": "vite",
         "build": "tsc && vite build",
         "deploy": "npm run build && firebase deploy --only hosting",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "version": "npm version patch"
     },
     "dependencies": {
         "@emotion/react": "^11.9.3",
@@ -24,7 +25,8 @@
         "react-fps-stats": "^0.2.3",
         "react-router-dom": "^6.3.0",
         "recoil": "^0.7.4",
-        "three": "^0.141.0"
+        "three": "^0.141.0",
+        "yajsondiff": "^2.0.1"
     },
     "devDependencies": {
         "@types/file-saver": "^2.0.5",

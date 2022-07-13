@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Box, SxProps, Theme } from '@mui/material'
 import Truss from '../../utility/Truss'
 import Visualizer from './Visualizer'
@@ -15,6 +15,7 @@ import { round } from '../../utility/math'
 import { Vector2 } from 'three'
 import Joint from '../../utility/Joint'
 import ViewerInfoBar from './ViewerInfoBar'
+import { flushSync } from 'react-dom'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
@@ -24,7 +25,8 @@ const Viewer = (props: ViewerProps) => {
 	const { value: truss, set: setTruss } = useCustomState.current_truss()
 	const { value: TRUSS_CONSTRAINTS } = useCustomState.truss_constraints()
 
-	const [undo, setUndo] = usePersistentState<TrussJSONType[]>('truss_undo', [], 'local')
+	const [historyIndex, setHistoryIndex] = usePersistentState('truss_undo_index', 0, 'local')
+	const [history, setHistory] = usePersistentState<any[]>('truss_undo', [], 'local')
 
 	const [forcesEnabled, setForcesEnabled] = useState(false)
 
@@ -40,11 +42,21 @@ const Viewer = (props: ViewerProps) => {
 	const joints = truss.joints
 	// const connections = truss.connections
 
-	const submit = (t: Truss) => {
-		if (undo.length >= MAX_UNDO_STATES) undo.shift()
-		undo.push(t.toJSON())
+	useEffect(() => {
+		submit(truss)
+	}, [TRUSS_CONSTRAINTS])
 
-		setUndo([ ...undo ])
+	const submit = (t: Truss) => {
+		// if (history.length >= MAX_UNDO_STATES) history.shift()
+		// const difference = diff(history[history.length - 1] ?? {}, t.toJSON())
+
+		// history.push(difference)
+		// setHistory([ ...history ])
+
+		// console.log('difference', difference, history)
+
+
+		// console.log('submit', TRUSS_CONSTRAINTS.distributedForce)
 
 		t.setDistributedForce(TRUSS_CONSTRAINTS.distributedForce)
 		setTruss(t.clone())
@@ -59,8 +71,8 @@ const Viewer = (props: ViewerProps) => {
 
 			truss.addJoint(
 				new Joint(new Vector2(
-					round(x, DEFAULT_PRECISION),
-					round(y, DEFAULT_PRECISION),
+					round(x, 1),
+					round(y, 1),
 				))
 			)
 
@@ -89,8 +101,8 @@ const Viewer = (props: ViewerProps) => {
 		const mirror = !shift && selectedJoints.size > 1
 
 		switch (key) {
-			case 'Delete':
-				if (!ctrl) break
+			case 'Delete': // Delete
+				if (!shift) break
 				selectedJoints.forEach((id) => {
 					truss.removeJoint(joints[id].id)
 				})
@@ -106,11 +118,18 @@ const Viewer = (props: ViewerProps) => {
 
 				submit(truss)
 			break
-			case 'z':
+			case 'z': // UNDO
 				if (!ctrl) break
-				if (undo.length > 0) {
-					setTruss(Truss.fromJSON(undo.pop() as TrussJSONType))
-					setUndo([ ...undo ])
+				if (history.length > 0) {
+					// setTruss(Truss.fromJSON(historyIndex.pop() as TrussJSONType))
+					// setHistoryIndex([ ...historyIndex ])
+				}
+			break
+			case 'y': // REDO
+				if (!ctrl) break
+				if (history.length > 0) {
+					// setTruss(Truss.fromJSON(historyIndex.pop() as TrussJSONType))
+					// setHistoryIndex([ ...historyIndex ])
 				}
 			break
 			case 'ArrowUp':
@@ -203,6 +222,8 @@ const Viewer = (props: ViewerProps) => {
 
 		selectedConnections.clear()
 
+		console.log('joint', e)
+
 		if (!(e as any).ctrlKey) {
 			if ((e as any).shiftKey && selectedJoints.size == 1) {
 				const [a, b] = [i, selectedJoints.values().next().value].sort((a, b) => a - b)
@@ -239,6 +260,22 @@ const Viewer = (props: ViewerProps) => {
 		setSelectedConnections(selectedConnections)
 		setJointDetails(null)
 		setConnectionDetails(details)
+	}
+
+	const handleSetMultipliers = () => {
+		for (let i = 0; i < joints.length; i++) {
+			const a = joints[i]
+			for (let j = 0; j < joints.length; j++) {
+				const b = joints[j]
+				if (b.id in a.connections) {
+					const c = a.connections[b.id]
+					if (c.force) {
+						c.multiplier = Math.min(Math.ceil(Math.abs(c.force) / (c.force > 0 ? TRUSS_CONSTRAINTS.maxCompression : TRUSS_CONSTRAINTS.maxTension)), TRUSS_CONSTRAINTS.maxMultiplier)
+					}
+				}
+			}
+		}
+		submit(truss)
 	}
 
 	const handleResetMultipliers = () => {
@@ -319,6 +356,7 @@ const Viewer = (props: ViewerProps) => {
 					truss={truss}
 					forcesEnabled={forcesEnabled}
 					onToggleForces={handleToggleForces}
+					onSetMultipliers={handleSetMultipliers}
 					onResetMultipliers={handleResetMultipliers}
 					onImport={handleImport}
 					onExport={handleExport}

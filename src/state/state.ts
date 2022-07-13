@@ -85,6 +85,7 @@ const useGlobalState = {
 	truss_constraints: () => createGlobalPersistentState(atoms.truss_constraints),
 	is_gen_running: () => createGlobalState(atoms.is_gen_running),
 	generation: () => createGlobalState(atoms.generation),
+	cost_visible: () => createGlobalPersistentState(atoms.cost_visible),
 }
 
 export default useGlobalState

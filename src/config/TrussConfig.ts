@@ -12,4 +12,5 @@ export const DEFAULT_TRUSS_CONSTRAINTS: TrussConstraintsType = {
 	maxCompression: 0,
 	maxTension: 0,
 	distributedForce: 0,
+	maxMultiplier: 1,
 }

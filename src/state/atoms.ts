@@ -22,6 +22,7 @@ const atoms = {
 	truss_constraints: customAtom<TrussConstraintsType>('truss_constraints', DEFAULT_TRUSS_CONSTRAINTS),
 	is_gen_running: customAtom<boolean>('is_gen_running', false),
 	generation: customAtom<number>('generation', 0),
+	cost_visible: customAtom<boolean>('cost_visible', true),
 }
 
 export default atoms

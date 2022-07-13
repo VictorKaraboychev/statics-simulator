@@ -8,6 +8,7 @@ import { roundVector2 } from '../../utility/functions'
 import { DEFAULT_PRECISION } from '../../config/GlobalConfig'
 import { round } from '../../utility/math'
 import { FIXTURE } from '../../utility/Joint'
+import NumberField from '../common/textfields/NumberField'
 
 interface TrussInfoProps {
 	truss: Truss
@@ -121,22 +122,19 @@ const TrussInfo = (props: TrussInfoProps) => {
 						>
 							<Typography
 								sx={{
-									mr: 'auto'
+									mr: 'auto',
+									minWidth: 125,
 								}}
 								variant={'body2'}
 								noWrap={true}
 							>
 								Multiplier:
 							</Typography>
-							<TextField
-								sx={{
-								}}
-								type={'number'}
+							<NumberField
 								label={'Multiplier'}
 								value={multiplier}
 								size={'small'}
-								variant={'outlined'}
-								onChange={(e) => setMultiplier(Number(e.target.value))}
+								onSubmit={setMultiplier}
 							/>
 						</Box>
 					</>
@@ -243,26 +241,22 @@ const TrussInfo = (props: TrussInfoProps) => {
 							>
 								Position:
 							</Typography>
-							<TextField
+							<NumberField
 								sx={{
 									mr: 0.5,
 								}}
-								type={'number'}
 								label={'X'}
 								value={round(position.x, 5)}
 								size={'small'}
-								variant={'outlined'}
-								onChange={(e) => setPosition(new Vector2(Number(e.target.value), position.y))}
+								onSubmit={(value) => setPosition(new Vector2(value, position.y))}
 							/>
-							<TextField
+							<NumberField
 								sx={{
 								}}
-								type={'number'}
 								label={'Y'}
 								value={round(position.y, 5)}
 								size={'small'}
-								variant={'outlined'}
-								onChange={(e) => setPosition(new Vector2(position.x, Number(e.target.value)))}
+								onSubmit={(value) => setPosition(new Vector2(position.x, value))}
 
 							/>
 						</Box>

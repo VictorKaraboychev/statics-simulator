@@ -3,6 +3,8 @@ import { Box } from '@mui/material'
 import Viewer from './components/viewer/Viewer'
 import { getGeneticAlgorithm } from './utility/trussy/the_algo'
 import useCustomState, { useStateManager } from './state/state'
+import GeneticAlgorithm from './utility/GeneticAlgorithm'
+import Truss from './utility/Truss'
 
 const App = () => {
 	useStateManager(true)
@@ -14,10 +16,16 @@ const App = () => {
 
     const [refresh, setRefresh] = useState(false)
 
-    const geneticAlgorithm = useRef(getGeneticAlgorithm(truss, { maxCompression: 8000, maxTension: 12000, distributedForce: 5000 }))
+    const geneticAlgorithm = useRef<GeneticAlgorithm<Truss> | null>(null)
 
     useEffect(() => {
-        if (IS_GEN_RUNNING) {
+        if (!IS_GEN_RUNNING) {
+            geneticAlgorithm.current = getGeneticAlgorithm(truss, TRUSS_CONSTRAINTS)
+        }
+    }, [truss, TRUSS_CONSTRAINTS, IS_GEN_RUNNING])
+
+    useEffect(() => {
+        if (IS_GEN_RUNNING && geneticAlgorithm.current) {
             const gen = geneticAlgorithm.current
             
             gen.evolve()

@@ -42,15 +42,18 @@ const TrussModel = (props: TrussModelProps) => {
 						const b = joints[j]
 						if (b.id in a.connections) {
 							const id = `${i}-${j}`
+							const connection = a.connections[b.id]
 
 							const stress = props.truss.getStress(a.id, b.id, props.constraints)
 							const force = props.truss.getForce(a.id, b.id)
+
+							const underStressed = (Math.abs(stress) * connection.multiplier) < (connection.multiplier - 1)
 
 							const stressType = stress < 0 ? 'tension' : 'compression'
 							// const value = TRUSS_COLORS[stressType].clone().multiplyScalar(Math.abs(stress))
 							// console.log(stress)
 
-							const color = new Color(Math.abs(stress) >= 1 ? TRUSS_COLORS[stressType] : '#000000')
+							const color = new Color(Math.abs(stress) >= 1 ? TRUSS_COLORS[stressType] : underStressed ? '#ff00ff' :'#000000')
 
 							const aPos = a.position.clone().multiplyScalar(scale).toArray()
 							const bPos = b.position.clone().multiplyScalar(scale).toArray()
@@ -69,7 +72,7 @@ const TrussModel = (props: TrussModelProps) => {
 											stress,
 											force,
 											length: a.distanceTo(b),
-											multiplier: a.connections[b.id].multiplier || 1,
+											multiplier: connection.multiplier || 1,
 											a,
 											b,
 										}

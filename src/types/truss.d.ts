@@ -32,4 +32,5 @@ export type TrussConstraintsType = {
 	maxCompression: number,
 	maxTension: number,
 	distributedForce: number,
+	maxMultiplier: number,
 }
