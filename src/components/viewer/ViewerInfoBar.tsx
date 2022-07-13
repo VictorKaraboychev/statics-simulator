@@ -6,7 +6,7 @@ import Truss from '../../utility/Truss'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
 import SettingsIcon from '@mui/icons-material/Settings'
-import FileUploadIcon from '@mui/icons-material/FileUpload'
+import PublishIcon from '@mui/icons-material/Publish'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import RestoreIcon from '@mui/icons-material/Restore'
 import Dialog from '../common/Dialog'
@@ -237,7 +237,7 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 							label={'Import'}
 							onClick={props.onImport}
 						>
-							<FileUploadIcon />
+							<PublishIcon />
 						</TooltipButton>
 						<TooltipButton
 							sx={{

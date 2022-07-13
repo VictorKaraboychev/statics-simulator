@@ -86,6 +86,8 @@ const Viewer = (props: ViewerProps) => {
 		let movement = 0.1
 		if (alt) movement *= 0.1
 
+		const mirror = !shift && selectedJoints.size > 1
+
 		switch (key) {
 			case 'Delete':
 				if (!ctrl) break
@@ -119,7 +121,7 @@ const Viewer = (props: ViewerProps) => {
 
 					let m = movement
 
-					if (shift) {
+					if (mirror) {
 						const y = joint.position.y
 						if (y === 0) {
 							m = 0
@@ -139,7 +141,7 @@ const Viewer = (props: ViewerProps) => {
 					
 					let m = movement
 
-					if (shift) {
+					if (mirror) {
 						const y = joint.position.y
 						if (y === 0) {
 							m = 0
@@ -159,7 +161,7 @@ const Viewer = (props: ViewerProps) => {
 
 					let m = movement
 
-					if (shift) {
+					if (mirror) {
 						const x = joint.position.x
 						if (x === 0) {
 							m = 0
@@ -179,7 +181,7 @@ const Viewer = (props: ViewerProps) => {
 
 					let m = movement
 
-					if (shift) {
+					if (mirror) {
 						const x = joint.position.x
 						if (x === 0) {
 							m = 0
@@ -259,8 +261,7 @@ const Viewer = (props: ViewerProps) => {
 	}
 
 	const handleDrop = (files: File[]) => {
-		const file = files[0]
-		file.text().then((text) => {
+		files[0].text().then((text) => {
 			const json = JSON.parse(text)
 			submit(Truss.fromJSON(json))
 		})
