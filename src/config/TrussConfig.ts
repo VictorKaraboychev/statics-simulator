@@ -8,7 +8,7 @@ export const TRUSS_COLORS: { [key: string]: string } = {
 	tension: '#ff0000',
 	over_compression: '#87ff75',
 	over_tension: '#fa87af',
-	under: '##8103ab',
+	under: '#8103ab',
 	illegal: '#ffff00',
 }
 
