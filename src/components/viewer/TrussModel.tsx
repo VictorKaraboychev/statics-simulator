@@ -48,10 +48,12 @@ const TrussModel = (props: TrussModelProps) => {
 							const force = props.truss.getForce(a.id, b.id)
 
 							const underStressed = (Math.abs(stress) * connection.multiplier) < (connection.multiplier - 1)
+							const overStressed = Math.abs(stress) * connection.multiplier > props.constraints.maxMultiplier
 
-							const stressType = stress < 0 ? 'tension' : 'compression'
-							// const value = TRUSS_COLORS[stressType].clone().multiplyScalar(Math.abs(stress))
-							// console.log(stress)
+							let stressType = stress < 0 ? 'tension' : 'compression'
+							if (overStressed) stressType = `over_${stressType}`
+							if (underStressed) stressType = 'under'
+							if (a.distanceTo(b) < props.constraints.minDistance) stressType = 'illegal'
 
 							const color = new Color(Math.abs(stress) >= 1 ? TRUSS_COLORS[stressType] : underStressed ? '#ff00ff' :'#000000')
 

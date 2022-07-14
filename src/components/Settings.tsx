@@ -20,7 +20,7 @@ const Settings = (props: SettingsProps) => {
 	return (
 		<>
 			<Dialog
-				title={'Options'}
+				title={'Settings'}
 				open={optionsOpen}
 				setOpen={setOptionsOpen}
 			>
@@ -101,6 +101,20 @@ const Settings = (props: SettingsProps) => {
 							}}
 						/>
 					</Box>
+					<NumberField
+						sx={{
+							mr: 2,
+						}}
+						label={'Min Length (m)'}
+						defaultValue={TRUSS_CONSTRAINTS.minDistance}
+						size={'small'}
+						onSubmit={(value) => {
+							setTrussConstraints({
+								...TRUSS_CONSTRAINTS,
+								minDistance: value,
+							})
+						}}
+					/>
 					<FormControlLabel
 						sx={{
 							width: '100%',
@@ -142,7 +156,7 @@ const Settings = (props: SettingsProps) => {
 					},
 					...props.sx,
 				}}
-				label={'Options'}
+				label={'Settings'}
 				size={'large'}
 				onClick={() => setOptionsOpen(true)}
 			>
