@@ -16,6 +16,8 @@ import { Vector2 } from 'three'
 import Joint from '../../utility/Joint'
 import ViewerInfoBar from './ViewerInfoBar'
 import { flushSync } from 'react-dom'
+import { DEFAULT_TRUSS_CONSTRAINTS } from '../../config/TrussConfig'
+import { equals } from '../../utility/functions'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
@@ -40,10 +42,12 @@ const Viewer = (props: ViewerProps) => {
 
 
 	const joints = truss.joints
-	// const connections = truss.connections
+	const connections = truss.connections
 
 	useEffect(() => {
-		submit(truss)
+		if (!equals(TRUSS_CONSTRAINTS, DEFAULT_TRUSS_CONSTRAINTS)) {
+			submit(truss)
+		}
 	}, [TRUSS_CONSTRAINTS])
 
 	const submit = (t: Truss) => {
@@ -76,6 +80,15 @@ const Viewer = (props: ViewerProps) => {
 				))
 			)
 
+			if (!(e as any).altKey && x !== 0) {
+				truss.addJoint(
+					new Joint(new Vector2(
+						round(-x, 1),
+						round(y, 1),
+					))
+				)
+			}
+
 			submit(truss)
 		}
 
@@ -99,6 +112,13 @@ const Viewer = (props: ViewerProps) => {
 		if (alt) movement *= 0.1
 
 		const mirror = !shift && selectedJoints.size > 1
+
+		const actionJoints = new Set(selectedJoints.values())
+		selectedConnections.forEach((i) => {
+			const [a, b] = i.split('-').map(Number)
+			actionJoints.add(a)
+			actionJoints.add(b)
+		})
 
 		switch (key) {
 			case 'Delete': // Delete
@@ -135,7 +155,7 @@ const Viewer = (props: ViewerProps) => {
 			case 'ArrowUp':
 				if (!ctrl) break
 
-				selectedJoints.forEach((id) => {
+				actionJoints.forEach((id) => {
 					const joint = joints[id]
 
 					let m = movement
@@ -155,7 +175,7 @@ const Viewer = (props: ViewerProps) => {
 			case 'ArrowDown':
 				if (!ctrl) break
 
-				selectedJoints.forEach((id) => {
+				actionJoints.forEach((id) => {
 					const joint = joints[id]
 					
 					let m = movement
@@ -175,7 +195,7 @@ const Viewer = (props: ViewerProps) => {
 			case 'ArrowLeft':
 				if (!ctrl) break
 				
-				selectedJoints.forEach((id) => {
+				actionJoints.forEach((id) => {
 					const joint = joints[id]
 
 					let m = movement
@@ -195,7 +215,7 @@ const Viewer = (props: ViewerProps) => {
 			case 'ArrowRight':
 				if (!ctrl) break
 				
-				selectedJoints.forEach((id) => {
+				actionJoints.forEach((id) => {
 					const joint = joints[id]
 
 					let m = movement
