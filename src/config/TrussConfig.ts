@@ -6,9 +6,9 @@ export const DEFAULT_TRUSS = default_truss as TrussJSONType
 export const TRUSS_COLORS: { [key: string]: string } = {
 	compression: '#00ff00',
 	tension: '#ff0000',
-	over_compression: '#083d00',
-	over_tension: '#870000',
-	under: '#ff00ff',
+	over_compression: '#87ff75',
+	over_tension: '#fa87af',
+	under: '##8103ab',
 	illegal: '#ffff00',
 }
 
