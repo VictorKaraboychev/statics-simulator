@@ -1,17 +1,19 @@
 import React, { useState } from 'react'
-import { Box, Checkbox, FormControlLabel, SxProps, Theme, Typography } from '@mui/material'
+import { Box, Checkbox, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, SxProps, Theme, Typography } from '@mui/material'
 import Dialog from './common/Dialog'
 import NumberField from './common/textfields/NumberField'
 import VERSION from '../version.json'
 import useCustomState from '../state/state'
 import TooltipButton from './common/TooltipButton'
 import SettingsIcon from '@mui/icons-material/Settings'
+import { THEME_OPTIONS } from '../config/GlobalConfig'
 
 interface SettingsProps {
 	sx?: SxProps<Theme>,
 }
 
 const Settings = (props: SettingsProps) => {
+	const { value: THEME, set: setTheme } = useCustomState.theme()
 	const { value: TRUSS_CONSTRAINTS, set: setTrussConstraints } = useCustomState.truss_constraints()
 	const { value: COST_VISIBLE, set: setCostVisible } = useCustomState.cost_visible()
 
@@ -31,6 +33,37 @@ const Settings = (props: SettingsProps) => {
 						flexDirection: 'column',
 					}}
 				>
+					<FormControl
+						sx={{
+							mb: 2,
+						}}
+					>
+						<Typography
+							variant={'body2'}
+							color={'text.primary'}
+						>
+							Theme
+						</Typography>
+						<RadioGroup
+							value={THEME}
+							onChange={(e) => setTheme(e.target.value as keyof typeof THEME_OPTIONS)}
+						>
+							{Object.entries(THEME_OPTIONS).map(([value, label]) => (
+								<FormControlLabel
+									key={value}
+									value={value}
+									label={label} 
+									control={
+										<Radio
+											sx={{
+												my: -0.75 
+											}}
+										/>
+									}
+								/>
+							))}
+						</RadioGroup>
+					</FormControl>
 					<Box
 						component={'div'}
 						sx={{

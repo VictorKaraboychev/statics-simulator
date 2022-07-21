@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Button, Card, Checkbox, FormControlLabel, TextField, Typography } from '@mui/material'
+import { Box, Button, Card, Checkbox, FormControlLabel, SxProps, TextField, Theme, Typography } from '@mui/material'
 import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
 import Truss from '../../utility/Truss'
 import { Vector2 } from 'three'
@@ -11,7 +11,8 @@ import { FIXTURE } from '../../utility/Joint'
 import NumberField from '../common/textfields/NumberField'
 
 interface TrussInfoProps {
-	truss: Truss
+	sx?: SxProps<Theme>,
+	truss: Truss,
 	connectionDetails: TrussConnectionDetailsType | null,
 	jointDetails: TrussJointDetailsType | null,
 	onSubmit?: (truss: Truss) => void,
@@ -65,19 +66,19 @@ const TrussInfo = (props: TrussInfoProps) => {
 	return (
 		<Card
 			sx={{
-				position: 'absolute',
-				top: 10,
-				right: 10,
 				boxShadow: 5,
 				width: 400,
-				zIndex: 20,
+				p: 2,
+				...props.sx,
 			}}
 			variant={'outlined'}
 		>
 			<Box
 				component={'div'}
 				sx={{
-					p: 2
+					display: 'flex',
+					flexDirection: 'column',
+					height: '100%',
 				}}
 			>
 				{connectionDetails && (
@@ -314,7 +315,7 @@ const TrussInfo = (props: TrussInfoProps) => {
 				)}
 				<Button
 					sx={{
-
+						mt: 'auto',
 					}}
 					disabled={!canSubmit}
 					fullWidth={true}

@@ -10,6 +10,7 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import RestoreIcon from '@mui/icons-material/Restore'
 import GpsFixedIcon from '@mui/icons-material/GpsFixed'
 import Settings from '../Settings'
+import { useEventEffect } from '../../utility/hooks'
 
 interface ViewerInfoBarProps {
 	truss: Truss,
@@ -31,6 +32,32 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 	const truss = props.truss
 	const maxForces = truss.getMaxForces()
 
+	useEventEffect((e: KeyboardEvent) => {
+		const {
+			altKey: alt,
+			ctrlKey: ctrl,
+			shiftKey: shift,
+			key,
+		} = e
+		e.preventDefault()
+
+		switch (key) {
+			case 'w':
+				if (!ctrl) break
+				props.onResetMultipliers()
+			break
+			case 'q':
+				if (!ctrl) break
+				props.onSetMultipliers()
+			break
+			case 'f':
+				if (!ctrl) break
+				props.onToggleForces?.()
+			break
+		}
+	}, 'keydown')
+
+
 	return (
 		<>
 			<Card
@@ -39,6 +66,7 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 					display: 'flex',
 					flexDirection: 'column',
 					boxShadow: 5,
+					borderRadius: 0,
 					px: 2,
 					pt: 2,
 					pb: 4,
@@ -50,6 +78,7 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 						fontWeight: 'bold',
 					}}
 					variant={'h5'}
+					color={'text.primary'}
 				>
 					Generation: {GENERATION}
 				</Typography>
@@ -63,7 +92,7 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 					<Typography
 						sx={{
 							mr: 2,
-							backgroundColor: COST_VISIBLE ? 'background.default' : '#000000',
+							backgroundColor: COST_VISIBLE ? 'background.default' : 'text.primary',
 							borderRadius: 1,
 							"&:hover": {
 								backgroundColor: 'background.default',

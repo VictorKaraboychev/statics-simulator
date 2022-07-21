@@ -1,7 +1,7 @@
-import React from 'react'
-import { Box, SxProps, Theme } from '@mui/material'
+import React, { useEffect, useState } from 'react'
+import { Box, SxProps, Theme, useTheme } from '@mui/material'
 import { Canvas, ThreeEvent } from '@react-three/fiber'
-import { MeshPhongMaterial, OrthographicCamera, PlaneGeometry, Vector3 } from 'three'
+import { ColorRepresentation, MeshPhongMaterial, OrthographicCamera, PlaneGeometry, Vector3 } from 'three'
 import CameraController from './CameraController'
 
 interface VisualizerProps {
@@ -11,6 +11,13 @@ interface VisualizerProps {
 }
 
 const Visualizer = (props: VisualizerProps) => {
+	const { palette } = useTheme()
+	const [bgcolor, setBgColor] = useState<ColorRepresentation>(palette.mode === 'dark' ? 0x111111 : 0xffffff)
+
+	useEffect(() => {
+		setBgColor(palette.mode === 'dark' ? 0x111111 : 0xffffff)
+	}, [palette.mode])
+
 	const camera = new OrthographicCamera(-window.innerWidth / 2, window.innerWidth / 2, window.innerHeight / 2, -window.innerHeight / 2, 1, 5000)
 	camera.position.set(0, 0, 500)
 	camera.zoom = 2
@@ -38,8 +45,8 @@ const Visualizer = (props: VisualizerProps) => {
 				<mesh
 					geometry={new PlaneGeometry(4000, 4000, 40)}
 					material={new MeshPhongMaterial({
-						color: 0xffffff,
-						emissive: 0xffffff,
+						color: bgcolor,
+						emissive: bgcolor,
 						emissiveIntensity: 4,
 					})}
 					position={[0, 0, -50]}
@@ -50,7 +57,7 @@ const Visualizer = (props: VisualizerProps) => {
 					color={0x999999}
 					groundColor={0x444444}
 					intensity={1}
-					position={new Vector3(0, 50, 50)}
+					position={new Vector3(0, 50, 100)}
 				/>
 				<gridHelper
 					args={[4000, 200, '#000000']}
