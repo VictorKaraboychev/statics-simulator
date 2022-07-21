@@ -290,13 +290,13 @@ export default class Truss {
 				}
 			})
 	
-			// console.log(
-			// 	K.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			// 	DL.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			// 	D.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			// 	F.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			// 	S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			// )
+			console.log(
+				K.to2DArray().map((row) => row.map((value) => value.toFixed(3))),
+				// DL.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+				// D.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+				// F.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+				// S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			)
 	
 			// console.timeEnd('computeForces')
 		} catch (e) {

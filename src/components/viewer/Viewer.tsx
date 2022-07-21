@@ -247,7 +247,7 @@ const Viewer = (props: ViewerProps) => {
 		if (!(e as any).ctrlKey) {
 			if ((e as any).shiftKey && selectedJoints.size == 1) {
 				const [a, b] = [i, selectedJoints.values().next().value].sort((a, b) => a - b)
-				truss.addConnection(joints[a].id, joints[b].id)
+				truss.addConnection(joints[a].id, joints[b].id, joints[a].connections[joints[b].id]?.multiplier ?? 1)
 				submit(truss)
 			}
 			selectedJoints.clear()

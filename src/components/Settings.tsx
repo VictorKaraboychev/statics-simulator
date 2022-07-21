@@ -66,6 +66,20 @@ const Settings = (props: SettingsProps) => {
 							}}
 						/>
 					</Box>
+					<NumberField
+						sx={{
+							mb: 2,
+						}}
+						label={'Distributed Force (N/m)'}
+						size={'small'}
+						defaultValue={TRUSS_CONSTRAINTS.distributedForce}
+						onSubmit={(value) => {
+							setTrussConstraints({
+								...TRUSS_CONSTRAINTS,
+								distributedForce: value,
+							})
+						}}
+					/>
 					<Box
 						component={'div'}
 						sx={{
@@ -79,13 +93,13 @@ const Settings = (props: SettingsProps) => {
 							sx={{
 								mr: 2,
 							}}
-							label={'Distributed Force (N/m)'}
+							label={'Min Length (m)'}
+							defaultValue={TRUSS_CONSTRAINTS.minDistance}
 							size={'small'}
-							defaultValue={TRUSS_CONSTRAINTS.distributedForce}
 							onSubmit={(value) => {
 								setTrussConstraints({
 									...TRUSS_CONSTRAINTS,
-									distributedForce: value,
+									minDistance: value,
 								})
 							}}
 						/>
@@ -101,20 +115,41 @@ const Settings = (props: SettingsProps) => {
 							}}
 						/>
 					</Box>
-					<NumberField
+					<Box
+						component={'div'}
 						sx={{
-							mr: 2,
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
+							mb: 2,
 						}}
-						label={'Min Length (m)'}
-						defaultValue={TRUSS_CONSTRAINTS.minDistance}
-						size={'small'}
-						onSubmit={(value) => {
-							setTrussConstraints({
-								...TRUSS_CONSTRAINTS,
-								minDistance: value,
-							})
-						}}
-					/>
+					>
+						<NumberField
+							sx={{
+								mr: 2,
+							}}
+							label={'Joint Cost ($)'}
+							defaultValue={TRUSS_CONSTRAINTS.jointCost}
+							size={'small'}
+							onSubmit={(value) => {
+								setTrussConstraints({
+									...TRUSS_CONSTRAINTS,
+									jointCost: value,
+								})
+							}}
+						/>
+						<NumberField
+							label={'Member Cost ($/m)'}
+							defaultValue={TRUSS_CONSTRAINTS.connectionCost}
+							size={'small'}
+							onSubmit={(value) => {
+								setTrussConstraints({
+									...TRUSS_CONSTRAINTS,
+									connectionCost: value,
+								})
+							}}
+						/>
+					</Box>
 					<FormControlLabel
 						sx={{
 							width: '100%',

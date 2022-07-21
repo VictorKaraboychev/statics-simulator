@@ -18,6 +18,7 @@ export type TrussConnectionDetailsType = {
 	force: number | null,
 	stress: number,
 	length: number,
+	angle: number,
 	multiplier: number,
 	a: Joint,
 	b: Joint,
@@ -34,4 +35,6 @@ export type TrussConstraintsType = {
 	distributedForce: number,
 	maxMultiplier: number,
 	minDistance: number,
+	connectionCost: number,
+	jointCost: number,
 }

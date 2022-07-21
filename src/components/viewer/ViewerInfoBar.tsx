@@ -23,6 +23,7 @@ interface ViewerInfoBarProps {
 }
 
 const ViewerInfoBar = (props: ViewerInfoBarProps) => {
+	const { value: TRUSS_CONSTRAINTS } = useCustomState.truss_constraints()
 	const { value: IS_GEN_RUNNING, set: setIsGenRunning } = useCustomState.is_gen_running()
 	const { value: GENERATION } = useCustomState.generation()
 	const { value: COST_VISIBLE } = useCustomState.cost_visible()
@@ -71,7 +72,7 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 						}}
 						color={'text.primary'}
 					>
-						Cost: ${truss.getCost(5, 15).toFixed(2)}
+						Cost: ${truss.getCost(TRUSS_CONSTRAINTS.jointCost, TRUSS_CONSTRAINTS.connectionCost).toFixed(2)}
 					</Typography>
 					<Typography
 						sx={{

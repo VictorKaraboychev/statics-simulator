@@ -18,4 +18,6 @@ export const DEFAULT_TRUSS_CONSTRAINTS: TrussConstraintsType = {
 	distributedForce: 0,
 	maxMultiplier: 1,
 	minDistance: 0,
+	connectionCost: 1,
+	jointCost: 1,
 }

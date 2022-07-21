@@ -98,7 +98,12 @@ const TrussInfo = (props: TrussInfoProps) => {
 						<Typography
 							variant={'body2'}
 						>
-							Length: {connectionDetails.length.toFixed(2)}m
+							Length: {connectionDetails.length.toFixed(4)}m
+						</Typography>
+						<Typography
+							variant={'body2'}
+						>
+							Angle: {(connectionDetails.angle * (180 / Math.PI)).toFixed(4)}° {(connectionDetails.angle / Math.PI).toFixed(4)}π rad
 						</Typography>
 						<Typography
 							variant={'body2'}
