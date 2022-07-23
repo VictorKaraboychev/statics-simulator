@@ -39,19 +39,21 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 			shiftKey: shift,
 			key,
 		} = e
-		e.preventDefault()
 
 		switch (key) {
 			case 'w':
 				if (!ctrl) break
+				e.preventDefault()
 				props.onResetMultipliers()
 			break
 			case 'q':
 				if (!ctrl) break
+				e.preventDefault()
 				props.onSetMultipliers()
 			break
 			case 'f':
 				if (!ctrl) break
+				e.preventDefault()
 				props.onToggleForces?.()
 			break
 		}

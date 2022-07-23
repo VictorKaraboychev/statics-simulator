@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Box, SxProps, Theme, useTheme } from '@mui/material'
 import { Canvas, ThreeEvent } from '@react-three/fiber'
-import { ColorRepresentation, MeshPhongMaterial, OrthographicCamera, PlaneGeometry, Vector3 } from 'three'
+import { Color, ColorRepresentation, MeshPhongMaterial, OrthographicCamera, PlaneGeometry, Vector3 } from 'three'
 import CameraController from './CameraController'
 
 interface VisualizerProps {
@@ -60,7 +60,7 @@ const Visualizer = (props: VisualizerProps) => {
 					position={new Vector3(0, 50, 100)}
 				/>
 				<gridHelper
-					args={[4000, 200, '#000000']}
+					args={[4000, 200, new Color(0xffffff).sub(new Color(bgcolor))]}
 					position={[0, 0, -10]}
 					rotation={[Math.PI / 2, 0, 0]}
 				/>

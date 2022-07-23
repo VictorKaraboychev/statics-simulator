@@ -17,7 +17,7 @@ import Joint from '../../utility/Joint'
 import ViewerInfoBar from './ViewerInfoBar'
 import { flushSync } from 'react-dom'
 import { DEFAULT_TRUSS_CONSTRAINTS } from '../../config/TrussConfig'
-import { equals } from '../../utility/functions'
+import { equals, findMin } from '../../utility/functions'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
@@ -107,7 +107,6 @@ const Viewer = (props: ViewerProps) => {
 			shiftKey: shift,
 			key,
 		} = e
-		e.preventDefault()
 
 		let movement = 0.1
 		if (alt) movement *= 0.1
@@ -143,6 +142,8 @@ const Viewer = (props: ViewerProps) => {
 				if (!ctrl) break
 				setSelectedConnections(new Set(connections.map(([a, b]) => `${a}-${b}`)))
 				setSelectedJoints(new Set(joints.map((j, i) => i)))
+
+				e.preventDefault()
 			break
 			case 'd': // Deselect all
 				if (!ctrl) break
@@ -150,6 +151,16 @@ const Viewer = (props: ViewerProps) => {
 				setSelectedConnections(new Set())
 				setJointDetails(null)
 				setConnectionDetails(null)
+
+				e.preventDefault()
+			break
+			case 'o':
+				if (!ctrl) break
+				const [cost, t] = findMin(truss)
+
+				console.log('cost', cost, t)
+				submit(t)
+				e.preventDefault()
 			break
 			case 'z': // UNDO
 				if (!ctrl) break

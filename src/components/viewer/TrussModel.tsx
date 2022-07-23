@@ -1,5 +1,5 @@
 import React from 'react'
-import { BackSide, BoxGeometry, BufferGeometry, Color, ConeBufferGeometry, MeshPhongMaterial, SphereGeometry, TetrahedronBufferGeometry, TetrahedronGeometry, Vector3 } from 'three'
+import { BackSide, BoxGeometry, BufferGeometry, Color, MeshPhongMaterial, SphereGeometry, Vector3 } from 'three'
 import Truss from '../../utility/Truss'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
@@ -50,12 +50,12 @@ const TrussModel = (props: TrussModelProps) => {
 							const underStressed = (Math.abs(stress) * connection.multiplier) < (connection.multiplier - 1)
 							const overStressed = Math.abs(stress) * connection.multiplier > props.constraints.maxMultiplier
 
-							let stressType = stress < 0 ? 'tension' : 'compression'
+							let stressType = Math.abs(stress) > 1 ? stress < 0 ? 'tension' : 'compression' : 'neutral'
 							if (overStressed) stressType = `over_${stressType}`
 							if (underStressed) stressType = 'under'
 							if (a.distanceTo(b) < props.constraints.minDistance) stressType = 'illegal'
 
-							const color = new Color(Math.abs(stress) >= 1 ? TRUSS_COLORS[stressType] : underStressed ? '#ff00ff' :'#000000')
+							const color = new Color(TRUSS_COLORS[stressType] ?? 0x000000)
 
 							const aPos = a.position.clone().multiplyScalar(scale).toArray()
 							const bPos = b.position.clone().multiplyScalar(scale).toArray()
