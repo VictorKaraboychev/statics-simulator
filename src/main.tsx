@@ -9,7 +9,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 	<StrictMode>
 		<RecoilRoot>
 			<App />
-			<FPSStats />
+			{/* <FPSStats /> */}
 		</RecoilRoot>
 	</StrictMode>
 )

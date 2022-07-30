@@ -23,6 +23,7 @@ const atoms = {
 	is_gen_running: customAtom<boolean>('is_gen_running', false),
 	generation: customAtom<number>('generation', 0),
 	cost_visible: customAtom<boolean>('cost_visible', true),
+	truss_view: customAtom<string>('truss_view','default'),
 }
 
 export default atoms

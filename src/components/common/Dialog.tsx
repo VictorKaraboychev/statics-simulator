@@ -7,6 +7,7 @@ import CloseIcon from '@mui/icons-material/Close'
 
 interface DialogInterface {
 	sx?: SxProps<Theme>,
+	dialogSx?: SxProps<Theme>,
 	title: string,
 	fullScreen?: boolean,
 	disableBackdropClose?: boolean,
@@ -38,6 +39,7 @@ const Dialog = (props: DialogInterface) => {
 
 	return (
 		<DialogMUI
+			sx={props.dialogSx}
 			fullScreen={props.fullScreen}
 			TransitionComponent={Transition}
 			open={props.open}

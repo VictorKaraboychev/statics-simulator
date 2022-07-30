@@ -1,5 +1,5 @@
 import React from 'react'
-import { BackSide, BoxGeometry, BufferGeometry, Color, MeshPhongMaterial, SphereGeometry, Vector3 } from 'three'
+import { BackSide, BoxGeometry, BufferGeometry, Color, MeshPhongMaterial, SphereGeometry, Vector2, Vector3 } from 'three'
 import Truss from '../../utility/Truss'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
@@ -13,6 +13,7 @@ import { useTheme } from '@mui/material'
 interface TrussModelProps {
 	truss: Truss,
 	scale: number,
+	view?: string,
 	constraints: TrussConstraintsType,
 	selectedJoints?: Set<number>,
 	selectedConnections?: Set<string>,
@@ -51,16 +52,25 @@ const TrussModel = (props: TrussModelProps) => {
 							const overStressed = Math.abs(stress) * connection.multiplier > props.constraints.maxMultiplier
 
 							let stressType = Math.abs(stress) > 1 ? stress < 0 ? 'tension' : 'compression' : 'neutral'
+							// let stressType = stress < 0 ? 'tension' : 'compression'
 							if (overStressed) stressType = `over_${stressType}`
 							if (underStressed) stressType = 'under'
 							if (a.distanceTo(b) < props.constraints.minDistance) stressType = 'illegal'
 
 							const color = new Color(TRUSS_COLORS[stressType] ?? 0x000000)
 
-							const aPos = a.position.clone().multiplyScalar(scale).toArray()
-							const bPos = b.position.clone().multiplyScalar(scale).toArray()
+							const angle = a.angleTo(b)
+
+							const aPos = a.position.clone().multiplyScalar(scale)
+							const bPos = b.position.clone().multiplyScalar(scale)
 
 							const selected = props.selectedConnections?.has(id)
+
+							const q = 2
+							const m = 2
+
+							const p = angle + Math.PI / 2
+							const o = new Vector2(Math.cos(p), Math.sin(p)).multiplyScalar((1 - connection.multiplier))
 
 							members.push(
 								<group
@@ -74,45 +84,95 @@ const TrussModel = (props: TrussModelProps) => {
 											stress,
 											force,
 											length: a.distanceTo(b),
-											angle: a.angleTo(b),
+											angle: angle,
 											multiplier: connection.multiplier || 1,
 											a,
 											b,
 										}
 									)}
 								>
+									{(() => {
+										switch (props.view) {
+											case 'stress':
+												return (
+													<primitive
+														object={new Line2(
+															new LineGeometry().setPositions([
+																...aPos.toArray(),
+																0,
+																...bPos.toArray(),
+																0,
+															]),
+															new LineMaterial({
+																color: new Color(TRUSS_COLORS[stress < 0 ? 'tension' : 'compression']).getHex(),
+																linewidth: 5 * Math.min(Math.abs(stress), 1) + 1,
+																worldUnits: true,
+															}),
+														)}
+													/>
+												)
+											case 'multiplier':
+												return (
+													new Array(connection.multiplier).fill(0).map((v, i) => {
+														return (
+															<primitive
+																key={i}
+																object={new Line2(
+																	new LineGeometry().setPositions([
+																		aPos.x + m * i * Math.cos(p) + o.x,
+																		aPos.y + m * i * Math.sin(p) + o.y,
+																		0,
+																		bPos.x + m * i * Math.cos(p) + o.x,
+																		bPos.y + m * i * Math.sin(p) + o.y,
+																		0,
+																	]),
+																	new LineMaterial({
+																		color: color.getHex(),
+																		linewidth: 1,
+																		worldUnits: true,
+																	}),
+																)}
+															/>
+														)
+													})
+												)
+											default:
+												return (
+													<primitive
+														object={new Line2(
+															new LineGeometry().setPositions([
+																...aPos.toArray(),
+																0,
+																...bPos.toArray(),
+																0,
+															]),
+															new LineMaterial({
+																color: color.getHex(),
+																linewidth: 5 * Math.min(Math.abs(stress), 1) + 1,
+																worldUnits: true,
+															}),
+														)}
+													/>
+												)
+										}
+									})()}
 									<primitive
 										object={new Line2(
 											new LineGeometry().setPositions([
-												...aPos,
-												0,
-												...bPos,
-												0,
+												...aPos.toArray(),
+												-0.5,
+												...bPos.toArray(),
+												-0.5,
 											]),
 											new LineMaterial({
-												color: color.getHex(),
-												linewidth: 5 * Math.min(Math.abs(stress), 1) + 1,
+												color: new Color(palette.primary.main).getHex(),
+												linewidth: 5 * Math.min(Math.abs(stress), 1) + 4,
+												transparent: true,
+												opacity: selected ? 1 : 0,
 												worldUnits: true,
 											}),
 										)}
 									/>
-									{selected && (
-										<primitive
-											object={new Line2(
-												new LineGeometry().setPositions([
-													...aPos,
-													-0.5,
-													...bPos,
-													-0.5,
-												]),
-												new LineMaterial({
-													color: new Color(palette.primary.main).getHex(),
-													linewidth: 5 * Math.min(Math.abs(stress), 1) + 4,
-													worldUnits: true,
-												}),
-											)}
-										/>
-									)}
 								</group>
 							)
 						}

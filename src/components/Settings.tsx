@@ -17,14 +17,14 @@ const Settings = (props: SettingsProps) => {
 	const { value: TRUSS_CONSTRAINTS, set: setTrussConstraints } = useCustomState.truss_constraints()
 	const { value: COST_VISIBLE, set: setCostVisible } = useCustomState.cost_visible()
 
-	const [optionsOpen, setOptionsOpen] = useState(false)
+	const [open, setOpen] = useState(false)
 
 	return (
 		<>
 			<Dialog
 				title={'Settings'}
-				open={optionsOpen}
-				setOpen={setOptionsOpen}
+				open={open}
+				setOpen={setOpen}
 			>
 				<Box
 					component={'div'}
@@ -226,7 +226,7 @@ const Settings = (props: SettingsProps) => {
 				}}
 				label={'Settings'}
 				size={'large'}
-				onClick={() => setOptionsOpen(true)}
+				onClick={() => setOpen(true)}
 			>
 				<SettingsIcon />
 			</TooltipButton>

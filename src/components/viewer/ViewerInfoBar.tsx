@@ -11,6 +11,7 @@ import RestoreIcon from '@mui/icons-material/Restore'
 import GpsFixedIcon from '@mui/icons-material/GpsFixed'
 import Settings from '../Settings'
 import { useEventEffect } from '../../utility/hooks'
+import Info from '../Info'
 
 interface ViewerInfoBarProps {
 	truss: Truss,
@@ -49,6 +50,7 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 			case 'q':
 				if (!ctrl) break
 				e.preventDefault()
+				e.stopPropagation()
 				props.onSetMultipliers()
 			break
 			case 'f':
@@ -217,6 +219,11 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 							<FileDownloadIcon />
 						</TooltipButton>
 					</Box>
+					<Info
+						sx={{
+							mr: 2,
+						}}
+					/>
 					<Settings
 						sx={{
 							

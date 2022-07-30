@@ -10,14 +10,13 @@ import Drop from '../common/Drop'
 import TrussInfo from './TrussInfo'
 import useCustomState from '../../state/state'
 import { useEventEffect, usePersistentState } from '../../utility/hooks'
-import { DEFAULT_PRECISION, MAX_UNDO_STATES, TRUSS_SCALE } from '../../config/GlobalConfig'
+import { DEFAULT_PRECISION, MAX_UNDO_STATES, TRUSS_SCALE, VIEW_MODES } from '../../config/GlobalConfig'
 import { round } from '../../utility/math'
 import { Vector2 } from 'three'
 import Joint from '../../utility/Joint'
 import ViewerInfoBar from './ViewerInfoBar'
-import { flushSync } from 'react-dom'
 import { DEFAULT_TRUSS_CONSTRAINTS } from '../../config/TrussConfig'
-import { equals, findMin } from '../../utility/functions'
+import { equals } from '../../utility/functions'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
@@ -26,6 +25,7 @@ interface ViewerProps {
 const Viewer = (props: ViewerProps) => {
 	const { value: truss, set: setTruss } = useCustomState.current_truss()
 	const { value: TRUSS_CONSTRAINTS } = useCustomState.truss_constraints()
+	const { value: TRUSS_VIEW, set: setTrussView } = useCustomState.truss_view()
 
 	const [historyIndex, setHistoryIndex] = usePersistentState('truss_undo_index', 0, 'local')
 	const [history, setHistory] = usePersistentState<any[]>('truss_undo', [], 'local')
@@ -138,6 +138,12 @@ const Viewer = (props: ViewerProps) => {
 
 				submit(truss)
 			break
+			case 'n': // New
+				if (!alt) break
+				setTruss(new Truss([], []))
+				e.preventDefault()
+				e.stopPropagation()
+			break
 			case 'a': // Select all
 				if (!ctrl) break
 				setSelectedConnections(new Set(connections.map(([a, b]) => `${a}-${b}`)))
@@ -154,14 +160,14 @@ const Viewer = (props: ViewerProps) => {
 
 				e.preventDefault()
 			break
-			case 'o':
-				if (!ctrl) break
-				const [cost, t] = findMin(truss)
+			// case 'o':
+			// 	if (!ctrl) break
+			// 	const [cost, t] = findMin(truss)
 
-				console.log('cost', cost, t)
-				submit(t)
-				e.preventDefault()
-			break
+			// 	console.log('cost', cost, t)
+			// 	submit(t)
+			// 	e.preventDefault()
+			// break
 			case 'z': // UNDO
 				if (!ctrl) break
 				if (history.length > 0) {
@@ -175,6 +181,22 @@ const Viewer = (props: ViewerProps) => {
 					// setTruss(Truss.fromJSON(historyIndex.pop() as TrussJSONType))
 					// setHistoryIndex([ ...historyIndex ])
 				}
+			break
+			case 'o': // Import
+				if (!ctrl) break
+				handleImport?.()
+				e.preventDefault()
+				e.stopPropagation()
+			break
+			case 's': // Export
+				if (!ctrl) break
+				handleExport()
+				e.preventDefault()
+				e.stopPropagation()
+			break
+			case 'm': // View mode
+				if (!ctrl) break
+				setTrussView(VIEW_MODES[(VIEW_MODES.indexOf(TRUSS_VIEW) + 1) % VIEW_MODES.length])
 			break
 			case 'ArrowUp':
 				if (!ctrl) break
@@ -381,6 +403,7 @@ const Viewer = (props: ViewerProps) => {
 				>
 					<TrussModel
 						truss={truss}
+						view={TRUSS_VIEW}
 						scale={TRUSS_SCALE}
 						constraints={TRUSS_CONSTRAINTS}
 						enableForces={forcesEnabled}
