@@ -2,7 +2,7 @@ import React from 'react'
 import { Box, Button, Card, Typography } from '@mui/material'
 import TooltipButton from '../common/TooltipButton'
 import useCustomState from '../../state/state'
-import Truss from '../../utility/Truss'
+import Truss from '../../utility/truss/Truss'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import PauseIcon from '@mui/icons-material/Pause'
 import PublishIcon from '@mui/icons-material/Publish'
@@ -46,18 +46,18 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 				if (!ctrl) break
 				e.preventDefault()
 				props.onResetMultipliers()
-			break
+				break
 			case 'q':
 				if (!ctrl) break
 				e.preventDefault()
 				e.stopPropagation()
 				props.onSetMultipliers()
-			break
+				break
 			case 'f':
 				if (!ctrl) break
 				e.preventDefault()
 				props.onToggleForces?.()
-			break
+				break
 		}
 	}, 'keydown')
 
@@ -226,7 +226,7 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 					/>
 					<Settings
 						sx={{
-							
+
 						}}
 					/>
 				</Box>

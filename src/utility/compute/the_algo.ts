@@ -1,13 +1,13 @@
 import { Vector2 } from 'three'
 import GeneticAlgorithm from "../GeneticAlgorithm"
-import Truss from "../Truss"
+import Truss from "../truss/Truss"
 import { randInt } from "../functions"
 import { meetsConstraints } from './constraints'
 import { efficiency } from './efficiency'
 import { TrussConstraintsType } from '../../types/truss'
 
 export const getGeneticAlgorithm = (bridge: Truss, constraints: TrussConstraintsType) => {
-    return new GeneticAlgorithm({
+	return new GeneticAlgorithm({
 		mutate: (item: Truss, i) => {
 			const mutationCount = randInt(0, item.size - 1)
 
@@ -27,7 +27,7 @@ export const getGeneticAlgorithm = (bridge: Truss, constraints: TrussConstraints
 
 			for (let i = 0; i < mutationMultiplier; i++) {
 				const mutation = randInt(0, connections.length - 1)
-				
+
 				const value = randInt(1, 4)
 
 				const [a, b] = connections[mutation]
@@ -69,12 +69,12 @@ export const getGeneticAlgorithm = (bridge: Truss, constraints: TrussConstraints
 			const meet = meetsConstraints(item)
 
 
-			for(let i = 0; i < 4; i++) {
+			for (let i = 0; i < 4; i++) {
 				fitness -= meet[i] * 1000000
 			}
-			fitness -= item.getCost(5, 15) 
+			fitness -= item.getCost(5, 15)
 			// fitness -= efficiency(item, constraints) * 10
-		
+
 			return fitness
 		},
 		initialPopulation: [bridge.clone()]

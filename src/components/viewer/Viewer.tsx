@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Box, SxProps, Theme } from '@mui/material'
-import Truss from '../../utility/Truss'
+import Truss from '../../utility/truss/Truss'
 import Visualizer from './Visualizer'
 import { TrussConnectionDetailsType, TrussJointDetailsType, TrussJSONType } from '../../types/truss'
 import TrussModel from './TrussModel'
@@ -13,7 +13,7 @@ import { useEventEffect, usePersistentState } from '../../utility/hooks'
 import { DEFAULT_PRECISION, MAX_UNDO_STATES, TRUSS_SCALE, VIEW_MODES } from '../../config/GlobalConfig'
 import { round } from '../../utility/math'
 import { Vector2 } from 'three'
-import Joint from '../../utility/Joint'
+import Joint from '../../utility/truss/Joint'
 import ViewerInfoBar from './ViewerInfoBar'
 import { DEFAULT_TRUSS_CONSTRAINTS } from '../../config/TrussConfig'
 import { equals } from '../../utility/functions'
@@ -137,20 +137,20 @@ const Viewer = (props: ViewerProps) => {
 				setConnectionDetails(null)
 
 				submit(truss)
-			break
+				break
 			case 'n': // New
 				if (!alt) break
 				setTruss(new Truss([], []))
 				e.preventDefault()
 				e.stopPropagation()
-			break
+				break
 			case 'a': // Select all
 				if (!ctrl) break
 				setSelectedConnections(new Set(connections.map(([a, b]) => `${a}-${b}`)))
 				setSelectedJoints(new Set(joints.map((j, i) => i)))
 
 				e.preventDefault()
-			break
+				break
 			case 'd': // Deselect all
 				if (!ctrl) break
 				setSelectedJoints(new Set())
@@ -159,7 +159,7 @@ const Viewer = (props: ViewerProps) => {
 				setConnectionDetails(null)
 
 				e.preventDefault()
-			break
+				break
 			// case 'o':
 			// 	if (!ctrl) break
 			// 	const [cost, t] = findMin(truss)
@@ -174,30 +174,30 @@ const Viewer = (props: ViewerProps) => {
 					// setTruss(Truss.fromJSON(historyIndex.pop() as TrussJSONType))
 					// setHistoryIndex([ ...historyIndex ])
 				}
-			break
+				break
 			case 'y': // REDO
 				if (!ctrl) break
 				if (history.length > 0) {
 					// setTruss(Truss.fromJSON(historyIndex.pop() as TrussJSONType))
 					// setHistoryIndex([ ...historyIndex ])
 				}
-			break
+				break
 			case 'o': // Import
 				if (!ctrl) break
 				handleImport?.()
 				e.preventDefault()
 				e.stopPropagation()
-			break
+				break
 			case 's': // Export
 				if (!ctrl) break
 				handleExport()
 				e.preventDefault()
 				e.stopPropagation()
-			break
+				break
 			case 'm': // View mode
 				if (!ctrl) break
 				setTrussView(VIEW_MODES[(VIEW_MODES.indexOf(TRUSS_VIEW) + 1) % VIEW_MODES.length])
-			break
+				break
 			case 'ArrowUp':
 				if (!ctrl) break
 
@@ -217,13 +217,13 @@ const Viewer = (props: ViewerProps) => {
 					joint.position.y = round(joint.position.y + m, DEFAULT_PRECISION)
 				})
 				submit(truss)
-			break
+				break
 			case 'ArrowDown':
 				if (!ctrl) break
 
 				actionJoints.forEach((id) => {
 					const joint = joints[id]
-					
+
 					let m = movement
 
 					if (mirror) {
@@ -237,10 +237,10 @@ const Viewer = (props: ViewerProps) => {
 					joint.position.y = round(joint.position.y - m, DEFAULT_PRECISION)
 				})
 				submit(truss)
-			break
+				break
 			case 'ArrowLeft':
 				if (!ctrl) break
-				
+
 				actionJoints.forEach((id) => {
 					const joint = joints[id]
 
@@ -257,10 +257,10 @@ const Viewer = (props: ViewerProps) => {
 					joint.position.x = round(joint.position.x - m, DEFAULT_PRECISION)
 				})
 				submit(truss)
-			break
+				break
 			case 'ArrowRight':
 				if (!ctrl) break
-				
+
 				actionJoints.forEach((id) => {
 					const joint = joints[id]
 
@@ -277,7 +277,7 @@ const Viewer = (props: ViewerProps) => {
 					joint.position.x = round(joint.position.x + m, DEFAULT_PRECISION)
 				})
 				submit(truss)
-			break
+				break
 			default:
 				return
 		}
@@ -439,7 +439,7 @@ const Viewer = (props: ViewerProps) => {
 						onSubmit={submit}
 					/>
 				</Box>
-				
+
 				<ViewerInfoBar
 					truss={truss}
 					forcesEnabled={forcesEnabled}

@@ -1,6 +1,6 @@
 import React from 'react'
 import { BackSide, BoxGeometry, BufferGeometry, Color, MeshPhongMaterial, SphereGeometry, Vector2, Vector3 } from 'three'
-import Truss from '../../utility/Truss'
+import Truss from '../../utility/truss/Truss'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { Line2 } from 'three/examples/jsm/lines/Line2'
@@ -207,7 +207,7 @@ const TrussModel = (props: TrussModelProps) => {
 							<mesh
 								geometry={geometry.main}
 								material={new MeshPhongMaterial({
-									color: joint.fixed ? '#999999' :'#ffffff',
+									color: joint.fixed ? '#999999' : '#ffffff',
 								})}
 							/>
 							{props.selectedJoints?.has(i) && (

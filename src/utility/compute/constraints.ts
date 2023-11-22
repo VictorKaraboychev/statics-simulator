@@ -1,4 +1,4 @@
-import Truss from '../Truss'
+import Truss from '../truss/Truss'
 
 const constraints = {
 	maxCompression: 8000,
@@ -22,7 +22,7 @@ export const meetsConstraints = (truss: Truss): number[] => {
 
 	const joints = truss.joints
 	const connections = truss.connections
-	
+
 	for (let i = 0; i < connections.length; i++) {
 		const [a, b] = connections[i]
 
@@ -35,7 +35,7 @@ export const meetsConstraints = (truss: Truss): number[] => {
 		if (constraints.minLength && distance < constraints.minLength) cases[0] += 1
 		if (constraints.maxLength && distance > constraints.maxLength) cases[1] += 1
 		if (constraints.maxCompression && p1.connections[p2.id].force! > constraints.maxCompression * p1.connections[p2.id].multiplier) cases[2] += 1
-		if (constraints.maxTension && p1.connections[p2.id].force! < -constraints.maxTension * p1.connections[p2.id].multiplier ) cases[3] += 1
+		if (constraints.maxTension && p1.connections[p2.id].force! < -constraints.maxTension * p1.connections[p2.id].multiplier) cases[3] += 1
 	}
 
 	return cases

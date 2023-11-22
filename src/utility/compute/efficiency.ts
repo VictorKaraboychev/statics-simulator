@@ -1,6 +1,6 @@
 
 import { TrussConstraintsType } from "../../types/truss"
-import Truss from "../Truss"
+import Truss from "../truss/Truss"
 
 export const efficiency = (truss: Truss, constraints: TrussConstraintsType): number => {
     // let max = 0

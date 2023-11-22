@@ -1,13 +1,13 @@
 import React from 'react'
 import { Box, Button, Card, Checkbox, FormControlLabel, SxProps, TextField, Theme, Typography } from '@mui/material'
 import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
-import Truss from '../../utility/Truss'
+import Truss from '../../utility/truss/Truss'
 import { Vector2 } from 'three'
 import { useEventEffect, useReliantState } from '../../utility/hooks'
 import { roundVector2 } from '../../utility/functions'
 import { DEFAULT_PRECISION } from '../../config/GlobalConfig'
 import { round } from '../../utility/math'
-import { FIXTURE } from '../../utility/Joint'
+import { FIXTURE } from '../../utility/truss/Joint'
 import NumberField from '../common/textfields/NumberField'
 
 interface TrussInfoProps {
@@ -57,7 +57,7 @@ const TrussInfo = (props: TrussInfoProps) => {
 		switch (e.key) {
 			case 'Enter':
 				handleSubmit()
-			break
+				break
 		}
 	}, 'keydown')
 
@@ -207,7 +207,7 @@ const TrussInfo = (props: TrussInfoProps) => {
 									/>
 								}
 							/>
-							<FormControlLabel 
+							<FormControlLabel
 								sx={{
 									width: '100%'
 								}}

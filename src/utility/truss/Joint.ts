@@ -1,6 +1,7 @@
 import { Vector2 } from 'three'
-import { JointJSONType } from '../types/joint'
-import { getUUID } from './functions'
+import { JointJSONType } from '../../types/truss'
+import { getUUID } from '../functions'
+import Connection from './Connection'
 
 export const FIXTURE = {
 	Pin: [new Vector2(0, 1), new Vector2(1, 0)],
@@ -12,10 +13,7 @@ export default class Joint {
 	position: Vector2
 	fixtures: Vector2[]
 	externalForce: Vector2
-	connections: { [id: string]: {
-		force: null | number,
-		multiplier: number,
-	} } // positive force is compression (toward the center of the joint) and negative force is tension (toward the outside of the joint)
+	connections: { [id: string]: Connection }
 
 	constructor(position: Vector2, fixtures?: Vector2[], external_force?: Vector2) {
 		this.id = getUUID()

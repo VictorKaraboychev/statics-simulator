@@ -1,10 +1,13 @@
 import Matrix, { solve } from "ml-matrix"
 import { Vector2 } from "three"
-import { TrussConstraintsType, TrussJSONType } from "../types/truss"
+import { TrussJSONType } from "../../types/truss"
 import Joint from "./Joint"
+import Connection from "./Connection"
 
 export default class Truss {
-	private truss: { [key: string]: Joint } = {}
+	private joints_: { [id: string]: Joint } = {}
+	private connections_: { [id: string]: Connection } = {}
+
 	private size_: number
 
 	constructor(joints: Joint[], connections: [number, number, number][]) {
@@ -91,11 +94,7 @@ export default class Truss {
 		return { maxCompression, maxTension }
 	}
 
-	addJoint(joint: Joint, connections: number[] = []): Truss {
-		connections.forEach((connection) => {
-			joint.connections[this.joints[connection].id].force = null
-			this.joints[connection].connections[joint.id].force = null
-		})
+	addJoint(joint: Joint): Truss {
 		this.truss[joint.id] = joint
 
 		this.size_++
@@ -112,9 +111,9 @@ export default class Truss {
 		return this
 	}
 
-	addConnection(fromId: string, toId: string, multiplier: number = 1): Truss {
-		this.truss[fromId].connections[toId] = { force: null, multiplier }
-		this.truss[toId].connections[fromId] = { force: null, multiplier }
+	addConnection(fromId: string, toId: string, connection: Connection): Truss {
+		this.truss[fromId].connections[toId] = connection
+		this.truss[toId].connections[fromId] = connection
 		return this
 	}
 
@@ -136,13 +135,12 @@ export default class Truss {
 		return this.truss[fromId].connections[toId].force
 	}
 
-	getStress(fromId: string, toId: string, constraints: TrussConstraintsType): number {
-		const connection = this.truss[fromId].connections[toId]
-		const force = (connection.force || 0) / (connection.multiplier || 1)
+	getStress(fromId: string, toId: string): number {
+		return this.truss[fromId].connections[toId].getStress()
+	}
 
-		if (force > 0) return force / constraints.maxCompression
-		if (force < 0) return force / constraints.maxTension
-		return 0
+	getStrain(fromId: string, toId: string): number {
+		return this.truss[fromId].connections[toId].getStrain()
 	}
 
 	setDistributedForce(distributedForce: number) {
@@ -244,13 +242,13 @@ export default class Truss {
 				}
 				return acc
 			}, DL.clone())
-	
+
 			const F = K.mmul(D)
-	
+
 			const S = connections.reduce((acc, connection, i) => {
 				const p1 = 2 * connection[0]
 				const p2 = 2 * connection[1]
-	
+
 				acc.addRow(i, [
 					new Matrix(
 						[
@@ -270,16 +268,16 @@ export default class Truss {
 						])
 					).get(0, 0) / L.get(i, 0)]
 				)
-	
+
 				return acc
 			}, Matrix.zeros(0, 1))
-	
+
 			connections.forEach((connection, i) => {
 				const a = joints[connection[0]]
 				const b = joints[connection[1]]
-	
+
 				const value = S.get(i, 0)
-	
+
 				a.connections[b.id].force = value
 				b.connections[a.id].force = value
 			})
@@ -289,7 +287,7 @@ export default class Truss {
 					joint.externalForce.set(F.get(i * 2, 0), F.get(i * 2 + 1, 0))
 				}
 			})
-	
+
 			// console.log(
 			// 	K.to2DArray().map((row) => row.map((value) => value.toFixed(3))),
 			// 	// DL.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
@@ -297,7 +295,7 @@ export default class Truss {
 			// 	// F.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
 			// 	// S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
 			// )
-	
+
 			// console.timeEnd('computeForces')
 		} catch (e) {
 			return false
@@ -306,7 +304,7 @@ export default class Truss {
 	}
 
 	clone(): Truss {
-		return new Truss(this.joints.map((joint) => joint.clone()), [ ...this.connections ])
+		return new Truss(this.joints.map((joint) => joint.clone()), [...this.connections])
 	}
 
 	toJSON(): TrussJSONType {

@@ -1,6 +1,6 @@
 import { Vector2 } from "three"
 import { round } from "./math"
-import Truss from "./Truss"
+import Truss from "./truss/Truss"
 
 /**
  * Creates a deep copy of an object.

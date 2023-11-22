@@ -52,11 +52,11 @@ const Settings = (props: SettingsProps) => {
 								<FormControlLabel
 									key={value}
 									value={value}
-									label={label} 
+									label={label}
 									control={
 										<Radio
 											sx={{
-												my: -0.75 
+												my: -0.75
 											}}
 										/>
 									}
@@ -77,7 +77,7 @@ const Settings = (props: SettingsProps) => {
 							sx={{
 								mr: 2,
 							}}
-							label={'Max Compression (N)'}
+							label={'Default Ultimate Compressive Stress (MPa)'}
 							defaultValue={TRUSS_CONSTRAINTS.maxCompression}
 							size={'small'}
 							onSubmit={(value) => {
@@ -88,7 +88,7 @@ const Settings = (props: SettingsProps) => {
 							}}
 						/>
 						<NumberField
-							label={'Max Tension (N)'}
+							label={'Default Ultimate Tensile Stress (MPa)'}
 							defaultValue={TRUSS_CONSTRAINTS.maxTension}
 							size={'small'}
 							onSubmit={(value) => {
@@ -112,91 +112,6 @@ const Settings = (props: SettingsProps) => {
 								distributedForce: value,
 							})
 						}}
-					/>
-					<Box
-						component={'div'}
-						sx={{
-							display: 'flex',
-							flexDirection: 'row',
-							alignItems: 'center',
-							mb: 2,
-						}}
-					>
-						<NumberField
-							sx={{
-								mr: 2,
-							}}
-							label={'Min Length (m)'}
-							defaultValue={TRUSS_CONSTRAINTS.minDistance}
-							size={'small'}
-							onSubmit={(value) => {
-								setTrussConstraints({
-									...TRUSS_CONSTRAINTS,
-									minDistance: value,
-								})
-							}}
-						/>
-						<NumberField
-							label={'Max Multiplier'}
-							defaultValue={TRUSS_CONSTRAINTS.maxMultiplier}
-							size={'small'}
-							onSubmit={(value) => {
-								setTrussConstraints({
-									...TRUSS_CONSTRAINTS,
-									maxMultiplier: value,
-								})
-							}}
-						/>
-					</Box>
-					<Box
-						component={'div'}
-						sx={{
-							display: 'flex',
-							flexDirection: 'row',
-							alignItems: 'center',
-							mb: 2,
-						}}
-					>
-						<NumberField
-							sx={{
-								mr: 2,
-							}}
-							label={'Joint Cost ($)'}
-							defaultValue={TRUSS_CONSTRAINTS.jointCost}
-							size={'small'}
-							onSubmit={(value) => {
-								setTrussConstraints({
-									...TRUSS_CONSTRAINTS,
-									jointCost: value,
-								})
-							}}
-						/>
-						<NumberField
-							label={'Member Cost ($/m)'}
-							defaultValue={TRUSS_CONSTRAINTS.connectionCost}
-							size={'small'}
-							onSubmit={(value) => {
-								setTrussConstraints({
-									...TRUSS_CONSTRAINTS,
-									connectionCost: value,
-								})
-							}}
-						/>
-					</Box>
-					<FormControlLabel
-						sx={{
-							width: '100%',
-							mb: 2,
-						}}
-						label={'Cost Visible'}
-						control={
-							<Checkbox
-								checked={COST_VISIBLE}
-								onChange={(e) => {
-									setCostVisible(e.currentTarget.checked)
-								}}
-							/>
-						}
 					/>
 					<Typography
 						variant={'body2'}

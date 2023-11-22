@@ -1,6 +1,5 @@
 import { Vector2 } from "three"
-import Joint from "../utility/Joint"
-import { JointJSONType } from "./joint"
+import Joint from "../utility/truss/Joint"
 
 export type TrussDetailsType = {
 	cost: number,
@@ -24,17 +23,24 @@ export type TrussConnectionDetailsType = {
 	b: Joint,
 }
 
-export type TrussJSONType = {
-	joints: JointJSONType[],
-	connections: [number, number, number][]
+export type JointJSONType = {
+	position: [number, number]
+	fixtures?: [number, number][]
+	externalForce?: [number, number]
 }
 
-export type TrussConstraintsType = {
-	maxCompression: number,
-	maxTension: number,
-	distributedForce: number,
-	maxMultiplier: number,
-	minDistance: number,
-	connectionCost: number,
-	jointCost: number,
+export type ConnectionJSONType = {
+	force: number,
+	density: number,
+	area: number,
+	youngsModulus: number,
+	ultimateStress: { 
+		tensile: number, 
+		compressive: number
+	},
+}
+
+export type TrussJSONType = {
+	joints: JointJSONType[],
+	connections: [number, number, ConnectionJSONType][]
 }
