@@ -13,7 +13,6 @@ export const THEME_OPTIONS = {
 export const VIEW_MODES = [
 	'default',
 	'stress',
-	'multiplier'
 ]
 
 export const KEY_BINDINGS = [

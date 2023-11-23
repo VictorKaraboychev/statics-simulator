@@ -4,15 +4,18 @@ import { getUUID } from "../functions"
 export default class Connection {
 	id: string
 
+	// [jointId1, jointId2] or null if not connected
+	jointIds: [string, string] | null = null
+
 	// positive force is compression (toward the center of the joint) and negative force is tension (toward the outside of the joint)
-	private force: number
+	force: number
 
-	private density: number
-	private area: number
+	density: number
+	area: number
 
-	private youngsModulus: number
+	youngsModulus: number
 
-	private ultimateStress: { 
+	ultimateStress: { 
 		tensile: number, 
 		compressive: number
 	}
@@ -23,7 +26,7 @@ export default class Connection {
 		this.force = force
 
 		this.density = density
-		this.area = 0
+		this.area = area
 
 		this.youngsModulus = youngsModulus
 		this.ultimateStress = ultimateStress
@@ -41,12 +44,24 @@ export default class Connection {
 		return this.stress > this.ultimateStress.compressive || this.stress < this.ultimateStress.tensile
 	}
 
+	getVolume(length: number): number {
+		return this.area * length
+	}
+
 	getWeight(length: number): number {
 		return this.density * this.area * length
 	}
 
+	clone(): Connection {
+		const connection = new Connection(this.force, this.density, this.area, this.youngsModulus, this.ultimateStress)
+		connection.id = this.id
+		connection.jointIds = this.jointIds
+		return connection
+	}
+
 	toJSON(): ConnectionJSONType {
 		return {
+			id: this.id,
 			force: this.force,
 			density: this.density,
 			area: this.area,
@@ -56,6 +71,8 @@ export default class Connection {
 	}
 
 	static fromJSON(json: ConnectionJSONType): Connection {
-		return new Connection(json.force, json.density, json.area, json.youngsModulus, json.ultimateStress)
+		const connection = new Connection(json.force, json.density, json.area, json.youngsModulus, json.ultimateStress)
+		connection.id = json.id
+		return connection
 	}
 }

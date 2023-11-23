@@ -1,6 +1,7 @@
 {
     "joints": [{
-            "position": [-7.5,
+            "position": [
+                -7.5,
                 0
             ],
             "fixtures": [

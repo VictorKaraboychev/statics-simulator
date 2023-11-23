@@ -14,8 +14,7 @@ interface SettingsProps {
 
 const Settings = (props: SettingsProps) => {
 	const { value: THEME, set: setTheme } = useCustomState.theme()
-	const { value: TRUSS_CONSTRAINTS, set: setTrussConstraints } = useCustomState.truss_constraints()
-	const { value: COST_VISIBLE, set: setCostVisible } = useCustomState.cost_visible()
+	const { value: TRUSS_PARAMETERS, set: setTrussConstraints } = useCustomState.truss_constraints()
 
 	const [open, setOpen] = useState(false)
 
@@ -78,41 +77,47 @@ const Settings = (props: SettingsProps) => {
 								mr: 2,
 							}}
 							label={'Default Ultimate Compressive Stress (MPa)'}
-							defaultValue={TRUSS_CONSTRAINTS.maxCompression}
+							defaultValue={TRUSS_PARAMETERS.ultimateStress.compressive}
 							size={'small'}
 							onSubmit={(value) => {
 								setTrussConstraints({
-									...TRUSS_CONSTRAINTS,
-									maxCompression: value,
+									...TRUSS_PARAMETERS,
+									ultimateStress: {
+										...TRUSS_PARAMETERS.ultimateStress,
+										compressive: value,
+									},
 								})
 							}}
 						/>
 						<NumberField
 							label={'Default Ultimate Tensile Stress (MPa)'}
-							defaultValue={TRUSS_CONSTRAINTS.maxTension}
+							defaultValue={TRUSS_PARAMETERS.ultimateStress.tensile}
 							size={'small'}
 							onSubmit={(value) => {
 								setTrussConstraints({
-									...TRUSS_CONSTRAINTS,
-									maxTension: value,
+									...TRUSS_PARAMETERS,
+									ultimateStress: {
+										...TRUSS_PARAMETERS.ultimateStress,
+										tensile: value,
+									},
 								})
 							}}
 						/>
 					</Box>
-					<NumberField
+					{/* <NumberField
 						sx={{
 							mb: 2,
 						}}
 						label={'Distributed Force (N/m)'}
 						size={'small'}
-						defaultValue={TRUSS_CONSTRAINTS.distributedForce}
+						defaultValue={TRUSS_PARAMETERS.distributedForce}
 						onSubmit={(value) => {
 							setTrussConstraints({
-								...TRUSS_CONSTRAINTS,
+								...TRUSS_PARAMETERS,
 								distributedForce: value,
 							})
 						}}
-					/>
+					/> */}
 					<Typography
 						variant={'body2'}
 						color={'text.primary'}

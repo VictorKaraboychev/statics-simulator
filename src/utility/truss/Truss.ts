@@ -3,23 +3,26 @@ import { Vector2 } from "three"
 import { TrussJSONType } from "../../types/truss"
 import Joint from "./Joint"
 import Connection from "./Connection"
+import { getUUID } from "../functions"
 
 export default class Truss {
+	id: string
+
 	private joints_: { [id: string]: Joint } = {}
 	private connections_: { [id: string]: Connection } = {}
 
 	private size_: number
 
-	constructor(joints: Joint[], connections: [number, number, number][]) {
-		joints.forEach((joint, i) => {
-			connections.forEach(([a, b, c]) => {
-				if (a === i) {
-					joint.connections[joints[b].id] = { force: null, multiplier: c }
-				} else if (b === i) {
-					joint.connections[joints[a].id] = { force: null, multiplier: c }
-				}
-			})
-			this.truss[joint.id] = joint
+	constructor(joints: Joint[] = [], connections: [number, number, Connection][] = []) {
+		this.id = getUUID()
+
+		joints.forEach((joint) => {
+			this.addJoint(joint)
+		})
+
+		connections.forEach(([fromId, toId, connection]) => {
+			connection.jointIds = [joints[fromId].id, joints[toId].id]
+			this.addConnection(...connection.jointIds, connection)
 		})
 
 		this.size_ = joints.length
@@ -50,143 +53,143 @@ export default class Truss {
 	}
 
 	get joints(): Joint[] {
-		return Object.values(this.truss)
+		return Object.values(this.joints_)
 	}
 
-	get connections(): [number, number, number][] {
-		const connections: [number, number, number][] = []
-		const joints = this.joints
-
-		for (let i = 0; i < this.size_; i++) {
-			const a = joints[i]
-			for (let j = i; j < this.size_; j++) {
-				const b = joints[j]
-				if (b.id in a.connections) {
-					connections.push([i, j, a.connections[b.id].multiplier || 1])
-				}
-			}
-		}
-		return connections
+	get connections(): [number, number, Connection][] {
+		const jointIdMap = Object.fromEntries(Object.values(this.joints_).map((joint, i) => [joint.id, i]))
+		return Object.values(this.connections_).map((connection) => [jointIdMap[connection.jointIds![0]], jointIdMap[connection.jointIds![1]], connection])
 	}
 
-	getCost(jointCost: number, connectionCost: number): number {
-		const joints = this.joints
-		return this.connections.reduce((acc, [a, b, multiplier]) => {
-			acc += joints[a].distanceTo(joints[b]) * connectionCost * multiplier
-			return acc
-		}, this.size_ * jointCost)
+	get jointIds(): string[] {
+		return Object.keys(this.joints_)
 	}
 
-	getMaxForces(): { maxCompression: number, maxTension: number } {
-		const joints = this.joints
-		let maxCompression = 0
-		let maxTension = 0
-
-		this.connections.forEach(([a, b]) => {
-			const force = joints[a].connections[joints[b].id].force
-
-			if (force) {
-				maxCompression = Math.max(maxCompression, force)
-				maxTension = Math.min(maxTension, force)
-			}
-		})
-
-		return { maxCompression, maxTension }
+	get connectionIds(): string[] {
+		return Object.keys(this.connections_)
 	}
 
 	addJoint(joint: Joint): Truss {
-		this.truss[joint.id] = joint
+		this.joints_[joint.id] = joint
 
 		this.size_++
+
 		return this
 	}
 
 	removeJoint(id: string): Truss {
-		this.getConnections(id).forEach((connection) => {
-			delete connection.connections[id]
+		// delete connections from other joints
+		Object.entries(this.joints_[id].connections).forEach(([jointId, connectionId]) => {
+			delete this.joints_[jointId].connections[id]
+			delete this.connections_[connectionId]
 		})
-		delete this.truss[id]
+
+		// delete joint
+		delete this.joints_[id]
 
 		this.size_--
+
 		return this
 	}
 
 	addConnection(fromId: string, toId: string, connection: Connection): Truss {
-		this.truss[fromId].connections[toId] = connection
-		this.truss[toId].connections[fromId] = connection
+		// add connection
+		this.connections_[connection.id] = connection
+		this.connections_[connection.id].jointIds = [fromId, toId]
+
+		// add connection reference to joints
+		this.joints_[fromId].connections[toId] = connection.id
+		this.joints_[toId].connections[fromId] = connection.id
+
 		return this
 	}
 
-	removeConnection(fromId: string, toId: string): Truss {
-		delete this.truss[fromId].connections[toId]
-		delete this.truss[toId].connections[fromId]
+	removeConnectionByIds(fromId: string, toId: string): Truss {
+		const connectionId = this.joints_[fromId].connections[toId]
+
+		// delete connection reference from joints
+		delete this.joints_[fromId].connections[toId]
+		delete this.joints_[toId].connections[fromId]
+
+		// delete connection
+		delete this.connections_[connectionId]
+
+		return this
+	}
+
+	removeConnection(id: string): Truss {
+		const [fromId, toId] = this.connections_[id].jointIds!
+
+		// delete connection reference from joints
+		delete this.joints_[fromId].connections[toId]
+		delete this.joints_[toId].connections[fromId]
+
+		// delete connection
+		delete this.connections_[id]
+
 		return this
 	}
 
 	getJoint(id: string): Joint {
-		return this.truss[id]
+		return this.joints_[id]
 	}
 
-	getConnections(id: string): Joint[] {
-		return Object.keys(this.truss[id].connections).map((key) => this.truss[key])
+	getConnection(id: string): Connection {
+		return this.connections_[id]
 	}
 
-	getForce(fromId: string, toId: string): number | null {
-		return this.truss[fromId].connections[toId].force
+	getConnectionByIds(fromId: string, toId: string): Connection {
+		return this.connections_[this.joints_[fromId].connections[toId]]
 	}
 
-	getStress(fromId: string, toId: string): number {
-		return this.truss[fromId].connections[toId].getStress()
+	getConnections(id: string): Connection[] {
+		return Object.values(this.joints_[id].connections).map((connectionId) => this.connections_[connectionId])
 	}
 
-	getStrain(fromId: string, toId: string): number {
-		return this.truss[fromId].connections[toId].getStrain()
-	}
+	// setDistributedForce(distributedForce: number) {
+	// 	const floor = this.joints.reduce((acc, joint) => {
+	// 		joint.externalForce = new Vector2(0, 0)
+	// 		if (joint.position.y === 0) acc.push(joint)
+	// 		return acc
+	// 	}, [] as Joint[])
 
-	setDistributedForce(distributedForce: number) {
-		const floor = this.joints.reduce((acc, joint) => {
-			joint.externalForce = new Vector2(0, 0)
-			if (joint.position.y === 0) acc.push(joint)
-			return acc
-		}, [] as Joint[])
-
-		for (let i = 0; i < floor.length; i++) {
-			const a = floor[i]
-			if (a.fixtures.length === 0) {
-				for (let j = 0; j < floor.length; j++) {
-					const b = floor[j]
-					if (a.connections[b.id]) {
-						a.externalForce.y -= distributedForce * (a.distanceTo(b) / 2)
-					}
-				}
-			}
-		}
-	}
+	// 	for (let i = 0; i < floor.length; i++) {
+	// 		const a = floor[i]
+	// 		if (a.fixtures.length === 0) {
+	// 			for (let j = 0; j < floor.length; j++) {
+	// 				const b = floor[j]
+	// 				if (a.connections[b.id]) {
+	// 					a.externalForce.y -= distributedForce * (a.distanceTo(b) / 2)
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	compute(): boolean {
 		const joints = this.joints
 		const connections = this.connections
 
-		const { L, T } = connections.reduce((acc, connection, i) => {
-			const a = joints[connection[0]]
-			const b = joints[connection[1]]
+		const { lengths, angles } = connections.reduce((acc, [aIndex, bIndex], i) => {
+			const a = joints[aIndex]
+			const b = joints[bIndex]
 
-			acc.L.addRow(i, [a.distanceTo(b)])
-			acc.T.addRow(i, [a.angleTo(b)])
+			acc.lengths.push(a.distanceTo(b))
+			acc.angles.push(a.angleTo(b))
 
 			return acc
 		}, {
-			L: new Matrix(0, 1),
-			T: new Matrix(0, 1),
+			lengths: [] as number[],
+			angles: [] as number[],
 		})
 
-		const K = connections.reduce((TGSM, connection, i) => {
+		const totalGlobalStiffness = connections.reduce((TGSM, [aIndex, bIndex], i) => {
 			const GSM = Matrix.zeros(this.size_ * 2, this.size_ * 2)
 
-			const p1 = 2 * connection[0]
-			const p2 = 2 * connection[1]
+			const p1 = 2 * aIndex
+			const p2 = 2 * bIndex
 
-			const angle = T.get(i, 0)
+			const angle = angles[i]
 
 			const C = Math.cos(angle)
 			const S = Math.sin(angle)
@@ -199,7 +202,7 @@ export default class Truss {
 			const M2 = M1.clone().multiply(-1)
 
 			GSM.setSubMatrix(M1, p1, p1).setSubMatrix(M2, p1, p2).setSubMatrix(M2, p2, p1).setSubMatrix(M1, p2, p2)
-			GSM.divide(L.get(i, 0))
+			GSM.divide(lengths[i])
 
 			TGSM.add(GSM)
 			return TGSM
@@ -207,47 +210,36 @@ export default class Truss {
 
 		try {
 			let j = 0
+
 			const DL = solve(joints.reduceRight((acc, joint, i) => {
 				const k = i * 2
-				const n = joint.fixtures.length
-				if (n == 2) {
-					acc.removeColumn(k)
+				if (joint.fixtures.x) {
 					acc.removeColumn(k)
 					acc.removeRow(k)
-					acc.removeRow(k)
-				} else if (n === 1) {
+				}
+				if (joint.fixtures.y) {
 					acc.removeColumn(k + 1)
 					acc.removeRow(k + 1)
 				}
 				return acc
-			}, K.clone()), joints.reduce((acc, joint, i) => {
-				const n = joint.fixtures.length
-				if (n == 0) {
-					acc.addRow(j++, [joint.externalForce.x])
-					acc.addRow(j++, [joint.externalForce.y])
-				}
-				else if (n === 1) {
-					acc.addRow(j++, [joint.externalForce.x])
-				}
+			}, totalGlobalStiffness.clone()), joints.reduce((acc, joint) => {
+				if (!joint.fixtures.x) acc.addRow(j++, [joint.externalForce.x])
+				if (!joint.fixtures.y) acc.addRow(j++, [joint.externalForce.y])
 				return acc
 			}, new Matrix(0, 1)))
 
 			const D = joints.reduce((acc, joint, i) => {
-				const n = joint.fixtures.length
-				if (n == 2) {
-					acc.addRow(i * 2, [0])
-					acc.addRow(i * 2 + 1, [0])
-				} else if (n === 1) {
-					acc.addRow(i * 2 + 1, [0])
-				}
+				const k = i * 2
+				if (joint.fixtures.x) acc.addRow(k, [0])
+				if (joint.fixtures.y) acc.addRow(k + 1, [0])
 				return acc
 			}, DL.clone())
 
-			const F = K.mmul(D)
+			const F = totalGlobalStiffness.mmul(D)
 
-			const S = connections.reduce((acc, connection, i) => {
-				const p1 = 2 * connection[0]
-				const p2 = 2 * connection[1]
+			const S = connections.reduce((acc, [aIndex, bIndex], i) => {
+				const p1 = 2 * aIndex
+				const p2 = 2 * bIndex
 
 				acc.addRow(i, [
 					new Matrix(
@@ -256,8 +248,8 @@ export default class Truss {
 						]
 					).mmul(
 						new Matrix([
-							[Math.cos(T.get(i, 0)), Math.sin(T.get(i, 0)), 0, 0],
-							[0, 0, Math.cos(T.get(i, 0)), Math.sin(T.get(i, 0))]
+							[Math.cos(angles[i]), Math.sin(angles[i]), 0, 0],
+							[0, 0, Math.cos(angles[i]), Math.sin(angles[i])]
 						])
 					).mmul(
 						new Matrix([
@@ -266,26 +258,18 @@ export default class Truss {
 							[D.get(p2, 0)],
 							[D.get(p2 + 1, 0)]
 						])
-					).get(0, 0) / L.get(i, 0)]
+					).get(0, 0) / lengths[i]]
 				)
 
 				return acc
 			}, Matrix.zeros(0, 1))
 
-			connections.forEach((connection, i) => {
-				const a = joints[connection[0]]
-				const b = joints[connection[1]]
-
-				const value = S.get(i, 0)
-
-				a.connections[b.id].force = value
-				b.connections[a.id].force = value
+			connections.forEach(([aIndex, bIndex, connection], i) => {
+				connection.force = S.get(i, 0)
 			})
 
 			joints.forEach((joint, i) => {
-				if (joint.fixtures.length > 0) {
-					joint.externalForce.set(F.get(i * 2, 0), F.get(i * 2 + 1, 0))
-				}
+				if (joint.fixed) joint.externalForce.set(F.get(i * 2, 0), F.get(i * 2 + 1, 0))
 			})
 
 			// console.log(
@@ -304,24 +288,25 @@ export default class Truss {
 	}
 
 	clone(): Truss {
-		return new Truss(this.joints.map((joint) => joint.clone()), [...this.connections])
+		const truss = new Truss(
+			this.joints.map((joint) => joint.clone()),
+			this.connections.map(([from, to, connection]) => [from, to, connection.clone()])
+		)
+		truss.id = this.id
+		return truss
 	}
 
 	toJSON(): TrussJSONType {
 		return {
 			joints: this.joints.map((joint) => joint.toJSON()),
-			connections: this.connections,
+			connections: this.connections.map(([from, to, connection]) => [from, to, connection.toJSON()]),
 		}
-	}
-
-	toString(): string {
-		return JSON.stringify(this.truss)
 	}
 
 	static fromJSON(json: TrussJSONType): Truss {
 		return new Truss(
 			json.joints.map((joint) => Joint.fromJSON(joint)),
-			json.connections,
+			json.connections.map(([fromId, toId, connection]) => [fromId, toId, Connection.fromJSON(connection)])
 		)
 	}
 }

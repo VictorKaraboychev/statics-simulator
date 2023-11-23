@@ -1,34 +1,35 @@
 import { Vector2 } from 'three'
 import { JointJSONType } from '../../types/truss'
 import { getUUID } from '../functions'
-import Connection from './Connection'
 
 export const FIXTURE = {
-	Pin: [new Vector2(0, 1), new Vector2(1, 0)],
-	Roller: [new Vector2(0, 1)]
+	Pin: { x: true, y: true },
+	RollerX: { x: true, y: false },
+	RollerY: { x: false, y: true },
+	Free: { x: false, y: false },
 }
 
 export default class Joint {
 	id: string
-	position: Vector2
-	fixtures: Vector2[]
-	externalForce: Vector2
-	connections: { [id: string]: Connection }
 
-	constructor(position: Vector2, fixtures?: Vector2[], external_force?: Vector2) {
+	position: Vector2
+	fixtures: { x: boolean, y: boolean }
+	externalForce: Vector2
+	connections: { [id: string]: string } = {}
+
+	constructor(position: Vector2, fixtures = { x: false, y: false }, external_force: Vector2 = new Vector2(0, 0)) {
 		this.id = getUUID()
 		this.position = position
-		this.fixtures = (fixtures ?? []).map((f) => new Vector2(Math.abs(f.x), Math.abs(f.y)))
-		this.externalForce = external_force ?? new Vector2(0, 0)
-		this.connections = {}
+		this.fixtures = fixtures
+		this.externalForce = external_force
 	}
 
-	get connections_count(): number {
+	get numConnections(): number {
 		return Object.keys(this.connections).length
 	}
 
 	get fixed(): boolean {
-		return this.externalForce.x !== 0 || this.externalForce.y !== 0
+		return this.fixtures.x || this.fixtures.y
 	}
 
 	angleTo(joint: Joint): number {
@@ -39,25 +40,29 @@ export default class Joint {
 		return Math.sqrt((this.position.x - joint.position.x) ** 2 + (this.position.y - joint.position.y) ** 2)
 	}
 
-	toJSON(): JointJSONType {
-		return {
-			position: this.position.toArray(),
-			fixtures: this.fixtures.length > 0 ? this.fixtures.map((f) => f.toArray()) : undefined,
-			externalForce: !this.externalForce.equals(new Vector2(0, 0)) ? this.externalForce.toArray() : undefined,
-		}
-	}
-
 	clone(): Joint {
-		const copy = new Joint(this.position.clone(), this.fixtures.map((f) => f.clone()), this.externalForce.clone())
+		const copy = new Joint(this.position.clone(), this.fixtures, this.externalForce.clone())
+		copy.id = this.id
 		copy.connections = { ...this.connections }
 		return copy
 	}
 
+	toJSON(): JointJSONType {
+		return {
+			id: this.id,
+			position: this.position.toArray(),
+			fixtures: this.fixed ? this.fixtures : undefined,
+			externalForce: !this.externalForce.equals(new Vector2(0, 0)) ? this.externalForce.toArray() : undefined,
+		}
+	}
+
 	static fromJSON(json: JointJSONType): Joint {
-		return new Joint(
+		const joint = new Joint(
 			new Vector2(json.position[0], json.position[1]),
-			json.fixtures?.map((f: number[]) => new Vector2(f[0], f[1])),
+			json.fixtures,
 			json.externalForce ? new Vector2(json.externalForce[0], json.externalForce[1]) : undefined
 		)
+		joint.id = json.id
+		return joint
 	}
 }

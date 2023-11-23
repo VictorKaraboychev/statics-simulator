@@ -1,4 +1,5 @@
 import { DependencyList, Dispatch, EffectCallback, SetStateAction, useEffect, useRef, useState } from "react"
+import { deepCopy } from './object'
 
 export const useEventEffect = <K extends keyof WindowEventMap>(listener: (this: Window, ev: WindowEventMap[K]) => any, type: K, deps?: DependencyList) => {
 	useEffect(() => {
@@ -22,6 +23,19 @@ export function useReliantState(initialState?: unknown, deps?: DependencyList): 
 	useEffect(() => deps && setState(initialState), deps)
 
 	return [state, setState]
+}
+
+export const useCompoundState = <T extends Object>(initialState: T | (() => T), deps?: DependencyList): [T, <K extends keyof T>(key: K) => (value: T[K]) => void, () => void] => {
+	const [state, setState] = useReliantState(deepCopy(initialState), deps)
+
+	const set = <K extends keyof T>(key: K) => (value: T[K]) => {
+		state[key] = value
+		setState({ ...state })
+	}
+
+	const reset = () => setState(initialState)
+
+	return [state, set, reset]
 }
 
 export const usePersistentState = <T>(key: string, initialState?: T, storage: 'local' | 'session' = 'local', deps?: DependencyList): [T, (value: T) => void] => {

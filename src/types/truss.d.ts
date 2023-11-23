@@ -1,10 +1,15 @@
 import { Vector2 } from "three"
 import Joint from "../utility/truss/Joint"
+import Connection from "../utility/truss/Connection"
 
-export type TrussDetailsType = {
-	cost: number,
-	maxCompression: number,
-	maxTension: number,
+export type DefaultTrussParamsType = {
+	density: number,
+	area: number,
+	youngsModulus: number,
+	ultimateStress: {
+		tensile: number,
+		compressive: number
+	},
 }
 
 export type TrussJointDetailsType = {
@@ -14,28 +19,28 @@ export type TrussJointDetailsType = {
 
 export type TrussConnectionDetailsType = {
 	id: string,
-	force: number | null,
-	stress: number,
 	length: number,
 	angle: number,
-	multiplier: number,
+	connection: Connection,
 	a: Joint,
 	b: Joint,
 }
 
 export type JointJSONType = {
+	id: string,
 	position: [number, number]
-	fixtures?: [number, number][]
+	fixtures?: { x: boolean, y: boolean }
 	externalForce?: [number, number]
 }
 
 export type ConnectionJSONType = {
+	id: string,
 	force: number,
 	density: number,
 	area: number,
 	youngsModulus: number,
-	ultimateStress: { 
-		tensile: number, 
+	ultimateStress: {
+		tensile: number,
 		compressive: number
 	},
 }

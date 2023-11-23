@@ -83,9 +83,6 @@ const useGlobalState = {
 		return { value: json.map(Truss.fromJSON), initial: initialJSON.map(Truss.fromJSON), set, load, reset }
 	},
 	truss_constraints: () => createGlobalPersistentState(atoms.truss_constraints),
-	is_gen_running: () => createGlobalState(atoms.is_gen_running),
-	generation: () => createGlobalState(atoms.generation),
-	cost_visible: () => createGlobalPersistentState(atoms.cost_visible),
 	truss_view: () => createGlobalPersistentState(atoms.truss_view),
 }
 

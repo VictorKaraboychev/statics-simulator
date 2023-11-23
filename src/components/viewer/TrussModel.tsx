@@ -1,12 +1,12 @@
-import React from 'react'
-import { BackSide, BoxGeometry, BufferGeometry, Color, MeshPhongMaterial, SphereGeometry, Vector2, Vector3 } from 'three'
+import React, { useEffect, useState } from 'react'
+import { BackSide, BoxGeometry, BufferGeometry, Color, MeshPhongMaterial, RingGeometry, SphereGeometry, Vector3 } from 'three'
 import Truss from '../../utility/truss/Truss'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { Line2 } from 'three/examples/jsm/lines/Line2'
 import Force from './Force'
 import { ThreeEvent } from '@react-three/fiber'
-import { TrussConnectionDetailsType, TrussConstraintsType, TrussJointDetailsType } from '../../types/truss'
+import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
 import { TRUSS_COLORS } from '../../config/TrussConfig'
 import { useTheme } from '@mui/material'
 
@@ -14,23 +14,36 @@ interface TrussModelProps {
 	truss: Truss,
 	scale: number,
 	view?: string,
-	constraints: TrussConstraintsType,
-	selectedJoints?: Set<number>,
+	selectedJoints?: Set<string>,
 	selectedConnections?: Set<string>,
 	position?: Vector3,
 	enableForces?: boolean,
-	onJointClick?: (e: ThreeEvent<MouseEvent>, i: number, details: TrussJointDetailsType) => void,
-	onConnectionClick?: (e: ThreeEvent<MouseEvent>, i: string, details: TrussConnectionDetailsType) => void,
+	onJointClick?: (e: MouseEvent, id: string, details: TrussJointDetailsType) => void,
+	onConnectionClick?: (e: MouseEvent, id: string, details: TrussConnectionDetailsType) => void,
 }
 
 const TrussModel = (props: TrussModelProps) => {
 	const { palette } = useTheme()
 
+	const truss = props.truss
+
 	const scale = props.scale
-	const joints = props.truss.joints
+	const joints = truss.joints
+
+	const [hovered, setHovered] = useState(false)
+
+	useEffect(() => {
+		document.body.style.cursor = hovered ? 'pointer' : 'auto'
+
+		return () => {
+			document.body.style.cursor = 'auto'
+		}
+	}, [hovered])
 
 	return (
 		<group
+			onPointerOver={() => setHovered(true)}
+			onPointerOut={() => setHovered(false)}
 			position={props.position ? props.position.multiplyScalar(scale) : undefined}
 		>
 			<group
@@ -43,19 +56,11 @@ const TrussModel = (props: TrussModelProps) => {
 						const b = joints[j]
 						if (b.id in a.connections) {
 							const id = `${i}-${j}`
-							const connection = a.connections[b.id]
+							const connection = truss.getConnectionByIds(a.id, b.id)
 
-							const stress = props.truss.getStress(a.id, b.id, props.constraints)
-							const force = props.truss.getForce(a.id, b.id)
+							const stress = connection.stress
 
-							const underStressed = (Math.abs(stress) * connection.multiplier) < (connection.multiplier - 1)
-							const overStressed = Math.abs(stress) * connection.multiplier > props.constraints.maxMultiplier
-
-							let stressType = Math.abs(stress) > 1 ? stress < 0 ? 'tension' : 'compression' : 'neutral'
-							// let stressType = stress < 0 ? 'tension' : 'compression'
-							if (overStressed) stressType = `over_${stressType}`
-							if (underStressed) stressType = 'under'
-							if (a.distanceTo(b) < props.constraints.minDistance) stressType = 'illegal'
+							const stressType = Math.abs(stress) > 1 ? stress < 0 ? 'tension' : 'compression' : 'neutral'
 
 							const color = new Color(TRUSS_COLORS[stressType] ?? 0x000000)
 
@@ -66,96 +71,38 @@ const TrussModel = (props: TrussModelProps) => {
 
 							const selected = props.selectedConnections?.has(id)
 
-							const q = 2
-							const m = 2
-
-							const p = angle + Math.PI / 2
-							const o = new Vector2(Math.cos(p), Math.sin(p)).multiplyScalar((1 - connection.multiplier))
-
 							members.push(
 								<group
 									key={id}
 									position={[0, 0, selected ? 1 : 0]}
 									onClick={(e) => props.onConnectionClick?.(
-										e,
-										id,
+										e.nativeEvent,
+										connection.id,
 										{
 											id: id,
-											stress,
-											force,
 											length: a.distanceTo(b),
 											angle: angle,
-											multiplier: connection.multiplier || 1,
+											connection: connection,
 											a,
 											b,
 										}
 									)}
 								>
-									{(() => {
-										switch (props.view) {
-											case 'stress':
-												return (
-													<primitive
-														object={new Line2(
-															new LineGeometry().setPositions([
-																...aPos.toArray(),
-																0,
-																...bPos.toArray(),
-																0,
-															]),
-															new LineMaterial({
-																color: new Color(TRUSS_COLORS[stress < 0 ? 'tension' : 'compression']).getHex(),
-																linewidth: 5 * Math.min(Math.abs(stress), 1) + 1,
-																worldUnits: true,
-															}),
-														)}
-													/>
-												)
-											case 'multiplier':
-												return (
-													new Array(connection.multiplier).fill(0).map((v, i) => {
-														return (
-															<primitive
-																key={i}
-																object={new Line2(
-																	new LineGeometry().setPositions([
-																		aPos.x + m * i * Math.cos(p) + o.x,
-																		aPos.y + m * i * Math.sin(p) + o.y,
-																		0,
-																		bPos.x + m * i * Math.cos(p) + o.x,
-																		bPos.y + m * i * Math.sin(p) + o.y,
-																		0,
-																	]),
-																	new LineMaterial({
-																		color: color.getHex(),
-																		linewidth: 1,
-																		worldUnits: true,
-																	}),
-																)}
-															/>
-														)
-													})
-												)
-											default:
-												return (
-													<primitive
-														object={new Line2(
-															new LineGeometry().setPositions([
-																...aPos.toArray(),
-																0,
-																...bPos.toArray(),
-																0,
-															]),
-															new LineMaterial({
-																color: color.getHex(),
-																linewidth: 5 * Math.min(Math.abs(stress), 1) + 1,
-																worldUnits: true,
-															}),
-														)}
-													/>
-												)
-										}
-									})()}
+									<primitive
+										object={new Line2(
+											new LineGeometry().setPositions([
+												...aPos.toArray(),
+												0,
+												...bPos.toArray(),
+												0,
+											]),
+											new LineMaterial({
+												color: color.getHex(),
+												linewidth: 5 * Math.min(Math.abs(stress), 1) + 1,
+												worldUnits: true,
+											}),
+										)}
+									/>
 									<primitive
 										object={new Line2(
 											new LineGeometry().setPositions([
@@ -186,18 +133,20 @@ const TrussModel = (props: TrussModelProps) => {
 
 					let geometry: { main: BufferGeometry, selected: BufferGeometry } = { main: new SphereGeometry(5, 16, 16), selected: new SphereGeometry(6.5, 16, 16) }
 
-					if (joint.fixtures.length > 0) {
-						geometry = { main: new BoxGeometry(10, 10, 10), selected: new BoxGeometry(13, 13, 13) }
+					if (joint.fixed) {
+						geometry = { main: new BoxGeometry(10, 10, 10), selected: new BoxGeometry(10, 10, 10) }
 					}
+
+					// geometry = { main: new RingGeometry(3, 5, 20), selected: new SphereGeometry(6.5, 16, 16) }
 
 					return (
 						<group
 							key={joint.id}
 							position={new Vector3(p.x, p.y, 0.5).multiplyScalar(scale)}
-							rotation={[0, 0, joint.fixtures.length === 1 ? Math.PI / 4 : 0]}
+							rotation={[0, 0, (joint.fixtures.x ? !joint.fixtures.y : joint.fixtures.y) ? Math.PI / 4 : 0]}
 							onClick={(e) => props.onJointClick?.(
-								e,
-								i,
+								e.nativeEvent,
+								joint.id,
 								{
 									id: i,
 									joint: joints[i],
@@ -210,7 +159,7 @@ const TrussModel = (props: TrussModelProps) => {
 									color: joint.fixed ? '#999999' : '#ffffff',
 								})}
 							/>
-							{props.selectedJoints?.has(i) && (
+							{props.selectedJoints?.has(joint.id) && (
 								<mesh
 									geometry={geometry.selected}
 									material={new MeshPhongMaterial({

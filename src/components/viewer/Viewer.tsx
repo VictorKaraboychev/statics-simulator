@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Box, SxProps, Theme } from '@mui/material'
 import Truss from '../../utility/truss/Truss'
 import Visualizer from './Visualizer'
@@ -7,7 +7,6 @@ import TrussModel from './TrussModel'
 import { ThreeEvent } from '@react-three/fiber'
 import { saveAs } from 'file-saver'
 import Drop from '../common/Drop'
-import TrussInfo from './TrussInfo'
 import useCustomState from '../../state/state'
 import { useEventEffect, usePersistentState } from '../../utility/hooks'
 import { DEFAULT_PRECISION, MAX_UNDO_STATES, TRUSS_SCALE, VIEW_MODES } from '../../config/GlobalConfig'
@@ -15,8 +14,11 @@ import { round } from '../../utility/math'
 import { Vector2 } from 'three'
 import Joint from '../../utility/truss/Joint'
 import ViewerInfoBar from './ViewerInfoBar'
-import { DEFAULT_TRUSS_CONSTRAINTS } from '../../config/TrussConfig'
+import { DEFAULT_TRUSS_PARAMETERS } from '../../config/TrussConfig'
 import { equals } from '../../utility/functions'
+import Connection from '../../utility/truss/Connection'
+import JointInfo from './info/JointInfo'
+import ConnectionInfo from './info/ConnectionInfo'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
@@ -24,7 +26,7 @@ interface ViewerProps {
 
 const Viewer = (props: ViewerProps) => {
 	const { value: truss, set: setTruss } = useCustomState.current_truss()
-	const { value: TRUSS_CONSTRAINTS } = useCustomState.truss_constraints()
+	const { value: TRUSS_PARAMETERS } = useCustomState.truss_constraints()
 	const { value: TRUSS_VIEW, set: setTrussView } = useCustomState.truss_view()
 
 	const [historyIndex, setHistoryIndex] = usePersistentState('truss_undo_index', 0, 'local')
@@ -32,23 +34,24 @@ const Viewer = (props: ViewerProps) => {
 
 	const [forcesEnabled, setForcesEnabled] = useState(false)
 
-	const [selectedJoints, setSelectedJoints] = useState<Set<number>>(new Set())
+	const [selectedJoints, setSelectedJoints] = useState<Set<string>>(new Set())
 	const [selectedConnections, setSelectedConnections] = useState<Set<string>>(new Set())
 
 	const [jointDetails, setJointDetails] = useState<TrussJointDetailsType | null>(null)
 	const [connectionDetails, setConnectionDetails] = useState<TrussConnectionDetailsType | null>(null)
 
+	console.log(selectedJoints, jointDetails)
+
 	const dropRef = useRef<{ open: () => void }>()
 
-
-	const joints = truss.joints
-	const connections = truss.connections
+	// const joints = truss.joints
+	// const connections = truss.connections
 
 	useEffect(() => {
-		if (!equals(TRUSS_CONSTRAINTS, DEFAULT_TRUSS_CONSTRAINTS)) {
+		if (!equals(TRUSS_PARAMETERS, DEFAULT_TRUSS_PARAMETERS)) {
 			submit(truss)
 		}
-	}, [TRUSS_CONSTRAINTS])
+	}, [TRUSS_PARAMETERS])
 
 	const submit = (t: Truss) => {
 		// if (history.length >= MAX_UNDO_STATES) history.shift()
@@ -62,42 +65,8 @@ const Viewer = (props: ViewerProps) => {
 
 		// console.log('submit', TRUSS_CONSTRAINTS.distributedForce)
 
-		t.setDistributedForce(TRUSS_CONSTRAINTS.distributedForce)
-		setTruss(t.clone())
-	}
-
-
-	const handleMouseClick = (e: ThreeEvent<MouseEvent>) => {
-		if ((e as any).shiftKey) {
-			const { x, y } = e.point.clone().divideScalar(TRUSS_SCALE)
-
-			// console.log('Adding joint at', x, y)
-
-			truss.addJoint(
-				new Joint(new Vector2(
-					round(x, 1),
-					round(y, 1),
-				))
-			)
-
-			if ((e as any).altKey && x !== 0) {
-				truss.addJoint(
-					new Joint(new Vector2(
-						round(-x, 1),
-						round(y, 1),
-					))
-				)
-			}
-
-			submit(truss)
-		}
-
-		if (!(e as any).ctrlKey) {
-			setSelectedJoints(new Set())
-			setSelectedConnections(new Set())
-			setJointDetails(null)
-			setConnectionDetails(null)
-		}
+		// t.setDistributedForce(TRUSS_CONSTRAINTS.distributedForce)
+		setTruss(t)
 	}
 
 	useEventEffect((e: KeyboardEvent) => {
@@ -109,27 +78,22 @@ const Viewer = (props: ViewerProps) => {
 		} = e
 
 		let movement = 0.1
-		if (alt) movement *= 0.1
+		if (alt) movement = 0.01
 
 		const mirror = !shift && selectedJoints.size > 1
 
 		const actionJoints = new Set(selectedJoints.values())
-		selectedConnections.forEach((i) => {
-			const [a, b] = i.split('-').map(Number)
-			actionJoints.add(a)
-			actionJoints.add(b)
+		selectedConnections.forEach((id) => {
+			const ids = truss.getConnection(id).jointIds
+			if (ids) ids.forEach(actionJoints.add)
 		})
 
 		switch (key) {
 			case 'Delete': // Delete
 				if (!shift) break
-				selectedJoints.forEach((id) => {
-					truss.removeJoint(joints[id].id)
-				})
-				selectedConnections.forEach((id) => {
-					const [a, b] = id.split('-').map(Number)
-					truss.removeConnection(joints[a].id, joints[b].id)
-				})
+
+				selectedJoints.forEach(truss.removeJoint)
+				selectedConnections.forEach(truss.removeConnection)
 
 				setSelectedJoints(new Set())
 				setSelectedConnections(new Set())
@@ -140,19 +104,23 @@ const Viewer = (props: ViewerProps) => {
 				break
 			case 'n': // New
 				if (!alt) break
+
 				setTruss(new Truss([], []))
+
 				e.preventDefault()
 				e.stopPropagation()
 				break
 			case 'a': // Select all
 				if (!ctrl) break
-				setSelectedConnections(new Set(connections.map(([a, b]) => `${a}-${b}`)))
-				setSelectedJoints(new Set(joints.map((j, i) => i)))
+
+				setSelectedJoints(new Set(truss.jointIds))
+				setSelectedConnections(new Set(truss.connectionIds))
 
 				e.preventDefault()
 				break
 			case 'd': // Deselect all
 				if (!ctrl) break
+
 				setSelectedJoints(new Set())
 				setSelectedConnections(new Set())
 				setJointDetails(null)
@@ -160,14 +128,6 @@ const Viewer = (props: ViewerProps) => {
 
 				e.preventDefault()
 				break
-			// case 'o':
-			// 	if (!ctrl) break
-			// 	const [cost, t] = findMin(truss)
-
-			// 	console.log('cost', cost, t)
-			// 	submit(t)
-			// 	e.preventDefault()
-			// break
 			case 'z': // UNDO
 				if (!ctrl) break
 				if (history.length > 0) {
@@ -184,25 +144,33 @@ const Viewer = (props: ViewerProps) => {
 				break
 			case 'o': // Import
 				if (!ctrl) break
-				handleImport?.()
+
+				handleImport()
+
 				e.preventDefault()
 				e.stopPropagation()
 				break
 			case 's': // Export
 				if (!ctrl) break
+
 				handleExport()
+
 				e.preventDefault()
 				e.stopPropagation()
 				break
 			case 'm': // View mode
 				if (!ctrl) break
+
 				setTrussView(VIEW_MODES[(VIEW_MODES.indexOf(TRUSS_VIEW) + 1) % VIEW_MODES.length])
+
+				e.preventDefault()
+				e.stopPropagation()
 				break
 			case 'ArrowUp':
 				if (!ctrl) break
 
 				actionJoints.forEach((id) => {
-					const joint = joints[id]
+					const joint = truss.getJoint(id)
 
 					let m = movement
 
@@ -222,7 +190,7 @@ const Viewer = (props: ViewerProps) => {
 				if (!ctrl) break
 
 				actionJoints.forEach((id) => {
-					const joint = joints[id]
+					const joint = truss.getJoint(id)
 
 					let m = movement
 
@@ -242,7 +210,7 @@ const Viewer = (props: ViewerProps) => {
 				if (!ctrl) break
 
 				actionJoints.forEach((id) => {
-					const joint = joints[id]
+					const joint = truss.getJoint(id)
 
 					let m = movement
 
@@ -262,7 +230,7 @@ const Viewer = (props: ViewerProps) => {
 				if (!ctrl) break
 
 				actionJoints.forEach((id) => {
-					const joint = joints[id]
+					const joint = truss.getJoint(id)
 
 					let m = movement
 
@@ -283,79 +251,97 @@ const Viewer = (props: ViewerProps) => {
 		}
 	}, 'keydown')
 
-	const handleJointClick = (e: ThreeEvent<MouseEvent>, i: number, details: TrussJointDetailsType) => {
+	const handleMouseClick = (e: ThreeEvent<MouseEvent>) => {
+		const { x, y } = e.point.clone().divideScalar(TRUSS_SCALE)
+
+		console.log('click at', x, y)
+
+		if (e.nativeEvent.shiftKey) {
+
+			truss.addJoint(
+				new Joint(new Vector2(
+					round(x, 1),
+					round(y, 1),
+				))
+			)
+
+			if (e.nativeEvent.altKey && x !== 0) {
+				truss.addJoint(
+					new Joint(new Vector2(
+						round(-x, 1),
+						round(y, 1),
+					))
+				)
+			}
+
+			submit(truss)
+		}
+
+		// if (!e.nativeEvent.ctrlKey) {
+		// 	setSelectedJoints(new Set())
+		// 	setSelectedConnections(new Set())
+		// 	setJointDetails(null)
+		// 	setConnectionDetails(null)
+		// }
+	}
+
+	const handleJointClick = (e: MouseEvent, id: string, details: TrussJointDetailsType) => {
 		e.stopPropagation()
 
-		if (!(e as any).ctrlKey) {
-			if ((e as any).shiftKey && selectedJoints.size == 1) {
-				const [a, b] = [i, selectedJoints.values().next().value].sort((a, b) => a - b)
-				truss.addConnection(joints[a].id, joints[b].id, joints[a].connections[joints[b].id]?.multiplier ?? 1)
-				submit(truss)
-			}
+		console.log('selectedJoints before', selectedJoints, id)
+
+		if (!e.ctrlKey) {
+			// if (e.shiftKey && selectedJoints.size == 1) {
+			// 	const otherId: string = selectedJoints.values().next().value
+
+			// 	const connection = new Connection(0, TRUSS_PARAMETERS.density, TRUSS_PARAMETERS.area, TRUSS_PARAMETERS.youngsModulus, TRUSS_PARAMETERS.ultimateStress)
+
+			// 	truss.addConnection(id, otherId, connection)
+			// 	submit(truss)
+			// }
+
 			selectedJoints.clear()
 			selectedConnections.clear()
-			setConnectionDetails(null)
 		}
-		if (selectedJoints.has(i)) {
-			selectedJoints.delete(i)
+
+		if (selectedJoints.has(id)) {
+			selectedJoints.delete(id)
 			setJointDetails(null)
 		} else {
-			selectedJoints.add(i)
+			selectedJoints.add(id)
 		}
+
+		console.log('selectedJoints after', selectedJoints, id)
 
 		setSelectedJoints(selectedJoints)
 		setSelectedConnections(selectedConnections)
 		setJointDetails(details)
 	}
 
-	const handleConnectionClick = (e: ThreeEvent<MouseEvent>, i: string, details: TrussConnectionDetailsType) => {
-		e.stopPropagation()
+	const handleConnectionClick = (e: MouseEvent, id: string, details: TrussConnectionDetailsType) => {
+		// e.stopPropagation()
 
-		if (!(e as any).ctrlKey) {
-			selectedJoints.clear()
-			selectedConnections.clear()
-			setJointDetails(null)
-		}
-		if (selectedConnections.has(i)) {
-			selectedConnections.delete(i)
-			setConnectionDetails(null)
-		} else {
-			selectedConnections.add(i)
-		}
+		// if (!e.ctrlKey) {
+		// 	selectedJoints.clear()
+		// 	selectedConnections.clear()
+		// 	setJointDetails(null)
+		// }
 
-		setSelectedJoints(selectedJoints)
-		setSelectedConnections(selectedConnections)
-		setConnectionDetails(details)
-	}
+		// if (selectedConnections.has(id)) {
+		// 	selectedConnections.delete(id)
+		// 	setConnectionDetails(null)
+		// } else {
+		// 	selectedConnections.add(id)
+		// }
 
-	const handleSetMultipliers = () => {
-		for (let i = 0; i < joints.length; i++) {
-			const a = joints[i]
-			for (let j = 0; j < joints.length; j++) {
-				const b = joints[j]
-				if (b.id in a.connections) {
-					const c = a.connections[b.id]
-					if (c.force) {
-						c.multiplier = Math.min(Math.ceil(Math.abs(c.force) / (c.force > 0 ? TRUSS_CONSTRAINTS.maxCompression : TRUSS_CONSTRAINTS.maxTension)), TRUSS_CONSTRAINTS.maxMultiplier)
-					}
-				}
-			}
-		}
-		submit(truss)
-	}
-
-	const handleResetMultipliers = () => {
-		truss.joints.forEach((joint) => {
-			Object.values(joint.connections).forEach((connection) => {
-				connection.multiplier = 1
-			})
-		})
-		submit(truss)
+		// setSelectedJoints(selectedJoints)
+		// setSelectedConnections(selectedConnections)
+		// setConnectionDetails(details)
 	}
 
 	const handleToggleForces = () => setForcesEnabled(!forcesEnabled)
 
-	const handleImport = dropRef.current?.open
+	const handleImport = dropRef.current?.open!
 
 	const handleExport = () => {
 		const json = JSON.stringify(truss.toJSON())
@@ -405,7 +391,6 @@ const Viewer = (props: ViewerProps) => {
 						truss={truss}
 						view={TRUSS_VIEW}
 						scale={TRUSS_SCALE}
-						constraints={TRUSS_CONSTRAINTS}
 						enableForces={forcesEnabled}
 						selectedJoints={selectedJoints}
 						selectedConnections={selectedConnections}
@@ -423,29 +408,29 @@ const Viewer = (props: ViewerProps) => {
 						zIndex: 20,
 					}}
 				>
-					<TrussInfo
-						truss={truss}
-						connectionDetails={null}
-						jointDetails={jointDetails}
-						onSubmit={submit}
-					/>
-					<TrussInfo
-						sx={{
-							ml: 2,
-						}}
-						truss={truss}
-						connectionDetails={connectionDetails}
-						jointDetails={null}
-						onSubmit={submit}
-					/>
+					{jointDetails && (
+						<JointInfo
+							truss={truss}
+							jointDetails={jointDetails}
+							onSubmit={submit}
+						/>
+					)}
+					{connectionDetails && (
+						<ConnectionInfo
+							sx={{
+								ml: 2,
+							}}
+							truss={truss}
+							connectionDetails={connectionDetails}
+							onSubmit={submit}
+						/>
+					)}
 				</Box>
 
 				<ViewerInfoBar
 					truss={truss}
 					forcesEnabled={forcesEnabled}
 					onToggleForces={handleToggleForces}
-					onSetMultipliers={handleSetMultipliers}
-					onResetMultipliers={handleResetMultipliers}
 					onImport={handleImport}
 					onExport={handleExport}
 					onSubmit={submit}

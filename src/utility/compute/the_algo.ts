@@ -21,20 +21,6 @@ export const getGeneticAlgorithm = (bridge: Truss, constraints: TrussConstraints
 				}
 			}
 
-			const joints = item.joints
-			const connections = item.connections
-			const mutationMultiplier = randInt(0, connections.length - 1)
-
-			for (let i = 0; i < mutationMultiplier; i++) {
-				const mutation = randInt(0, connections.length - 1)
-
-				const value = randInt(1, 4)
-
-				const [a, b] = connections[mutation]
-				joints[a].connections[joints[b].id].multiplier = value
-				joints[b].connections[joints[a].id].multiplier = value
-			}
-
 			// if (Math.random() < 0.02) {
 			// 	if (Math.random() < 0.5) {
 			// 		const indexA = randInt(0, item.size - 1)
