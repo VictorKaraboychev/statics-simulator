@@ -16,7 +16,7 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 	const connectionDetails = props.connectionDetails
 	const connection = props.truss.getConnection(connectionDetails.connection.id)
 
-	console.log('CONNECTION: ', connection, connectionDetails.id, props.truss)
+	// console.log('CONNECTION: ', connection, connectionDetails.id, props.truss)
 
 	// const [connection, setConnection] = useCompoundState<Connection>(props.truss.getConnection(connectionDetails.id), [props.connectionDetails, props.truss])
 

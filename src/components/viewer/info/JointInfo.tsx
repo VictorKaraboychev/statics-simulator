@@ -44,7 +44,7 @@ const JointInfo = (props: JointInfoProps) => {
 		}
 	}, 'keydown')
 
-	console.log('JOINT: ', joint, jointDetails.joint.id, props.truss)
+	// console.log('JOINT: ', joint, jointDetails.joint.id, props.truss)
 
 	if (!joint) return null
 

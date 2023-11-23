@@ -62,6 +62,7 @@ export default class Connection {
 	toJSON(): ConnectionJSONType {
 		return {
 			id: this.id,
+			jointIds: this.jointIds ?? undefined,
 			force: this.force,
 			density: this.density,
 			area: this.area,
@@ -73,6 +74,7 @@ export default class Connection {
 	static fromJSON(json: ConnectionJSONType): Connection {
 		const connection = new Connection(json.force, json.density, json.area, json.youngsModulus, json.ultimateStress)
 		connection.id = json.id
+		connection.jointIds = json.jointIds ?? null
 		return connection
 	}
 }

@@ -13,16 +13,15 @@ export default class Truss {
 
 	private size_: number
 
-	constructor(joints: Joint[] = [], connections: [number, number, Connection][] = []) {
+	constructor(joints: Joint[] = [], connections: Connection[] = []) {
 		this.id = getUUID()
 
 		joints.forEach((joint) => {
 			this.addJoint(joint)
 		})
 
-		connections.forEach(([fromId, toId, connection]) => {
-			connection.jointIds = [joints[fromId].id, joints[toId].id]
-			this.addConnection(...connection.jointIds, connection)
+		connections.forEach((connection) => {
+			this.connections_[connection.id] = connection
 		})
 
 		this.size_ = joints.length
@@ -290,7 +289,7 @@ export default class Truss {
 	clone(): Truss {
 		const truss = new Truss(
 			this.joints.map((joint) => joint.clone()),
-			this.connections.map(([from, to, connection]) => [from, to, connection.clone()])
+			Object.values(this.connections_).map((connection) => connection.clone())
 		)
 		truss.id = this.id
 		return truss
@@ -299,14 +298,14 @@ export default class Truss {
 	toJSON(): TrussJSONType {
 		return {
 			joints: this.joints.map((joint) => joint.toJSON()),
-			connections: this.connections.map(([from, to, connection]) => [from, to, connection.toJSON()]),
+			connections: Object.values(this.connections_).map((connection) => connection.toJSON()),
 		}
 	}
 
 	static fromJSON(json: TrussJSONType): Truss {
 		return new Truss(
 			json.joints.map((joint) => Joint.fromJSON(joint)),
-			json.connections.map(([fromId, toId, connection]) => [fromId, toId, Connection.fromJSON(connection)])
+			json.connections.map((connection) => Connection.fromJSON(connection))
 		)
 	}
 }

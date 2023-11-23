@@ -53,6 +53,7 @@ export default class Joint {
 			position: this.position.toArray(),
 			fixtures: this.fixed ? this.fixtures : undefined,
 			externalForce: !this.externalForce.equals(new Vector2(0, 0)) ? this.externalForce.toArray() : undefined,
+			connections: this.connections,
 		}
 	}
 
@@ -63,6 +64,7 @@ export default class Joint {
 			json.externalForce ? new Vector2(json.externalForce[0], json.externalForce[1]) : undefined
 		)
 		joint.id = json.id
+		joint.connections = json.connections
 		return joint
 	}
 }

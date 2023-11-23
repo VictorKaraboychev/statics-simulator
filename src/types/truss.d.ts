@@ -31,10 +31,12 @@ export type JointJSONType = {
 	position: [number, number]
 	fixtures?: { x: boolean, y: boolean }
 	externalForce?: [number, number]
+	connections: { [id: string]: string }
 }
 
 export type ConnectionJSONType = {
 	id: string,
+	jointIds?: [string, string],
 	force: number,
 	density: number,
 	area: number,
@@ -47,5 +49,5 @@ export type ConnectionJSONType = {
 
 export type TrussJSONType = {
 	joints: JointJSONType[],
-	connections: [number, number, ConnectionJSONType][]
+	connections: ConnectionJSONType[]
 }

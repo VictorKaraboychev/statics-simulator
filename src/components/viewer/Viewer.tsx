@@ -40,8 +40,6 @@ const Viewer = (props: ViewerProps) => {
 	const [jointDetails, setJointDetails] = useState<TrussJointDetailsType | null>(null)
 	const [connectionDetails, setConnectionDetails] = useState<TrussConnectionDetailsType | null>(null)
 
-	console.log(selectedJoints, jointDetails)
-
 	const dropRef = useRef<{ open: () => void }>()
 
 	// const joints = truss.joints
@@ -77,6 +75,8 @@ const Viewer = (props: ViewerProps) => {
 			key,
 		} = e
 
+		if (['Shift', 'Control', 'Alt'].includes(key)) return
+
 		let movement = 0.1
 		if (alt) movement = 0.01
 
@@ -85,15 +85,15 @@ const Viewer = (props: ViewerProps) => {
 		const actionJoints = new Set(selectedJoints.values())
 		selectedConnections.forEach((id) => {
 			const ids = truss.getConnection(id).jointIds
-			if (ids) ids.forEach(actionJoints.add)
+			if (ids) actionJoints.add(ids[0]).add(ids[1])
 		})
 
 		switch (key) {
 			case 'Delete': // Delete
 				if (!shift) break
 
-				selectedJoints.forEach(truss.removeJoint)
-				selectedConnections.forEach(truss.removeConnection)
+				selectedJoints.forEach((id) => truss.removeJoint(id))
+				selectedConnections.forEach((id) => truss.removeConnection(id))
 
 				setSelectedJoints(new Set())
 				setSelectedConnections(new Set())
@@ -182,7 +182,7 @@ const Viewer = (props: ViewerProps) => {
 							m *= -1
 						}
 					}
-					joint.position.y = round(joint.position.y + m, DEFAULT_PRECISION)
+					joint.position.y = round(joint.position.y - m, DEFAULT_PRECISION)
 				})
 				submit(truss)
 				break
@@ -202,7 +202,7 @@ const Viewer = (props: ViewerProps) => {
 							m *= -1
 						}
 					}
-					joint.position.y = round(joint.position.y - m, DEFAULT_PRECISION)
+					joint.position.y = round(joint.position.y + m, DEFAULT_PRECISION)
 				})
 				submit(truss)
 				break
@@ -277,66 +277,101 @@ const Viewer = (props: ViewerProps) => {
 			submit(truss)
 		}
 
-		// if (!e.nativeEvent.ctrlKey) {
-		// 	setSelectedJoints(new Set())
-		// 	setSelectedConnections(new Set())
-		// 	setJointDetails(null)
-		// 	setConnectionDetails(null)
-		// }
+		if (!e.nativeEvent.ctrlKey) {
+			setSelectedJoints(new Set())
+			setSelectedConnections(new Set())
+			setJointDetails(null)
+			setConnectionDetails(null)
+		}
 	}
 
-	const handleJointClick = (e: MouseEvent, id: string, details: TrussJointDetailsType) => {
+	const handleJointClick = (e: ThreeEvent<MouseEvent>, id: string, details: TrussJointDetailsType) => {
 		e.stopPropagation()
 
-		console.log('selectedJoints before', selectedJoints, id)
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt } = e.nativeEvent
 
-		if (!e.ctrlKey) {
-			// if (e.shiftKey && selectedJoints.size == 1) {
-			// 	const otherId: string = selectedJoints.values().next().value
+		let jDetails: TrussJointDetailsType | null = jointDetails
+		let cDetails: TrussConnectionDetailsType | null = connectionDetails
 
-			// 	const connection = new Connection(0, TRUSS_PARAMETERS.density, TRUSS_PARAMETERS.area, TRUSS_PARAMETERS.youngsModulus, TRUSS_PARAMETERS.ultimateStress)
+		if (!ctrl && shift && selectedJoints.size === 1) {
+			const otherId: string = selectedJoints.values().next().value
 
-			// 	truss.addConnection(id, otherId, connection)
-			// 	submit(truss)
-			// }
+			const connection = new Connection(0, TRUSS_PARAMETERS.density, TRUSS_PARAMETERS.area, TRUSS_PARAMETERS.youngsModulus, TRUSS_PARAMETERS.ultimateStress)
 
-			selectedJoints.clear()
-			selectedConnections.clear()
+			truss.addConnection(id, otherId, connection)
+			submit(truss)
 		}
 
 		if (selectedJoints.has(id)) {
-			selectedJoints.delete(id)
-			setJointDetails(null)
+			if (!ctrl && selectedJoints.size > 1) {
+				selectedJoints.clear()
+				selectedConnections.clear()
+				selectedJoints.add(id)
+
+				jDetails = details
+				cDetails = null
+			} else {
+				selectedJoints.delete(id)
+
+				jDetails = null
+			}
 		} else {
+			if (!ctrl) {
+				selectedJoints.clear()
+				selectedConnections.clear()
+
+				cDetails = null
+			}
 			selectedJoints.add(id)
+
+			jDetails = details
 		}
 
 		console.log('selectedJoints after', selectedJoints, id)
 
 		setSelectedJoints(selectedJoints)
 		setSelectedConnections(selectedConnections)
-		setJointDetails(details)
+		setJointDetails(jDetails)
+		setConnectionDetails(cDetails)
 	}
 
-	const handleConnectionClick = (e: MouseEvent, id: string, details: TrussConnectionDetailsType) => {
-		// e.stopPropagation()
+	const handleConnectionClick = (e: ThreeEvent<MouseEvent>, id: string, details: TrussConnectionDetailsType) => {
+		e.stopPropagation()
 
-		// if (!e.ctrlKey) {
-		// 	selectedJoints.clear()
-		// 	selectedConnections.clear()
-		// 	setJointDetails(null)
-		// }
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt } = e.nativeEvent
 
-		// if (selectedConnections.has(id)) {
-		// 	selectedConnections.delete(id)
-		// 	setConnectionDetails(null)
-		// } else {
-		// 	selectedConnections.add(id)
-		// }
+		let jDetails: TrussJointDetailsType | null = jointDetails
+		let cDetails: TrussConnectionDetailsType | null = connectionDetails
 
-		// setSelectedJoints(selectedJoints)
-		// setSelectedConnections(selectedConnections)
-		// setConnectionDetails(details)
+		if (selectedConnections.has(id)) {
+			if (!ctrl && selectedConnections.size > 1) {
+				selectedJoints.clear()
+				selectedConnections.clear()
+				selectedConnections.add(id)
+
+				jDetails = null
+				cDetails = details
+			} else {
+				selectedConnections.delete(id)
+
+				cDetails = null
+			}
+		} else {
+			if (!ctrl) {
+				selectedJoints.clear()
+				selectedConnections.clear()
+
+				jDetails = null
+			}
+			selectedConnections.add(id)
+
+			cDetails = details
+		}
+
+		setSelectedJoints(selectedJoints)
+		setSelectedConnections(selectedConnections)
+		setJointDetails(jDetails)
+		setConnectionDetails(cDetails)
 	}
 
 	const handleToggleForces = () => setForcesEnabled(!forcesEnabled)
