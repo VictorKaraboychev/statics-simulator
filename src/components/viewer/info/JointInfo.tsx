@@ -25,7 +25,6 @@ const JointInfo = (props: JointInfoProps) => {
 
 	const canSubmit = Boolean(
 		joint &&
-		!joint.fixed &&
 		!position.equals(joint.position) ||
 		!externalForce.equals(joint.externalForce)
 	)

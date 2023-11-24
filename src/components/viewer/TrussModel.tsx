@@ -41,6 +41,12 @@ const TrussModel = (props: TrussModelProps) => {
 		}
 	}, [hovered])
 
+	const handleHoverSelected = (hover: boolean) => {
+		if (props.hoverSelected) {
+			props.hoverSelected.current = hover
+		}
+	}
+
 	return (
 		<group
 			position={props.position ? props.position.multiplyScalar(scale) : undefined}
@@ -82,6 +88,8 @@ const TrussModel = (props: TrussModelProps) => {
 										b,
 									}
 								)}
+								onPointerOver={() => selected && handleHoverSelected(true)}
+								onPointerOut={() => selected && handleHoverSelected(false)}
 							>
 								<primitive
 									object={new Line2(
@@ -146,6 +154,8 @@ const TrussModel = (props: TrussModelProps) => {
 										joint: joints[i],
 									}
 								)}
+								onPointerOver={() => selected && handleHoverSelected(true)}
+								onPointerOut={() => selected && handleHoverSelected(false)}
 							>
 								<mesh
 									geometry={geometry.main}

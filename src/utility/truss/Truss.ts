@@ -175,7 +175,7 @@ export default class Truss {
 		const joints = this.joints
 		const connections = this.connections
 
-		console.time('computeForces')
+		// console.time('computeForces')
 
 		const { lengths, angles } = connections.reduce((acc, [aIndex, bIndex]) => {
 			const a = joints[aIndex]
@@ -290,7 +290,7 @@ export default class Truss {
 			// 	S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
 			// )
 
-			console.timeEnd('computeForces')
+			// console.timeEnd('computeForces')
 		} catch (e) {
 			return false
 		}

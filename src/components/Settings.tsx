@@ -7,6 +7,7 @@ import useCustomState from '../state/state'
 import TooltipButton from './common/TooltipButton'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { THEME_OPTIONS } from '../config/GlobalConfig'
+import EngineeringField from './common/textfields/EngineeringField'
 
 interface SettingsProps {
 	sx?: SxProps<Theme>,
@@ -14,6 +15,7 @@ interface SettingsProps {
 
 const Settings = (props: SettingsProps) => {
 	const { value: THEME, set: setTheme } = useCustomState.theme()
+	const { value: GRID_SCALE, set: setGridScale } = useCustomState.grid_scale()
 	const { value: TRUSS_PARAMETERS, set: setTrussConstraints } = useCustomState.truss_constraints()
 
 	const [open, setOpen] = useState(false)
@@ -63,6 +65,36 @@ const Settings = (props: SettingsProps) => {
 							))}
 						</RadioGroup>
 					</FormControl>
+					<Box
+						component={'div'}
+						sx={{
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
+							mb: 2,
+							width: '100%',
+						}}
+					>
+						<Typography
+							sx={{
+								mr: 'auto',
+								minWidth: 125,
+							}}
+							variant={'body2'}
+							noWrap={true}
+						>
+							Grid Scale:
+						</Typography>
+						<EngineeringField
+							label={''}
+							baseUnit={'m'}
+							defaultValue={GRID_SCALE.scale}
+							size={'small'}
+							onSubmit={(value) => {
+								setGridScale(value)
+							}}
+						/>
+					</Box>
 					<Box
 						component={'div'}
 						sx={{

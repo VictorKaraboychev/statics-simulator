@@ -10,7 +10,7 @@ import Drop from '../common/Drop'
 import useCustomState from '../../state/state'
 import { useEventEffect, usePersistentState } from '../../utility/hooks'
 import { DEFAULT_PRECISION, MAX_UNDO_STATES, TRUSS_SCALE, VIEW_MODES } from '../../config/GlobalConfig'
-import { round } from '../../utility/math'
+import { round, roundVector } from '../../utility/math'
 import { Vector2 } from 'three'
 import Joint from '../../utility/truss/Joint'
 import ViewerInfoBar from './ViewerInfoBar'
@@ -40,9 +40,19 @@ const Viewer = (props: ViewerProps) => {
 	const [jointDetails, setJointDetails] = useState<TrussJointDetailsType | null>(null)
 	const [connectionDetails, setConnectionDetails] = useState<TrussConnectionDetailsType | null>(null)
 
+	const dragRef = useRef<{ start: Vector2, current: Vector2, jointStarts: { [id: string]: Vector2 } }>()
 	const hoverSelectedRef = useRef<boolean>(false)
 
 	const dropRef = useRef<{ open: () => void }>()
+
+	const getActionJoints = (): Set<string> => {
+		const actionJoints = new Set(selectedJoints.values())
+		selectedConnections.forEach((id) => {
+			const ids = truss.getConnection(id).jointIds
+			if (ids) actionJoints.add(ids[0]).add(ids[1])
+		})
+		return actionJoints
+	}
 
 	const submit = (t: Truss) => {
 		// if (history.length >= MAX_UNDO_STATES) history.shift()
@@ -64,11 +74,7 @@ const Viewer = (props: ViewerProps) => {
 
 		const mirror = shift && selectedJoints.size > 1
 
-		const actionJoints = new Set(selectedJoints.values())
-		selectedConnections.forEach((id) => {
-			const ids = truss.getConnection(id).jointIds
-			if (ids) actionJoints.add(ids[0]).add(ids[1])
-		})
+		const actionJoints = getActionJoints()
 
 		switch (key) {
 			case 'Delete': // Delete
@@ -237,7 +243,6 @@ const Viewer = (props: ViewerProps) => {
 		const { x, y } = e.point.clone().divideScalar(TRUSS_SCALE)
 
 		if (shift) {
-
 			truss.addJoint(
 				new Joint(new Vector2(
 					round(x, 1),
@@ -257,38 +262,94 @@ const Viewer = (props: ViewerProps) => {
 			submit(truss)
 		}
 
-		// if (!ctrl) {
-		// 	setSelectedJoints(new Set())
-		// 	setSelectedConnections(new Set())
-		// 	setJointDetails(null)
-		// 	setConnectionDetails(null)
-		// }
+		if (!ctrl) {
+			setSelectedJoints(new Set())
+			setSelectedConnections(new Set())
+			setJointDetails(null)
+			setConnectionDetails(null)
+		}
 	}
 
-	const handleMouseHover = (e: ThreeEvent<MouseEvent>, position: Vector2, delta: Vector2) => {
+	const handleMouseDown = (e: ThreeEvent<MouseEvent>) => {
 		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
 
-		if (mouse == 1 && (selectedJoints.size >= 1 || selectedConnections.size >= 1)) {
-			const mirror = shift && selectedJoints.size > 1
+		const { x, y } = roundVector(e.point.clone().divideScalar(TRUSS_SCALE), 1)
+		const position = new Vector2(x, y)
 
-			const actionJoints = new Set(selectedJoints.values())
-			selectedConnections.forEach((id) => {
-				const ids = truss.getConnection(id).jointIds
-				if (ids) actionJoints.add(ids[0]).add(ids[1])
-			})
+		if (mouse == 1) {
+			if (hoverSelectedRef.current && !dragRef.current) {
+				const actionJoints = getActionJoints()
 
-			actionJoints.forEach((id) => {
-				const joint = truss.getJoint(id)
+				const jointStarts: { [id: string]: Vector2 } = {}
 
-				if (mirror) {					
-					joint.position.x += delta.x * Math.sign(joint.position.x) * Math.sign(position.x)
-					joint.position.y += delta.y * Math.sign(joint.position.y) * Math.sign(position.y)
-				} else {
-					joint.position.add(delta)
+				actionJoints.forEach((id) => {
+					const joint = truss.getJoint(id)
+					jointStarts[id] = joint.position.clone()
+				})
+
+				dragRef.current = {
+					start: position,
+					current: position,
+					jointStarts,
 				}
-			})
+			}
+		}
+	}
 
-			submit(truss)
+	const handleMouseUp = (e: ThreeEvent<MouseEvent>) => {
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
+
+		// const { x, y } = e.point.clone().divideScalar(TRUSS_SCALE)
+
+		if (dragRef.current) {
+			// const { start, jointStarts } = dragRef.current
+			// const delta = new Vector2(x, y).sub(start)
+
+			// const actionJoints = getActionJoints()
+
+			// actionJoints.forEach((id) => {
+			// 	const joint = truss.getJoint(id)
+			// 	joint.position = jointStarts[id].clone().add(delta)
+			// })
+
+			dragRef.current = undefined
+
+			// submit(truss)
+		}
+	}
+
+	const handleMouseHover = (e: ThreeEvent<MouseEvent>) => {
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
+
+		const { x, y } = roundVector(e.point.clone().divideScalar(TRUSS_SCALE), 1)
+		const position = new Vector2(x, y)
+
+		if (mouse == 1) {
+			if (dragRef.current) {
+				if (dragRef.current?.current.equals(position)) return
+
+				const { start, jointStarts } = dragRef.current
+				const delta = new Vector2(x, y).sub(start)
+
+				const actionJoints = getActionJoints()
+
+				// const mirror = shift && actionJoints.size > 1
+
+				actionJoints.forEach((id) => {
+					const joint = truss.getJoint(id)
+					joint.position = jointStarts[id].clone().add(delta)
+
+					// if (mirror) {					
+					// 	joint.position.x += delta.x * Math.sign(joint.position.x) * Math.sign(position.x)
+					// 	joint.position.y += delta.y * Math.sign(joint.position.y) * Math.sign(position.y)
+					// } else {
+					// 	joint.position.add(delta)
+					// }
+				})
+
+				submit(truss)
+				dragRef.current.current = position
+			}
 		}
 	}
 
@@ -425,6 +486,8 @@ const Viewer = (props: ViewerProps) => {
 						zIndex: 10,
 					}}
 					onClick={handleMouseClick}
+					onMouseUp={handleMouseUp}
+					onMouseDown={handleMouseDown}
 					onHover={handleMouseHover}
 				>
 					<TrussModel

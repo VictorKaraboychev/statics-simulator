@@ -4,3 +4,8 @@ export type Range = {
 }
 
 export type HoverState = 'accepted' | 'rejected' | 'none'
+
+export type GridScaleType = {
+	scale: number,
+	base_unit: string,
+}

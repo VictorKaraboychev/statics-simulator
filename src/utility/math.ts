@@ -1,3 +1,4 @@
+import { Vector, Vector2, Vector3 } from 'three'
 import { Range } from '../types/general'
 
 /**
@@ -20,8 +21,13 @@ export const constrain = (value: number, range: Range) => {
 	return Math.max(Math.min(value, range.max || value + 1), range.min || value - 1)
 }
 
-export const round = (value: number, decimals?: number) => {
-	return Math.round(value * 10 ** (decimals || 0)) / 10 ** (decimals || 0)
+export const round = (value: number, decimals: number = 0) => {
+	return Math.round(value * 10 ** decimals) / 10 ** decimals
+}
+
+export const roundVector = <T extends Vector>(vector: T, decimals: number = 0): T => {
+	// @ts-ignore
+	return vector.multiplyScalar(10 ** decimals).round().divideScalar(10 ** decimals)
 }
 
 // export const delay = new (ms: number) => {
