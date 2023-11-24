@@ -92,6 +92,8 @@ export default class Truss {
 	}
 
 	addConnection(fromId: string, toId: string, connection: Connection): Truss {
+		if (!this.joints_[fromId] || !this.joints_[toId] || this.joints_[fromId].connections[toId]) return this
+
 		// add connection
 		this.connections_[connection.id] = connection
 		this.connections_[connection.id].jointIds = [fromId, toId]
@@ -104,6 +106,8 @@ export default class Truss {
 	}
 
 	removeConnectionByIds(fromId: string, toId: string): Truss {
+		if (!this.joints_[fromId]?.connections[toId]) return this
+
 		const connectionId = this.joints_[fromId].connections[toId]
 
 		// delete connection reference from joints
@@ -117,6 +121,8 @@ export default class Truss {
 	}
 
 	removeConnection(id: string): Truss {
+		if (!this.connections_[id]) return this
+
 		const [fromId, toId] = this.connections_[id].jointIds!
 
 		// delete connection reference from joints
@@ -169,7 +175,9 @@ export default class Truss {
 		const joints = this.joints
 		const connections = this.connections
 
-		const { lengths, angles } = connections.reduce((acc, [aIndex, bIndex], i) => {
+		console.time('computeForces')
+
+		const { lengths, angles } = connections.reduce((acc, [aIndex, bIndex]) => {
 			const a = joints[aIndex]
 			const b = joints[bIndex]
 
@@ -182,13 +190,14 @@ export default class Truss {
 			angles: [] as number[],
 		})
 
-		const totalGlobalStiffness = connections.reduce((TGSM, [aIndex, bIndex], i) => {
+		const K = connections.reduce((TGSM, [aIndex, bIndex, connection], i) => {
 			const GSM = Matrix.zeros(this.size_ * 2, this.size_ * 2)
 
 			const p1 = 2 * aIndex
 			const p2 = 2 * bIndex
 
 			const angle = angles[i]
+			const elasticModulus = connection.youngsModulus * connection.area / lengths[i]
 
 			const C = Math.cos(angle)
 			const S = Math.sin(angle)
@@ -196,12 +205,11 @@ export default class Truss {
 			const M1 = new Matrix([
 				[C * C, C * S],
 				[C * S, S * S]
-			])
+			]).multiply(elasticModulus)
 
 			const M2 = M1.clone().multiply(-1)
 
 			GSM.setSubMatrix(M1, p1, p1).setSubMatrix(M2, p1, p2).setSubMatrix(M2, p2, p1).setSubMatrix(M1, p2, p2)
-			GSM.divide(lengths[i])
 
 			TGSM.add(GSM)
 			return TGSM
@@ -212,16 +220,16 @@ export default class Truss {
 
 			const DL = solve(joints.reduceRight((acc, joint, i) => {
 				const k = i * 2
-				if (joint.fixtures.x) {
-					acc.removeColumn(k)
-					acc.removeRow(k)
-				}
 				if (joint.fixtures.y) {
 					acc.removeColumn(k + 1)
 					acc.removeRow(k + 1)
 				}
+				if (joint.fixtures.x) {
+					acc.removeColumn(k)
+					acc.removeRow(k)
+				}
 				return acc
-			}, totalGlobalStiffness.clone()), joints.reduce((acc, joint) => {
+			}, K.clone()), joints.reduce((acc, joint) => {
 				if (!joint.fixtures.x) acc.addRow(j++, [joint.externalForce.x])
 				if (!joint.fixtures.y) acc.addRow(j++, [joint.externalForce.y])
 				return acc
@@ -232,39 +240,42 @@ export default class Truss {
 				if (joint.fixtures.x) acc.addRow(k, [0])
 				if (joint.fixtures.y) acc.addRow(k + 1, [0])
 				return acc
-			}, DL.clone())
+			}, DL)
 
-			const F = totalGlobalStiffness.mmul(D)
+			const F = K.mmul(D)
 
-			const S = connections.reduce((acc, [aIndex, bIndex], i) => {
+			const S = connections.reduce((acc, [aIndex, bIndex, connection], i) => {
 				const p1 = 2 * aIndex
 				const p2 = 2 * bIndex
 
-				acc.addRow(i, [
-					new Matrix(
-						[
-							[-1, 1]
-						]
-					).mmul(
-						new Matrix([
-							[Math.cos(angles[i]), Math.sin(angles[i]), 0, 0],
-							[0, 0, Math.cos(angles[i]), Math.sin(angles[i])]
-						])
-					).mmul(
-						new Matrix([
-							[D.get(p1, 0)],
-							[D.get(p1 + 1, 0)],
-							[D.get(p2, 0)],
-							[D.get(p2 + 1, 0)]
-						])
-					).get(0, 0) / lengths[i]]
+				acc.addRow(
+					i,
+					[
+						new Matrix(
+							[
+								[-1, 1]
+							]
+						).mmul(
+							new Matrix([
+								[Math.cos(angles[i]), Math.sin(angles[i]), 0, 0],
+								[0, 0, Math.cos(angles[i]), Math.sin(angles[i])]
+							])
+						).mmul(
+							new Matrix([
+								[D.get(p1, 0)],
+								[D.get(p1 + 1, 0)],
+								[D.get(p2, 0)],
+								[D.get(p2 + 1, 0)]
+							])
+						).get(0, 0) * (connection.youngsModulus / lengths[i])
+					]
 				)
 
 				return acc
 			}, Matrix.zeros(0, 1))
 
 			connections.forEach(([aIndex, bIndex, connection], i) => {
-				connection.force = S.get(i, 0)
+				connection.stress = S.get(i, 0)
 			})
 
 			joints.forEach((joint, i) => {
@@ -273,13 +284,13 @@ export default class Truss {
 
 			// console.log(
 			// 	K.to2DArray().map((row) => row.map((value) => value.toFixed(3))),
-			// 	// DL.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			// 	// D.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			// 	// F.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			// 	// S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			// 	DL.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			// 	D.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			// 	F.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			// 	S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
 			// )
 
-			// console.timeEnd('computeForces')
+			console.timeEnd('computeForces')
 		} catch (e) {
 			return false
 		}

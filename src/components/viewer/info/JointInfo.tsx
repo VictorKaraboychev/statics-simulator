@@ -24,11 +24,14 @@ const JointInfo = (props: JointInfoProps) => {
 	const [externalForce, setExternalForce] = useReliantState<Vector2>(joint ? joint.externalForce : new Vector2(0, 0), [props.jointDetails, props.truss])
 
 	const canSubmit = Boolean(
-
+		joint &&
+		!joint.fixed &&
+		!position.equals(joint.position) ||
+		!externalForce.equals(joint.externalForce)
 	)
 
 	const handleSubmit = () => {
-		if (!jointDetails || !joint) return
+		if (!canSubmit || !joint) return
 
 		joint.position = roundVector2(position, DEFAULT_PRECISION)
 		joint.externalForce = roundVector2(externalForce, DEFAULT_PRECISION)
@@ -109,17 +112,14 @@ const JointInfo = (props: JointInfoProps) => {
 						sx={{
 							width: '100%'
 						}}
-						label={'Pin'}
+						label={'X'}
 						control={
 							<Checkbox
-								checked={joint?.fixtures.x && joint?.fixtures.y}
+								checked={joint?.fixtures.x}
 								onChange={(e) => {
 									if (!joint) return
-									if (e.currentTarget.checked) {
-										joint.fixtures = FIXTURE.Pin
-									} else {
-										joint.fixtures = FIXTURE.Free
-									}
+									joint.fixtures.x = e.currentTarget.checked
+									joint.externalForce.x = 0
 									props.onSubmit?.(props.truss)
 								}}
 							/>
@@ -129,37 +129,14 @@ const JointInfo = (props: JointInfoProps) => {
 						sx={{
 							width: '100%'
 						}}
-						label={'Roll-X'}
+						label={'Y'}
 						control={
 							<Checkbox
-								checked={joint?.fixtures.x && !joint?.fixtures.y}
+								checked={joint?.fixtures.y}
 								onChange={(e) => {
 									if (!joint) return
-									if (e.currentTarget.checked) {
-										joint.fixtures = FIXTURE.RollerX
-									} else {
-										joint.fixtures = FIXTURE.Free
-									}
-									props.onSubmit?.(props.truss)
-								}}
-							/>
-						}
-					/>
-					<FormControlLabel
-						sx={{
-							width: '100%'
-						}}
-						label={'Roll-Y'}
-						control={
-							<Checkbox
-								checked={!joint?.fixtures.x && joint?.fixtures.y}
-								onChange={(e) => {
-									if (!joint) return
-									if (e.currentTarget.checked) {
-										joint.fixtures = FIXTURE.RollerY
-									} else {
-										joint.fixtures = FIXTURE.Free
-									}
+									joint.fixtures.y = e.currentTarget.checked
+									joint.externalForce.y = 0
 									props.onSubmit?.(props.truss)
 								}}
 							/>
@@ -232,8 +209,7 @@ const JointInfo = (props: JointInfoProps) => {
 						value={round(externalForce.x, 5)}
 						size={'small'}
 						variant={'outlined'}
-						// disabled={(joint?.fixtures.length ?? 0) > 0}
-						disabled={true}
+						disabled={joint.fixtures.x}
 						onChange={(e) => setExternalForce(new Vector2(Number(e.target.value), externalForce.y))}
 					/>
 					<TextField
@@ -244,8 +220,7 @@ const JointInfo = (props: JointInfoProps) => {
 						value={round(externalForce.y, 5)}
 						size={'small'}
 						variant={'outlined'}
-						// disabled={(joint?.fixtures.length ?? 0) > 0}
-						disabled={true}
+						disabled={joint.fixtures.y}
 						onChange={(e) => setExternalForce(new Vector2(externalForce.x, Number(e.target.value)))}
 					/>
 				</Box>

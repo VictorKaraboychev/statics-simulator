@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRecoilState } from 'recoil'
 import { CustomAtom } from '../types/state'
 import Truss from '../utility/truss/Truss'
@@ -68,8 +68,14 @@ const useGlobalState = {
 	current_truss: () => {
 		const { value: json, initial: initialJSON, set: setJSON, load, reset } = createGlobalPersistentState(atoms.current_truss)
 
-		const value = Truss.fromJSON(json)
-		value.compute()
+		const [value, setValue] = useState<Truss>(Truss.fromJSON(initialJSON))
+
+		useEffect(() => {
+			const value = Truss.fromJSON(json)
+			value.compute()
+
+			setValue(value)
+		}, [json])
 
 		const set = (newValue: Truss, save = true) => setJSON(newValue.toJSON(), save)
 

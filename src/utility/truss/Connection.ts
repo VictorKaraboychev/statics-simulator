@@ -8,22 +8,22 @@ export default class Connection {
 	jointIds: [string, string] | null = null
 
 	// positive force is compression (toward the center of the joint) and negative force is tension (toward the outside of the joint)
-	force: number
+	stress: number
 
 	density: number
 	area: number
 
 	youngsModulus: number
 
-	ultimateStress: { 
-		tensile: number, 
-		compressive: number
+	ultimateStress: {
+		tension: number,
+		compression: number
 	}
 
-	constructor(force: number = 0, density: number = 1, area: number = 1, youngsModulus: number = 1, ultimateStress: { tensile: number; compressive: number; } = { tensile: -Infinity, compressive: Infinity }) {
+	constructor(stress: number = 0, density: number = 1, area: number = 1, youngsModulus: number = 1, ultimateStress: { tension: number; compression: number; } = { tension: -Infinity, compression: Infinity }) {
 		this.id = getUUID()
-		
-		this.force = force
+
+		this.stress = stress
 
 		this.density = density
 		this.area = area
@@ -32,23 +32,39 @@ export default class Connection {
 		this.ultimateStress = ultimateStress
 	}
 
-	get stress(): number {
-		return this.force / this.area
+	set force(force: number) {
+		this.stress = force / this.area
+	}
+
+	get force(): number {
+		return this.stress * this.area
 	}
 
 	get strain(): number {
 		return this.stress / this.youngsModulus
 	}
 
+	get utilization(): number {
+		return Math.abs(this.stress) / Math.abs(this.ultimateStress[this.stressType])
+	}
+
 	get failure(): boolean {
-		return this.stress > this.ultimateStress.compressive || this.stress < this.ultimateStress.tensile
+		return this.utilization > 1
+	}
+
+	get stressType(): 'tension' | 'compression' {
+		return this.stress > 0 ? 'compression' : 'tension'
+	}
+
+	getElongation(length: number): number {
+		return this.strain * length
 	}
 
 	getVolume(length: number): number {
 		return this.area * length
 	}
 
-	getWeight(length: number): number {
+	getMass(length: number): number {
 		return this.density * this.area * length
 	}
 
@@ -63,7 +79,7 @@ export default class Connection {
 		return {
 			id: this.id,
 			jointIds: this.jointIds ?? undefined,
-			force: this.force,
+			stress: this.stress,
 			density: this.density,
 			area: this.area,
 			youngsModulus: this.youngsModulus,
@@ -72,7 +88,7 @@ export default class Connection {
 	}
 
 	static fromJSON(json: ConnectionJSONType): Connection {
-		const connection = new Connection(json.force, json.density, json.area, json.youngsModulus, json.ultimateStress)
+		const connection = new Connection(json.stress, json.density, json.area, json.youngsModulus, json.ultimateStress)
 		connection.id = json.id
 		connection.jointIds = json.jointIds ?? null
 		return connection

@@ -11,11 +11,11 @@ export const TRUSS_COLORS: { [key: string]: string } = {
 }
 
 export const DEFAULT_TRUSS_PARAMETERS: DefaultTrussParamsType = {
-	density: 1,
-	area: 1,
-	youngsModulus: 1,
+	density: 7850,
+	area: 0.0004,
+	youngsModulus: 200e9,
 	ultimateStress: {
-		tensile: -Infinity,
-		compressive: Infinity
+		tension: -250e6,
+		compression: 152e6
 	},
 }

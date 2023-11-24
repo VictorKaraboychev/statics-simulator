@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { useThree } from '@react-three/fiber'
-import { MOUSE, Vector3 } from 'three'
+import { MOUSE, TOUCH, Vector3 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 interface CameraControllerProps {
@@ -15,14 +15,23 @@ const CameraController = (props: CameraControllerProps) => {
 			const controls = new OrbitControls(camera, gl.domElement)
 			if (props.target) controls.target = props.target
 			controls.enableRotate = false
+
 			controls.maxDistance = 750
-			controls.panSpeed = 0.8
+
+			controls.panSpeed = 1
+			controls.zoomSpeed = 2
 
 			controls.mouseButtons = {
-				LEFT: MOUSE.PAN,
-				MIDDLE: 0, //MOUSE.MIDDLE,
-				RIGHT: 0,
+				LEFT: -1 as any,
+				MIDDLE: MOUSE.PAN,
+				RIGHT: -1 as any,
 			}
+			controls.touches = {
+				ONE: TOUCH.PAN,
+				TWO: TOUCH.DOLLY_PAN,
+			}
+
+			controls.maxZoom = 10
 			controls.minZoom = 1
 
 			controls.update()

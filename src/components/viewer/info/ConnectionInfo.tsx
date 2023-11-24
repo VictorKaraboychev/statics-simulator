@@ -4,6 +4,7 @@ import { TrussConnectionDetailsType } from '../../../types/truss'
 import Truss from '../../../utility/truss/Truss'
 import { useCompoundState, useEventEffect } from '../../../utility/hooks'
 import Connection from '../../../utility/truss/Connection'
+import { fEngineering } from '../../../utility/format'
 
 interface ConnectionInfoProps {
 	sx?: SxProps<Theme>
@@ -15,8 +16,6 @@ interface ConnectionInfoProps {
 const ConnectionInfo = (props: ConnectionInfoProps) => {
 	const connectionDetails = props.connectionDetails
 	const connection = props.truss.getConnection(connectionDetails.connection.id)
-
-	// console.log('CONNECTION: ', connection, connectionDetails.id, props.truss)
 
 	// const [connection, setConnection] = useCompoundState<Connection>(props.truss.getConnection(connectionDetails.id), [props.connectionDetails, props.truss])
 
@@ -40,6 +39,12 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 	}, 'keydown')
 
 	if (!connection) return null
+
+	const length = connectionDetails.length
+	const angle = connectionDetails.angle
+
+	const stress = connection.stress
+	const isTension = connection.stressType === 'tension'
 
 	return (
 		<Card
@@ -74,51 +79,149 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 				<Typography
 					variant={'body2'}
 				>
-					Length: {connectionDetails.length.toFixed(4)}m
+					Mass: {fEngineering(connection.getMass(length * 1e3), 'g')}
 				</Typography>
 				<Typography
 					variant={'body2'}
 				>
-					Angle: {(connectionDetails.angle * (180 / Math.PI)).toFixed(4)}° {(connectionDetails.angle / Math.PI).toFixed(4)}π rad
+					Length: {fEngineering(length, 'm')}
 				</Typography>
 				<Typography
 					variant={'body2'}
 				>
-					Force: {Math.ceil(connectionDetails.connection.force || 0)?.toFixed(0)}N
+					Angle: {(angle * (180 / Math.PI)).toFixed(2)}° {(angle / Math.PI).toFixed(4)}π rad
 				</Typography>
 				<Typography
 					variant={'body2'}
 				>
-					Stress: {Math.abs(connectionDetails.connection.stress * 100).toFixed(0)}MPa
+					Force: {fEngineering(connection.force, 'N')}
 				</Typography>
 				<Box
-					component={'div'}
 					sx={{
 						display: 'flex',
 						flexDirection: 'row',
 						alignItems: 'center',
-						mb: 1,
-						width: '100%',
 					}}
 				>
 					<Typography
-						sx={{
-							mr: 'auto',
-							minWidth: 125,
-						}}
 						variant={'body2'}
-						noWrap={true}
 					>
-						Youngs Modulus:
+						Stress: {fEngineering(stress, 'Pa')}
+						(
+						<Typography
+							sx={{
+								fontWeight: 'bold',
+								color: isTension ? 'error.main' : 'success.main',
+								textJustify: 'center',
+								textTransform: 'capitalize',
+							}}
+							variant={'caption'}
+						>
+							{connection.stressType}
+						</Typography>
+						)
 					</Typography>
-					<NumberField
-						label={'Youngs Modulus (GPa)'}
-						value={connection.youngsModulus / 1e9}
-						size={'small'}
-						onSubmit={(value) => {
+				</Box>
+				<Typography
+					variant={'body2'}
+				>
+					Elongation: {fEngineering(connection.getElongation(length), 'm')} ({(connection.strain * 100).toFixed(4)}%)
+				</Typography>
 
+				<Box
+					sx={{
+						display: 'flex',
+						flexDirection: 'column',
+						mt: 2,
+						width: '100%',
+					}}
+				>
+					<Box
+						sx={{
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
+							mb: 1,
+							width: '100%',
 						}}
-					/>
+					>
+						<NumberField
+							sx={{
+								mr: 0.5,
+								width: '30%',
+							}}
+							label={'Density (kg/m³)'}
+							value={connection.density}
+							size={'small'}
+							onSubmit={(value) => {
+
+							}}
+						/>
+						<NumberField
+							sx={{
+								mr: 0.5,
+								width: '30%',
+							}}
+							label={'Area (m²)'}
+							value={connection.area}
+							size={'small'}
+							onSubmit={(value) => {
+
+							}}
+						/>
+						<NumberField
+							sx={{
+								mr: 0.5,
+								width: '40%',
+							}}
+							label={'Youngs Modulus (GPa)'}
+							value={connection.youngsModulus / 1e9}
+							size={'small'}
+							onSubmit={(value) => {
+
+							}}
+						/>
+					</Box>
+					<Box
+						component={'div'}
+						sx={{
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
+							mb: 1,
+							width: '100%',
+						}}
+					>
+						<Typography
+							sx={{
+								mr: 'auto',
+								minWidth: 125,
+							}}
+							variant={'body2'}
+							noWrap={true}
+						>
+							Ultimate Stress:
+						</Typography>
+						<NumberField
+							sx={{
+								mr: 0.5,
+							}}
+							label={'Tensile (MPa)'}
+							value={connection.ultimateStress.tension / 1e6}
+							size={'small'}
+							onSubmit={(value) => {
+
+							}}
+						/>
+						<NumberField
+							label={'Compressive (MPa)'}
+							value={connection.ultimateStress.compression / 1e6}
+							size={'small'}
+							onSubmit={(value) => {
+
+							}}
+						/>
+					</Box>
 				</Box>
 				<Button
 					sx={{

@@ -77,28 +77,28 @@ const Settings = (props: SettingsProps) => {
 								mr: 2,
 							}}
 							label={'Default Ultimate Compressive Stress (MPa)'}
-							defaultValue={TRUSS_PARAMETERS.ultimateStress.compressive}
+							defaultValue={TRUSS_PARAMETERS.ultimateStress.compression * 1e-6}
 							size={'small'}
 							onSubmit={(value) => {
 								setTrussConstraints({
 									...TRUSS_PARAMETERS,
 									ultimateStress: {
 										...TRUSS_PARAMETERS.ultimateStress,
-										compressive: value,
+										compression: value,
 									},
 								})
 							}}
 						/>
 						<NumberField
 							label={'Default Ultimate Tensile Stress (MPa)'}
-							defaultValue={TRUSS_PARAMETERS.ultimateStress.tensile}
+							defaultValue={TRUSS_PARAMETERS.ultimateStress.tension * 1e-6}
 							size={'small'}
 							onSubmit={(value) => {
 								setTrussConstraints({
 									...TRUSS_PARAMETERS,
 									ultimateStress: {
 										...TRUSS_PARAMETERS.ultimateStress,
-										tensile: value,
+										tension: value,
 									},
 								})
 							}}

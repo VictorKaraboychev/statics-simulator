@@ -40,16 +40,9 @@ const Viewer = (props: ViewerProps) => {
 	const [jointDetails, setJointDetails] = useState<TrussJointDetailsType | null>(null)
 	const [connectionDetails, setConnectionDetails] = useState<TrussConnectionDetailsType | null>(null)
 
+	const hoverSelectedRef = useRef<boolean>(false)
+
 	const dropRef = useRef<{ open: () => void }>()
-
-	// const joints = truss.joints
-	// const connections = truss.connections
-
-	useEffect(() => {
-		if (!equals(TRUSS_PARAMETERS, DEFAULT_TRUSS_PARAMETERS)) {
-			submit(truss)
-		}
-	}, [TRUSS_PARAMETERS])
 
 	const submit = (t: Truss) => {
 		// if (history.length >= MAX_UNDO_STATES) history.shift()
@@ -58,29 +51,18 @@ const Viewer = (props: ViewerProps) => {
 		// history.push(difference)
 		// setHistory([ ...history ])
 
-		// console.log('difference', difference, history)
-
-
-		// console.log('submit', TRUSS_CONSTRAINTS.distributedForce)
-
-		// t.setDistributedForce(TRUSS_CONSTRAINTS.distributedForce)
 		setTruss(t)
 	}
 
 	useEventEffect((e: KeyboardEvent) => {
-		const {
-			altKey: alt,
-			ctrlKey: ctrl,
-			shiftKey: shift,
-			key,
-		} = e
+		const { altKey: alt, ctrlKey: ctrl, shiftKey: shift, key } = e
 
 		if (['Shift', 'Control', 'Alt'].includes(key)) return
 
 		let movement = 0.1
 		if (alt) movement = 0.01
 
-		const mirror = !shift && selectedJoints.size > 1
+		const mirror = shift && selectedJoints.size > 1
 
 		const actionJoints = new Set(selectedJoints.values())
 		selectedConnections.forEach((id) => {
@@ -90,8 +72,6 @@ const Viewer = (props: ViewerProps) => {
 
 		switch (key) {
 			case 'Delete': // Delete
-				if (!shift) break
-
 				selectedJoints.forEach((id) => truss.removeJoint(id))
 				selectedConnections.forEach((id) => truss.removeConnection(id))
 
@@ -178,11 +158,11 @@ const Viewer = (props: ViewerProps) => {
 						const y = joint.position.y
 						if (y === 0) {
 							m = 0
-						} else if (y > 0) {
+						} else if (y < 0) {
 							m *= -1
 						}
 					}
-					joint.position.y = round(joint.position.y - m, DEFAULT_PRECISION)
+					joint.position.y = round(joint.position.y + m, DEFAULT_PRECISION)
 				})
 				submit(truss)
 				break
@@ -198,11 +178,11 @@ const Viewer = (props: ViewerProps) => {
 						const y = joint.position.y
 						if (y === 0) {
 							m = 0
-						} else if (y > 0) {
+						} else if (y < 0) {
 							m *= -1
 						}
 					}
-					joint.position.y = round(joint.position.y + m, DEFAULT_PRECISION)
+					joint.position.y = round(joint.position.y - m, DEFAULT_PRECISION)
 				})
 				submit(truss)
 				break
@@ -252,11 +232,11 @@ const Viewer = (props: ViewerProps) => {
 	}, 'keydown')
 
 	const handleMouseClick = (e: ThreeEvent<MouseEvent>) => {
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
+
 		const { x, y } = e.point.clone().divideScalar(TRUSS_SCALE)
 
-		console.log('click at', x, y)
-
-		if (e.nativeEvent.shiftKey) {
+		if (shift) {
 
 			truss.addJoint(
 				new Joint(new Vector2(
@@ -265,7 +245,7 @@ const Viewer = (props: ViewerProps) => {
 				))
 			)
 
-			if (e.nativeEvent.altKey && x !== 0) {
+			if (alt && x !== 0) {
 				truss.addJoint(
 					new Joint(new Vector2(
 						round(-x, 1),
@@ -277,11 +257,38 @@ const Viewer = (props: ViewerProps) => {
 			submit(truss)
 		}
 
-		if (!e.nativeEvent.ctrlKey) {
-			setSelectedJoints(new Set())
-			setSelectedConnections(new Set())
-			setJointDetails(null)
-			setConnectionDetails(null)
+		// if (!ctrl) {
+		// 	setSelectedJoints(new Set())
+		// 	setSelectedConnections(new Set())
+		// 	setJointDetails(null)
+		// 	setConnectionDetails(null)
+		// }
+	}
+
+	const handleMouseHover = (e: ThreeEvent<MouseEvent>, position: Vector2, delta: Vector2) => {
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
+
+		if (mouse == 1 && (selectedJoints.size >= 1 || selectedConnections.size >= 1)) {
+			const mirror = shift && selectedJoints.size > 1
+
+			const actionJoints = new Set(selectedJoints.values())
+			selectedConnections.forEach((id) => {
+				const ids = truss.getConnection(id).jointIds
+				if (ids) actionJoints.add(ids[0]).add(ids[1])
+			})
+
+			actionJoints.forEach((id) => {
+				const joint = truss.getJoint(id)
+
+				if (mirror) {					
+					joint.position.x += delta.x * Math.sign(joint.position.x) * Math.sign(position.x)
+					joint.position.y += delta.y * Math.sign(joint.position.y) * Math.sign(position.y)
+				} else {
+					joint.position.add(delta)
+				}
+			})
+
+			submit(truss)
 		}
 	}
 
@@ -326,8 +333,6 @@ const Viewer = (props: ViewerProps) => {
 
 			jDetails = details
 		}
-
-		console.log('selectedJoints after', selectedJoints, id)
 
 		setSelectedJoints(selectedJoints)
 		setSelectedConnections(selectedConnections)
@@ -415,18 +420,19 @@ const Viewer = (props: ViewerProps) => {
 					height: '100%',
 				}}
 			>
-
 				<Visualizer
 					sx={{
 						zIndex: 10,
 					}}
 					onClick={handleMouseClick}
+					onHover={handleMouseHover}
 				>
 					<TrussModel
 						truss={truss}
 						view={TRUSS_VIEW}
 						scale={TRUSS_SCALE}
 						enableForces={forcesEnabled}
+						hoverSelected={hoverSelectedRef}
 						selectedJoints={selectedJoints}
 						selectedConnections={selectedConnections}
 						onJointClick={handleJointClick}

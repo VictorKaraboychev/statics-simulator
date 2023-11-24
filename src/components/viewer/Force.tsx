@@ -14,7 +14,7 @@ const Force = (props: ForceProps) => {
 	const { palette } = useTheme()
 	const color = new Color(palette.primary.main).getHex()
 
-	const force = new Vector3(props.force.x, props.force.y, 0).clone().normalize().multiplyScalar(35)
+	const force = new Vector3(props.force.x, props.force.y, 0).clone().normalize().multiplyScalar(20)
 	const origin = new Vector3(props.origin.x, props.origin.y, 0)
 
 	return (

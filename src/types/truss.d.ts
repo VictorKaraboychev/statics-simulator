@@ -7,8 +7,8 @@ export type DefaultTrussParamsType = {
 	area: number,
 	youngsModulus: number,
 	ultimateStress: {
-		tensile: number,
-		compressive: number
+		tension: number,
+		compression: number
 	},
 }
 
@@ -37,13 +37,13 @@ export type JointJSONType = {
 export type ConnectionJSONType = {
 	id: string,
 	jointIds?: [string, string],
-	force: number,
+	stress: number,
 	density: number,
 	area: number,
 	youngsModulus: number,
 	ultimateStress: {
-		tensile: number,
-		compressive: number
+		tension: number,
+		compression: number
 	},
 }
 

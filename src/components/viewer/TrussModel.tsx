@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { BackSide, BoxGeometry, BufferGeometry, Color, MeshPhongMaterial, RingGeometry, SphereGeometry, Vector3 } from 'three'
+import { BackSide, BoxGeometry, BufferGeometry, Color, MeshPhongMaterial, RingGeometry, SphereGeometry, TorusGeometry, Vector3 } from 'three'
 import Truss from '../../utility/truss/Truss'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
@@ -14,6 +14,7 @@ interface TrussModelProps {
 	truss: Truss,
 	scale: number,
 	view?: string,
+	hoverSelected?: React.MutableRefObject<boolean>,
 	selectedJoints?: Set<string>,
 	selectedConnections?: Set<string>,
 	position?: Vector3,
@@ -42,131 +43,136 @@ const TrussModel = (props: TrussModelProps) => {
 
 	return (
 		<group
-			onPointerOver={() => setHovered(true)}
-			onPointerOut={() => setHovered(false)}
 			position={props.position ? props.position.multiplyScalar(scale) : undefined}
 		>
 			<group
-				position={[0, 0, -2]}
+				onPointerOver={() => setHovered(true)}
+				onPointerOut={() => setHovered(false)}
 			>
-				{truss.connections.map(([aIndex, bIndex, connection]) => {
-					const a = joints[aIndex]
-					const b = joints[bIndex]
+				<group
+					position={[0, 0, -2]}
+				>
+					{truss.connections.map(([aIndex, bIndex, connection]) => {
+						const a = joints[aIndex]
+						const b = joints[bIndex]
 
-					const aPos = a.position.clone().multiplyScalar(scale)
-					const bPos = b.position.clone().multiplyScalar(scale)
+						const aPos = a.position.clone().multiplyScalar(scale)
+						const bPos = b.position.clone().multiplyScalar(scale)
 
-					const selected = props.selectedConnections?.has(connection.id)
+						const selected = props.selectedConnections?.has(connection.id)
 
-					const stress = connection.stress
+						const utilization = connection.utilization
 
-					const stressType = Math.abs(stress) > 1 ? stress < 0 ? 'tension' : 'compression' : 'neutral'
-					const color = new Color(TRUSS_COLORS[stressType] ?? 0x000000)
+						const stressType = connection.failure ? connection.stressType : 'neutral'
+						const color = new Color(TRUSS_COLORS[stressType] ?? 0x000000)
 
-					return (
-						<group
-							key={connection.id}
-							position={[0, 0, selected ? 1 : 0]}
-							onClick={(e) => props.onConnectionClick?.(
-								e,
-								connection.id,
-								{
-									id: `${aIndex}-${bIndex}`,
-									length: a.distanceTo(b),
-									angle: a.angleTo(b),
-									connection: connection,
-									a,
-									b,
-								}
-							)}
-						>
-							<primitive
-								object={new Line2(
-									new LineGeometry().setPositions([
-										...aPos.toArray(),
-										0,
-										...bPos.toArray(),
-										0,
-									]),
-									new LineMaterial({
-										color: color.getHex(),
-										linewidth: 5 * Math.min(Math.abs(stress), 1) + 1,
-										worldUnits: true,
-									}),
+						return (
+							<group
+								key={connection.id}
+								position={[0, 0, selected ? 1 : 0]}
+								onClick={(e) => props.onConnectionClick?.(
+									e,
+									connection.id,
+									{
+										id: `${aIndex}-${bIndex}`,
+										length: a.distanceTo(b),
+										angle: a.angleTo(b),
+										connection: connection,
+										a,
+										b,
+									}
 								)}
-							/>
-							<primitive
-								object={new Line2(
-									new LineGeometry().setPositions([
-										...aPos.toArray(),
-										-0.5,
-										...bPos.toArray(),
-										-0.5,
-									]),
-									new LineMaterial({
-										color: new Color(palette.primary.main).getHex(),
-										linewidth: 5 * Math.min(Math.abs(stress), 1) + 4,
-										transparent: true,
-										opacity: selected ? 1 : 0,
-										worldUnits: true,
-									}),
+							>
+								<primitive
+									object={new Line2(
+										new LineGeometry().setPositions([
+											...aPos.toArray(),
+											0,
+											...bPos.toArray(),
+											0,
+										]),
+										new LineMaterial({
+											color: color.getHex(),
+											linewidth: 5 * Math.min(Math.abs(utilization), 1) + 1,
+											worldUnits: true,
+										}),
+									)}
+								/>
+								<primitive
+									object={new Line2(
+										new LineGeometry().setPositions([
+											...aPos.toArray(),
+											-0.5,
+											...bPos.toArray(),
+											-0.5,
+										]),
+										new LineMaterial({
+											color: new Color(palette.primary.main).getHex(),
+											linewidth: 5 * Math.min(Math.abs(utilization), 1) + 4,
+											transparent: true,
+											opacity: selected ? 1 : 0,
+											worldUnits: true,
+										}),
+									)}
+								/>
+							</group>
+						)
+					})}
+				</group>
+				<group>
+					{joints.map((joint, i) => {
+						const p = joint.position.clone()
+
+						let geometry: { main: BufferGeometry, selected: BufferGeometry } = { main: new SphereGeometry(5, 16, 16), selected: new SphereGeometry(6.5, 16, 16) }
+
+						if (joint.fixed) {
+							geometry = { main: new BoxGeometry(10, 10, 10), selected: new BoxGeometry(13, 13, 13) }
+						}
+
+						// geometry = { main: new TorusGeometry(3.5, 2, 20, 16), selected: new SphereGeometry(6.5, 16, 16) }
+
+						const selected = props.selectedJoints?.has(joint.id)
+
+						return (
+							<group
+								key={joint.id}
+								position={new Vector3(p.x, p.y, 0.5).multiplyScalar(scale)}
+								rotation={[0, 0, (joint.fixtures.x ? !joint.fixtures.y : joint.fixtures.y) ? Math.PI / 4 : 0]}
+								onClick={(e) => props.onJointClick?.(
+									e,
+									joint.id,
+									{
+										id: i,
+										joint: joints[i],
+									}
 								)}
-							/>
-						</group>
-					)
-				})}
-			</group>
-			<group>
-				{joints.map((joint, i) => {
-					const p = joint.position.clone()
-
-					let geometry: { main: BufferGeometry, selected: BufferGeometry } = { main: new SphereGeometry(4, 16, 16), selected: new SphereGeometry(5.5, 16, 16) }
-
-					if (joint.fixed) {
-						geometry = { main: new BoxGeometry(10, 10, 10), selected: new BoxGeometry(10, 10, 10) }
-					}
-
-					// geometry = { main: new RingGeometry(3, 5, 20), selected: new SphereGeometry(6.5, 16, 16) }
-
-					return (
-						<group
-							key={joint.id}
-							position={new Vector3(p.x, p.y, 0.5).multiplyScalar(scale)}
-							rotation={[0, 0, (joint.fixtures.x ? !joint.fixtures.y : joint.fixtures.y) ? Math.PI / 4 : 0]}
-							onClick={(e) => props.onJointClick?.(
-								e,
-								joint.id,
-								{
-									id: i,
-									joint: joints[i],
-								}
-							)}
-						>
-							<mesh
-								geometry={geometry.main}
-								material={new MeshPhongMaterial({
-									color: joint.fixed ? '#999999' : '#ffffff',
-								})}
-							/>
-							{props.selectedJoints?.has(joint.id) && (
+							>
 								<mesh
-									geometry={geometry.selected}
+									geometry={geometry.main}
 									material={new MeshPhongMaterial({
-										color: palette.primary.main,
-										side: BackSide,
-										emissive: palette.primary.main,
+										color: joint.fixed ? '#999999' : '#ffffff',
 									})}
 								/>
-							)}
-						</group>
+								{selected && (
+									<mesh
+										geometry={geometry.selected}
+										material={new MeshPhongMaterial({
+											color: palette.primary.main,
+											side: BackSide,
+											emissive: palette.primary.main,
+										})}
+									/>
+								)}
+							</group>
 
-					)
-				})}
+						)
+					})}
+				</group>
 			</group>
 			{props.enableForces && (
 				<group>
 					{joints.reduce((acc, joint) => {
-						if (joint.fixed) {
+						if (Math.floor(Math.abs(joint.externalForce.x) * 100) > 0 || Math.floor(Math.abs(joint.externalForce.y) * 100) > 0) {
 							acc.push(
 								<Force
 									key={joint.id}
