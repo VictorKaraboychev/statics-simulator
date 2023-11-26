@@ -1,13 +1,13 @@
-import { Box, Button, Card, Checkbox, FormControlLabel, SxProps, TextField, Theme, Typography } from '@mui/material'
+import { Box, Button, Card, Checkbox, SxProps, Table, TableBody, TableCell, TableHead, TableRow, Theme, Typography } from '@mui/material'
 import NumberField from '../../common/textfields/NumberField'
-import { round } from '../../../utility/math'
 import { TrussJointDetailsType } from '../../../types/truss'
-import { FIXTURE } from '../../../utility/truss/Joint'
 import { Vector2 } from 'three'
 import { useEventEffect, useReliantState } from '../../../utility/hooks'
 import Truss from '../../../utility/truss/Truss'
 import { roundVector2 } from '../../../utility/functions'
 import { DEFAULT_PRECISION } from '../../../config/GlobalConfig'
+import EngineeringField from '../../common/textfields/EngineeringField'
+import { fEngineering } from '../../../utility/format'
 
 interface JointInfoProps {
 	sx?: SxProps<Theme>
@@ -20,20 +20,21 @@ const JointInfo = (props: JointInfoProps) => {
 	const jointDetails = props.jointDetails
 	const joint = props.truss.getJoint(jointDetails.joint.id)
 
-	const [position, setPosition] = useReliantState<Vector2>(joint ? joint.position : new Vector2(0, 0), [props.jointDetails, props.truss])
-	const [externalForce, setExternalForce] = useReliantState<Vector2>(joint ? joint.externalForce : new Vector2(0, 0), [props.jointDetails, props.truss])
+	const [position, setPosition] = useReliantState<Vector2>(joint ? joint.position : new Vector2(0, 0), [joint.position])
+	const [externalForce, setExternalForce] = useReliantState<Vector2>(joint ? joint.force : new Vector2(0, 0), [joint.force])
 
 	const canSubmit = Boolean(
 		joint &&
 		!position.equals(joint.position) ||
-		!externalForce.equals(joint.externalForce)
+		(!joint.fixtures.x && externalForce.x !== joint.force.x) ||
+		(!joint.fixtures.y && externalForce.y !== joint.force.y)
 	)
 
 	const handleSubmit = () => {
 		if (!canSubmit || !joint) return
 
 		joint.position = roundVector2(position, DEFAULT_PRECISION)
-		joint.externalForce = roundVector2(externalForce, DEFAULT_PRECISION)
+		joint.force = roundVector2(externalForce, DEFAULT_PRECISION)
 
 		props.onSubmit?.(props.truss)
 	}
@@ -46,16 +47,16 @@ const JointInfo = (props: JointInfoProps) => {
 		}
 	}, 'keydown')
 
-	// console.log('JOINT: ', joint, jointDetails.joint.id, props.truss)
-
 	if (!joint) return null
 
 	return (
 		<Card
 			sx={{
+				display: 'flex',
 				boxShadow: 5,
 				width: 400,
 				p: 2,
+				mb: 'auto',
 				...props.sx,
 			}}
 			variant={'outlined'}
@@ -88,6 +89,100 @@ const JointInfo = (props: JointInfoProps) => {
 				>
 					Connections: {jointDetails.joint.numConnections}
 				</Typography>
+				<Table
+					size={'small'}
+				>
+					<TableHead>
+						<TableRow>
+							<TableCell
+								sx={{
+									fontWeight: 'bold',
+								}}
+							>
+								Property
+							</TableCell>
+							<TableCell
+								sx={{
+									fontWeight: 'bold',
+									width: 100,
+								}}
+								align={'center'}
+							>
+								X
+							</TableCell>
+							<TableCell
+								sx={{
+									fontWeight: 'bold',
+									width: 100,
+								}}
+								align={'center'}
+							>
+								Y
+							</TableCell>
+						</TableRow>
+					</TableHead>
+					<TableBody>
+						<TableRow>
+							<TableCell>
+								Displacement
+							</TableCell>
+							<TableCell
+								align={'right'}
+							>
+								{fEngineering(joint.displacement.x, 'm')}
+							</TableCell>
+							<TableCell
+								align={'right'}
+							>
+								{fEngineering(joint.displacement.y, 'm')}
+							</TableCell>
+						</TableRow>
+						<TableRow>
+							<TableCell>
+								Fixed
+							</TableCell>
+							<TableCell
+								align={'center'}
+							>
+								<Checkbox
+									sx={{
+										my: -0.75
+									}}
+									checked={joint?.fixtures.x}
+									onChange={(e) => {
+										joint.fixtures.x = e.currentTarget.checked
+										joint.force.x = 0
+										props.onSubmit?.(props.truss)
+									}}
+								/>
+							</TableCell>
+							<TableCell
+								align={'center'}
+							>
+								<Checkbox
+									sx={{
+										my: -0.75
+									}}
+									checked={joint?.fixtures.y}
+									onChange={(e) => {
+										joint.fixtures.y = e.currentTarget.checked
+										joint.force.y = 0
+										props.onSubmit?.(props.truss)
+									}}
+								/>
+							</TableCell>
+						</TableRow>
+					</TableBody>
+				</Table>
+				<Typography
+					sx={{
+						my: 2,
+						fontWeight: 'bold',
+					}}
+					variant={'body2'}
+				>
+					Joint Properties
+				</Typography>
 				<Box
 					component={'div'}
 					sx={{
@@ -97,85 +192,23 @@ const JointInfo = (props: JointInfoProps) => {
 						mb: 1,
 					}}
 				>
-					<Typography
-						sx={{
-							mr: 'auto',
-							minWidth: 125,
-						}}
-						variant={'body2'}
-						noWrap={true}
-					>
-						Fixed:
-					</Typography>
-					<FormControlLabel
-						sx={{
-							width: '100%'
-						}}
-						label={'X'}
-						control={
-							<Checkbox
-								checked={joint?.fixtures.x}
-								onChange={(e) => {
-									if (!joint) return
-									joint.fixtures.x = e.currentTarget.checked
-									joint.externalForce.x = 0
-									props.onSubmit?.(props.truss)
-								}}
-							/>
-						}
-					/>
-					<FormControlLabel
-						sx={{
-							width: '100%'
-						}}
-						label={'Y'}
-						control={
-							<Checkbox
-								checked={joint?.fixtures.y}
-								onChange={(e) => {
-									if (!joint) return
-									joint.fixtures.y = e.currentTarget.checked
-									joint.externalForce.y = 0
-									props.onSubmit?.(props.truss)
-								}}
-							/>
-						}
-					/>
-				</Box>
-				<Box
-					component={'div'}
-					sx={{
-						display: 'flex',
-						flexDirection: 'row',
-						alignItems: 'center',
-						mb: 1,
-					}}
-				>
-					<Typography
-						sx={{
-							mr: 'auto',
-							minWidth: 125,
-						}}
-						variant={'body2'}
-						noWrap={true}
-					>
-						Position:
-					</Typography>
 					<NumberField
 						sx={{
-							mr: 0.5,
+							mr: 1,
 						}}
-						label={'X'}
-						value={round(position.x, 5)}
+						label={'Position (X)'}
 						size={'small'}
+						decimals={5}
+						endComponent={'m'}
+						defaultValue={joint.position.x}
 						onSubmit={(value) => setPosition(new Vector2(value, position.y))}
 					/>
 					<NumberField
-						sx={{
-						}}
-						label={'Y'}
-						value={round(position.y, 5)}
+						label={'Position (Y)'}
 						size={'small'}
+						decimals={5}
+						endComponent={'m'}
+						defaultValue={joint.position.y}
 						onSubmit={(value) => setPosition(new Vector2(position.x, value))}
 
 					/>
@@ -189,43 +222,31 @@ const JointInfo = (props: JointInfoProps) => {
 						mb: 1,
 					}}
 				>
-					<Typography
+					<EngineeringField
 						sx={{
-							mr: 'auto',
-							minWidth: 125,
+							mr: 1,
 						}}
-						variant={'body2'}
-						noWrap={true}
-					>
-						External Forces:
-					</Typography>
-					<TextField
-						sx={{
-							mr: 0.5,
-						}}
-						type={'number'}
-						label={'X'}
-						value={round(externalForce.x, 5)}
+						label={'Force (X)'}
 						size={'small'}
-						variant={'outlined'}
+						baseUnit={'N'}
 						disabled={joint.fixtures.x}
-						onChange={(e) => setExternalForce(new Vector2(Number(e.target.value), externalForce.y))}
+						decimals={5}
+						defaultValue={joint.force.x}
+						onSubmit={(value) => setExternalForce(new Vector2(value, externalForce.y))}
 					/>
-					<TextField
-						sx={{
-						}}
-						type={'number'}
-						label={'Y'}
-						value={round(externalForce.y, 5)}
+					<EngineeringField
+						label={'Force (Y)'}
 						size={'small'}
-						variant={'outlined'}
+						baseUnit={'N'}
 						disabled={joint.fixtures.y}
-						onChange={(e) => setExternalForce(new Vector2(externalForce.x, Number(e.target.value)))}
+						decimals={5}
+						defaultValue={joint.force.y}
+						onSubmit={(value) => setExternalForce(new Vector2(externalForce.x, value))}
 					/>
 				</Box>
 				<Button
 					sx={{
-						mt: 'auto',
+						mt: 1,
 					}}
 					disabled={!canSubmit}
 					fullWidth={true}

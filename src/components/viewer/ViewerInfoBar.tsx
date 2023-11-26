@@ -94,13 +94,13 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 					<Button
 						sx={{
 							mr: 2,
-							width: 150,
+							width: 125,
 						}}
 						variant={'contained'}
 						size={'small'}
 						onClick={props.onToggleForces}
 					>
-						{props.forcesEnabled ? 'Disable' : 'Enable'} Forces
+						{props.forcesEnabled ? 'Hide' : 'Show'} Forces
 					</Button>
 					<Box
 						component={'div'}

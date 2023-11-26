@@ -1,5 +1,36 @@
 import { GridScaleType } from "../types/general"
 
+export const METRIC_PREFIXES = [
+	{ exp: -18, symbol: 'a' },
+	{ exp: -15, symbol: 'f' },
+	{ exp: -12, symbol: 'p' },
+	{ exp: -9, symbol: 'n' },
+	{ exp: -6, symbol: 'µ' },
+	{ exp: -3, symbol: 'm' },
+	{ exp: -2, symbol: 'c' },
+	{ exp: 0, symbol: '' },
+	{ exp: 3, symbol: 'k' },
+	{ exp: 6, symbol: 'M' },
+	{ exp: 9, symbol: 'G' },
+	{ exp: 12, symbol: 'T' },
+	{ exp: 15, symbol: 'P' },
+	{ exp: 18, symbol: 'E' },
+];
+
+export const EXPONENT_SUFFIXES: { [key: string]: number } = {
+	'⁻': -1,
+	'⁰': 0,
+	'¹': 1,
+	'²': 2,
+	'³': 3,
+	'⁴': 4,
+	'⁵': 5,
+	'⁶': 6,
+	'⁷': 7,
+	'⁸': 8,
+	'⁹': 9,
+}
+
 export const DEFAULT_PRECISION = 5
 
 export const MAX_UNDO_STATES = 10000

@@ -1,13 +1,14 @@
-import React, { useState } from 'react'
-import { Box, Checkbox, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, SxProps, Theme, Typography } from '@mui/material'
+import { useState } from 'react'
+import { Box, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, SxProps, Theme, Typography } from '@mui/material'
 import Dialog from './common/Dialog'
-import NumberField from './common/textfields/NumberField'
 import VERSION from '../version.json'
 import useCustomState from '../state/state'
 import TooltipButton from './common/TooltipButton'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { THEME_OPTIONS } from '../config/GlobalConfig'
 import EngineeringField from './common/textfields/EngineeringField'
+import { fEngineering } from '../utility/format'
+import NumberField from './common/textfields/NumberField'
 
 interface SettingsProps {
 	sx?: SxProps<Theme>,
@@ -20,6 +21,10 @@ const Settings = (props: SettingsProps) => {
 
 	const [open, setOpen] = useState(false)
 
+	// console.log(fEngineering(0.0004, 'm²'))
+	// console.log(fEngineering(4607000, 'g/m³'))
+	// console.log(fEngineering(4607000, 'g²⋅m/s'))
+
 	return (
 		<>
 			<Dialog
@@ -28,7 +33,6 @@ const Settings = (props: SettingsProps) => {
 				setOpen={setOpen}
 			>
 				<Box
-					component={'div'}
 					sx={{
 						display: 'flex',
 						flexDirection: 'column',
@@ -40,8 +44,11 @@ const Settings = (props: SettingsProps) => {
 						}}
 					>
 						<Typography
+							sx={{
+								mb: 1,
+								fontWeight: 'bold',
+							}}
 							variant={'body2'}
-							color={'text.primary'}
 						>
 							Theme
 						</Typography>
@@ -65,6 +72,15 @@ const Settings = (props: SettingsProps) => {
 							))}
 						</RadioGroup>
 					</FormControl>
+					<Typography
+						sx={{
+							mb: 2,
+							fontWeight: 'bold',
+						}}
+						variant={'body2'}
+					>
+						Editor Settings
+					</Typography>
 					<Box
 						component={'div'}
 						sx={{
@@ -75,23 +91,80 @@ const Settings = (props: SettingsProps) => {
 							width: '100%',
 						}}
 					>
-						<Typography
-							sx={{
-								mr: 'auto',
-								minWidth: 125,
-							}}
-							variant={'body2'}
-							noWrap={true}
-						>
-							Grid Scale:
-						</Typography>
+
 						<EngineeringField
-							label={''}
+							sx={{
+								mr: 2,
+							}}
+							label={'Grid Scale'}
+							size={'small'}
 							baseUnit={'m'}
 							defaultValue={GRID_SCALE.scale}
-							size={'small'}
 							onSubmit={(value) => {
-								setGridScale(value)
+								setGridScale({
+									...GRID_SCALE,
+									scale: value,
+								})
+							}}
+						/>
+						<EngineeringField
+							label={'Default Cross-Sectional Area'}
+							size={'small'}
+							baseUnit={'m²'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.area}
+							onSubmit={(value) => {
+								setTrussConstraints({
+									...TRUSS_PARAMETERS,
+									area: value,
+								})
+							}}
+						/>
+					</Box>
+					<Typography
+						sx={{
+							mb: 2,
+							fontWeight: 'bold',
+						}}
+						variant={'body2'}
+					>
+						Default Material Properties
+					</Typography>
+					<Box
+						component={'div'}
+						sx={{
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
+							mb: 2,
+						}}
+					>
+						<EngineeringField
+							sx={{
+								mr: 2,
+							}}
+							label={'Default Density'}
+							size={'small'}
+							baseUnit={'g/m³'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.density * 1e3}
+							onSubmit={(value) => {
+								setTrussConstraints({
+									...TRUSS_PARAMETERS,
+									density: value / 1e3,
+								})
+							}}
+						/>
+						<NumberField
+							label={'Default Poisson\'s Ratio'}
+							size={'small'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.poissonsRatio}
+							onSubmit={(value) => {
+								setTrussConstraints({
+									...TRUSS_PARAMETERS,
+									poissonsRatio: value,
+								})
 							}}
 						/>
 					</Box>
@@ -104,13 +177,54 @@ const Settings = (props: SettingsProps) => {
 							mb: 2,
 						}}
 					>
-						<NumberField
+						<EngineeringField
 							sx={{
 								mr: 2,
 							}}
-							label={'Default Ultimate Compressive Stress (MPa)'}
-							defaultValue={TRUSS_PARAMETERS.ultimateStress.compression * 1e-6}
+							label={'Default Young\'s Modulus'}
 							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.youngsModulus}
+							onSubmit={(value) => {
+								setTrussConstraints({
+									...TRUSS_PARAMETERS,
+									youngsModulus: value,
+								})
+							}}
+						/>
+						<EngineeringField
+							label={'Default Shear Modulus'}
+							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.shearModulus}
+							onSubmit={(value) => {
+								setTrussConstraints({
+									...TRUSS_PARAMETERS,
+									shearModulus: value,
+								})
+							}}
+						/>
+					</Box>
+					<Box
+						component={'div'}
+						sx={{
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
+							mb: 2,
+						}}
+					>
+						<EngineeringField
+							sx={{
+								mr: 2,
+							}}
+							label={'Default Ultimate Compressive Stress'}
+							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.ultimateStress.compression}
 							onSubmit={(value) => {
 								setTrussConstraints({
 									...TRUSS_PARAMETERS,
@@ -121,10 +235,12 @@ const Settings = (props: SettingsProps) => {
 								})
 							}}
 						/>
-						<NumberField
-							label={'Default Ultimate Tensile Stress (MPa)'}
-							defaultValue={TRUSS_PARAMETERS.ultimateStress.tension * 1e-6}
+						<EngineeringField
+							label={'Default Ultimate Tensile Stress'}
 							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.ultimateStress.tension}
 							onSubmit={(value) => {
 								setTrussConstraints({
 									...TRUSS_PARAMETERS,
@@ -136,20 +252,6 @@ const Settings = (props: SettingsProps) => {
 							}}
 						/>
 					</Box>
-					{/* <NumberField
-						sx={{
-							mb: 2,
-						}}
-						label={'Distributed Force (N/m)'}
-						size={'small'}
-						defaultValue={TRUSS_PARAMETERS.distributedForce}
-						onSubmit={(value) => {
-							setTrussConstraints({
-								...TRUSS_PARAMETERS,
-								distributedForce: value,
-							})
-						}}
-					/> */}
 					<Typography
 						variant={'body2'}
 						color={'text.primary'}

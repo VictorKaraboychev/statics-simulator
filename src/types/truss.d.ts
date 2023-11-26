@@ -6,6 +6,8 @@ export type DefaultTrussParamsType = {
 	density: number,
 	area: number,
 	youngsModulus: number,
+	shearModulus: number,
+	poissonsRatio?: number,
 	ultimateStress: {
 		tension: number,
 		compression: number
@@ -19,18 +21,31 @@ export type TrussJointDetailsType = {
 
 export type TrussConnectionDetailsType = {
 	id: string,
-	length: number,
-	angle: number,
 	connection: Connection,
 	a: Joint,
 	b: Joint,
+}
+
+export type MaterialJSONType = {
+	id: string,
+	name: string,
+	color: string,
+	density: number,
+	youngsModulus: number,
+	shearModulus: number,
+	poissonsRatio: number,
+	ultimateStress: {
+		tension: number,
+		compression: number
+	},
 }
 
 export type JointJSONType = {
 	id: string,
 	position: [number, number]
 	fixtures?: { x: boolean, y: boolean }
-	externalForce?: [number, number]
+	displacement?: [number, number]
+	force?: [number, number]
 	connections: { [id: string]: string }
 }
 
@@ -38,13 +53,10 @@ export type ConnectionJSONType = {
 	id: string,
 	jointIds?: [string, string],
 	stress: number,
-	density: number,
 	area: number,
-	youngsModulus: number,
-	ultimateStress: {
-		tension: number,
-		compression: number
-	},
+	length: number,
+	angle: number,
+	material: MaterialJSONType,
 }
 
 export type TrussJSONType = {

@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Box, SxProps, Theme } from '@mui/material'
 import Truss from '../../utility/truss/Truss'
 import Visualizer from './Visualizer'
-import { TrussConnectionDetailsType, TrussJointDetailsType, TrussJSONType } from '../../types/truss'
+import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
 import TrussModel from './TrussModel'
 import { ThreeEvent } from '@react-three/fiber'
 import { saveAs } from 'file-saver'
@@ -14,11 +14,10 @@ import { round, roundVector } from '../../utility/math'
 import { Vector2 } from 'three'
 import Joint from '../../utility/truss/Joint'
 import ViewerInfoBar from './ViewerInfoBar'
-import { DEFAULT_TRUSS_PARAMETERS } from '../../config/TrussConfig'
-import { equals } from '../../utility/functions'
 import Connection from '../../utility/truss/Connection'
 import JointInfo from './info/JointInfo'
 import ConnectionInfo from './info/ConnectionInfo'
+import Material from '../../utility/truss/Material'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
@@ -32,7 +31,7 @@ const Viewer = (props: ViewerProps) => {
 	const [historyIndex, setHistoryIndex] = usePersistentState('truss_undo_index', 0, 'local')
 	const [history, setHistory] = usePersistentState<any[]>('truss_undo', [], 'local')
 
-	const [forcesEnabled, setForcesEnabled] = useState(false)
+	const [forcesEnabled, setForcesEnabled] = usePersistentState('force_enabled', true)
 
 	const [selectedJoints, setSelectedJoints] = useState<Set<string>>(new Set())
 	const [selectedConnections, setSelectedConnections] = useState<Set<string>>(new Set())
@@ -292,6 +291,8 @@ const Viewer = (props: ViewerProps) => {
 					current: position,
 					jointStarts,
 				}
+
+				document.body.style.cursor = 'grabbing'
 			}
 		}
 	}
@@ -314,6 +315,8 @@ const Viewer = (props: ViewerProps) => {
 
 			dragRef.current = undefined
 
+			document.body.style.cursor = 'auto'
+
 			// submit(truss)
 		}
 	}
@@ -333,22 +336,23 @@ const Viewer = (props: ViewerProps) => {
 
 				const actionJoints = getActionJoints()
 
-				// const mirror = shift && actionJoints.size > 1
+				const mirror = shift && actionJoints.size > 1
 
 				actionJoints.forEach((id) => {
 					const joint = truss.getJoint(id)
-					joint.position = jointStarts[id].clone().add(delta)
 
-					// if (mirror) {					
-					// 	joint.position.x += delta.x * Math.sign(joint.position.x) * Math.sign(position.x)
-					// 	joint.position.y += delta.y * Math.sign(joint.position.y) * Math.sign(position.y)
-					// } else {
-					// 	joint.position.add(delta)
-					// }
+					if (mirror) {					
+						joint.position.x = jointStarts[id].x + delta.x * Math.sign(jointStarts[id].x) * Math.sign(start.x)
+						joint.position.y = jointStarts[id].y + delta.y * Math.sign(jointStarts[id].y) * Math.sign(start.y)
+					} else {
+						joint.position = jointStarts[id].clone().add(delta)
+					}
 				})
 
 				submit(truss)
 				dragRef.current.current = position
+
+				document.body.style.cursor = 'grabbing'
 			}
 		}
 	}
@@ -364,7 +368,8 @@ const Viewer = (props: ViewerProps) => {
 		if (!ctrl && shift && selectedJoints.size === 1) {
 			const otherId: string = selectedJoints.values().next().value
 
-			const connection = new Connection(0, TRUSS_PARAMETERS.density, TRUSS_PARAMETERS.area, TRUSS_PARAMETERS.youngsModulus, TRUSS_PARAMETERS.ultimateStress)
+			const material = new Material('Material', '#000000', TRUSS_PARAMETERS.density, TRUSS_PARAMETERS.youngsModulus, TRUSS_PARAMETERS.shearModulus, TRUSS_PARAMETERS.poissonsRatio, TRUSS_PARAMETERS.ultimateStress)
+			const connection = new Connection(0, 0, 0, TRUSS_PARAMETERS.area, material)
 
 			truss.addConnection(id, otherId, connection)
 			submit(truss)
@@ -514,6 +519,7 @@ const Viewer = (props: ViewerProps) => {
 				>
 					{jointDetails && (
 						<JointInfo
+							key={jointDetails.id}
 							truss={truss}
 							jointDetails={jointDetails}
 							onSubmit={submit}
@@ -521,6 +527,7 @@ const Viewer = (props: ViewerProps) => {
 					)}
 					{connectionDetails && (
 						<ConnectionInfo
+							key={connectionDetails.id}
 							sx={{
 								ml: 2,
 							}}

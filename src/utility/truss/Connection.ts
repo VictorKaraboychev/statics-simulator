@@ -1,75 +1,106 @@
 import { ConnectionJSONType } from "../../types/truss"
 import { getUUID } from "../functions"
+import Material from "./Material"
+
+export enum FailureMode {
+	NONE,
+	AXIAL,
+	BUCKLING,
+}
 
 export default class Connection {
 	id: string
 
-	// [jointId1, jointId2] or null if not connected
-	jointIds: [string, string] | null = null
+	jointIds: [string, string] | null = null // [jointId1, jointId2] or null if not connected
 
-	// positive force is compression (toward the center of the joint) and negative force is tension (toward the outside of the joint)
-	stress: number
-
-	density: number
+	axialStress: number // positive force is tension (toward the outside of the connection) and negative force is compression (toward the center of the connection)
+	
+	length: number
+	angle: number
 	area: number
 
-	youngsModulus: number
+	material: Material
 
-	ultimateStress: {
-		tension: number,
-		compression: number
-	}
-
-	constructor(stress: number = 0, density: number = 1, area: number = 1, youngsModulus: number = 1, ultimateStress: { tension: number; compression: number; } = { tension: -Infinity, compression: Infinity }) {
+	constructor(stress = 0, length = 0, angle = 0, area = 1, material?: Material) {
 		this.id = getUUID()
 
-		this.stress = stress
+		this.axialStress = stress
 
-		this.density = density
+		this.length = length
+		this.angle = angle
 		this.area = area
 
-		this.youngsModulus = youngsModulus
-		this.ultimateStress = ultimateStress
+		this.material = material ?? new Material('Material')
 	}
 
 	set force(force: number) {
-		this.stress = force / this.area
+		this.axialStress = force / this.area
 	}
 
 	get force(): number {
-		return this.stress * this.area
+		return this.axialStress * this.area
 	}
 
-	get strain(): number {
-		return this.stress / this.youngsModulus
+	get transverseStress(): number {
+		return this.transverseStrain * this.material.youngsModulus
+	}
+
+	get axialStrain(): number {
+		return this.axialStress / this.material.youngsModulus
+	}
+
+	get transverseStrain(): number {
+		return -this.axialStrain * this.material.poissonsRatio
+	}
+
+	get axialElongation(): number {
+		return this.axialStrain * this.length
+	}
+
+	get transverseElongation(): number {
+		return this.transverseStrain * this.length
 	}
 
 	get utilization(): number {
-		return Math.abs(this.stress) / Math.abs(this.ultimateStress[this.stressType])
+		return Math.abs(this.axialStress) / Math.abs(this.material.ultimateStress[this.stressType])
 	}
 
-	get failure(): boolean {
-		return this.utilization > 1
+	get safetyFactor(): number {
+		return 1 / this.utilization
+	}
+
+	get failure(): FailureMode {
+		if (this.utilization <= 1) return FailureMode.NONE
+		return FailureMode.AXIAL
 	}
 
 	get stressType(): 'tension' | 'compression' {
-		return this.stress > 0 ? 'compression' : 'tension'
+		return this.axialStress < 0 ? 'compression' : 'tension'
 	}
 
-	getElongation(length: number): number {
-		return this.strain * length
+	get axialStiffness(): number {
+		return this.material.youngsModulus * this.area / this.length
 	}
 
-	getVolume(length: number): number {
-		return this.area * length
+	get areaMomentOfInertia(): number {
+		return this.area ** 2 / 6
 	}
 
-	getMass(length: number): number {
-		return this.density * this.area * length
+	get bucklingForce(): number {
+		return Math.PI ** 2 * this.material.youngsModulus * this.areaMomentOfInertia / this.length ** 2
+	
+	}
+
+	get volume(): number {
+		return this.area * this.length
+	}
+
+	get mass(): number {
+		return this.material.density * this.volume
 	}
 
 	clone(): Connection {
-		const connection = new Connection(this.force, this.density, this.area, this.youngsModulus, this.ultimateStress)
+		const connection = new Connection(this.force, this.length, this.angle, this.area, this.material.clone())
 		connection.id = this.id
 		connection.jointIds = this.jointIds
 		return connection
@@ -79,16 +110,16 @@ export default class Connection {
 		return {
 			id: this.id,
 			jointIds: this.jointIds ?? undefined,
-			stress: this.stress,
-			density: this.density,
+			stress: this.axialStress,
+			length: this.length,
+			angle: this.angle,
 			area: this.area,
-			youngsModulus: this.youngsModulus,
-			ultimateStress: this.ultimateStress,
+			material: this.material.toJSON(),
 		}
 	}
 
 	static fromJSON(json: ConnectionJSONType): Connection {
-		const connection = new Connection(json.stress, json.density, json.area, json.youngsModulus, json.ultimateStress)
+		const connection = new Connection(json.stress, json.length, json.angle, json.area, Material.fromJSON(json.material))
 		connection.id = json.id
 		connection.jointIds = json.jointIds ?? null
 		return connection

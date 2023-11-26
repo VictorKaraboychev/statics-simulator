@@ -1,10 +1,11 @@
-import { Box, Button, Card, SxProps, Theme, Typography } from '@mui/material'
+import { Box, Button, Card, SxProps, Table, TableBody, TableCell, TableHead, TableRow, Theme, Typography } from '@mui/material'
 import NumberField from '../../common/textfields/NumberField'
 import { TrussConnectionDetailsType } from '../../../types/truss'
 import Truss from '../../../utility/truss/Truss'
-import { useCompoundState, useEventEffect } from '../../../utility/hooks'
-import Connection from '../../../utility/truss/Connection'
-import { fEngineering } from '../../../utility/format'
+import { useCompoundState, useEventEffect, useReliantState } from '../../../utility/hooks'
+import { fEngineering, fPercent } from '../../../utility/format'
+import EngineeringField from '../../common/textfields/EngineeringField'
+import Material from '../../../utility/truss/Material'
 
 interface ConnectionInfoProps {
 	sx?: SxProps<Theme>
@@ -16,16 +17,31 @@ interface ConnectionInfoProps {
 const ConnectionInfo = (props: ConnectionInfoProps) => {
 	const connectionDetails = props.connectionDetails
 	const connection = props.truss.getConnection(connectionDetails.connection.id)
+	const material = connection.material
 
-	// const [connection, setConnection] = useCompoundState<Connection>(props.truss.getConnection(connectionDetails.id), [props.connectionDetails, props.truss])
+	const [modifiedArea, setModifiedArea] = useReliantState<number>(connection.area, [props.connectionDetails, props.truss])
+	const [modifiedMaterial, setModifiedMaterial] = useCompoundState<Material>(material, [props.connectionDetails, props.truss])
 
 	const canSubmit = Boolean(
-
+		connection &&
+		(
+			connection.area !== modifiedArea ||
+			material.density !== modifiedMaterial.density ||
+			material.youngsModulus !== modifiedMaterial.youngsModulus ||
+			material.poissonsRatio !== modifiedMaterial.poissonsRatio ||
+			material.ultimateStress.tension !== modifiedMaterial.ultimateStress.tension ||
+			material.ultimateStress.compression !== modifiedMaterial.ultimateStress.compression
+		)
 	)
 
 	const handleSubmit = () => {
 		if (!connectionDetails || !connection) return
 
+		connection.area = modifiedArea
+		material.density = modifiedMaterial.density
+		material.youngsModulus = modifiedMaterial.youngsModulus
+		material.poissonsRatio = modifiedMaterial.poissonsRatio
+		material.ultimateStress = modifiedMaterial.ultimateStress
 
 		props.onSubmit?.(props.truss)
 	}
@@ -39,12 +55,6 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 	}, 'keydown')
 
 	if (!connection) return null
-
-	const length = connectionDetails.length
-	const angle = connectionDetails.angle
-
-	const stress = connection.stress
-	const isTension = connection.stressType === 'tension'
 
 	return (
 		<Card
@@ -79,22 +89,17 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 				<Typography
 					variant={'body2'}
 				>
-					Mass: {fEngineering(connection.getMass(length * 1e3), 'g')}
+					Mass: {fEngineering(connection.mass * 1e3, 'g')}
 				</Typography>
 				<Typography
 					variant={'body2'}
 				>
-					Length: {fEngineering(length, 'm')}
+					Length: {fEngineering(connection.length, 'm')}
 				</Typography>
 				<Typography
 					variant={'body2'}
 				>
-					Angle: {(angle * (180 / Math.PI)).toFixed(2)}° {(angle / Math.PI).toFixed(4)}π rad
-				</Typography>
-				<Typography
-					variant={'body2'}
-				>
-					Force: {fEngineering(connection.force, 'N')}
+					Angle: {(connection.angle * (180 / Math.PI)).toFixed(2)}° {(connection.angle / Math.PI).toFixed(4)}π rad
 				</Typography>
 				<Box
 					sx={{
@@ -106,33 +111,138 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 					<Typography
 						variant={'body2'}
 					>
-						Stress: {fEngineering(stress, 'Pa')}
-						(
+						Force: {fEngineering(connection.force, 'N')} (
 						<Typography
 							sx={{
 								fontWeight: 'bold',
-								color: isTension ? 'error.main' : 'success.main',
+								color: connection.stressType === 'tension' ? 'error.main' : 'success.main',
 								textJustify: 'center',
 								textTransform: 'capitalize',
 							}}
 							variant={'caption'}
 						>
 							{connection.stressType}
-						</Typography>
-						)
+						</Typography>)
 					</Typography>
 				</Box>
 				<Typography
 					variant={'body2'}
 				>
-					Elongation: {fEngineering(connection.getElongation(length), 'm')} ({(connection.strain * 100).toFixed(4)}%)
+					Utilization: {fPercent(connection.utilization)} (FoS: {connection.utilization > 0 ? connection.safetyFactor.toFixed(2) : '0.00'}×)
 				</Typography>
-
+				<Table
+					sx={{
+						mb: 2,
+					}}
+					size={'small'}
+				>
+					<TableHead>
+						<TableRow>
+							<TableCell
+								sx={{
+									fontWeight: 'bold',
+								}}
+							>
+								Property
+							</TableCell>
+							<TableCell
+								sx={{
+									fontWeight: 'bold',
+									width: 100,
+								}}
+								align={'right'}
+							>
+								Axial
+							</TableCell>
+							<TableCell
+								sx={{
+									fontWeight: 'bold',
+									width: 100,
+								}}
+								align={'right'}
+							>
+								Transverse
+							</TableCell>
+						</TableRow>
+					</TableHead>
+					<TableBody>
+						<TableRow>
+							<TableCell>
+								Stress
+							</TableCell>
+							<TableCell
+								align={'right'}
+							>
+								{fEngineering(connection.axialStress, 'Pa')}
+							</TableCell>
+							<TableCell
+								align={'right'}
+							>
+								{fEngineering(connection.transverseStress, 'Pa')}
+							</TableCell>
+						</TableRow>
+						<TableRow>
+							<TableCell>
+								Strain
+							</TableCell>
+							<TableCell
+								align={'right'}
+							>
+								{fPercent(connection.axialStrain, 4)}
+							</TableCell>
+							<TableCell
+								align={'right'}
+							>
+								{fPercent(connection.transverseStrain, 4)}
+							</TableCell>
+						</TableRow>
+						<TableRow>
+							<TableCell>
+								Elongation
+							</TableCell>
+							<TableCell
+								align={'right'}
+							>
+								{fEngineering(connection.axialElongation, 'm')}
+							</TableCell>
+							<TableCell
+								align={'right'}
+							>
+								{fEngineering(connection.transverseElongation, 'm')}
+							</TableCell>
+						</TableRow>
+					</TableBody>
+				</Table>
+				<Box
+					sx={{
+						display: 'flex',
+						flexDirection: 'row',
+						alignItems: 'center',
+						width: '100%',
+					}}
+				>
+					<EngineeringField
+						label={'Cross-Sectional Area'}
+						size={'small'}
+						baseUnit={'m²'}
+						decimals={5}
+						defaultValue={connection.area}
+						onSubmit={setModifiedArea}
+					/>
+				</Box>
+				<Typography
+					sx={{
+						my: 2,
+						fontWeight: 'bold',
+					}}
+					variant={'body2'}
+				>
+					Material Properties
+				</Typography>
 				<Box
 					sx={{
 						display: 'flex',
 						flexDirection: 'column',
-						mt: 2,
 						width: '100%',
 					}}
 				>
@@ -145,45 +255,26 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 							width: '100%',
 						}}
 					>
-						<NumberField
+						<EngineeringField
 							sx={{
-								mr: 0.5,
-								width: '30%',
+								mr: 1,
 							}}
-							label={'Density (kg/m³)'}
-							value={connection.density}
+							label={'Density'}
 							size={'small'}
-							onSubmit={(value) => {
-
-							}}
+							baseUnit={'g/m³'}
+							decimals={5}
+							defaultValue={material.density * 1e3}
+							onSubmit={(value) => setModifiedMaterial('density')(value / 1e3)}
 						/>
 						<NumberField
-							sx={{
-								mr: 0.5,
-								width: '30%',
-							}}
-							label={'Area (m²)'}
-							value={connection.area}
+							label={'Poisson\'s Ratio'}
 							size={'small'}
-							onSubmit={(value) => {
-
-							}}
-						/>
-						<NumberField
-							sx={{
-								mr: 0.5,
-								width: '40%',
-							}}
-							label={'Youngs Modulus (GPa)'}
-							value={connection.youngsModulus / 1e9}
-							size={'small'}
-							onSubmit={(value) => {
-
-							}}
+							decimals={5}
+							defaultValue={material.poissonsRatio}
+							onSubmit={setModifiedMaterial('poissonsRatio')}
 						/>
 					</Box>
 					<Box
-						component={'div'}
 						sx={{
 							display: 'flex',
 							flexDirection: 'row',
@@ -192,40 +283,69 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 							width: '100%',
 						}}
 					>
-						<Typography
+						<EngineeringField
 							sx={{
-								mr: 'auto',
-								minWidth: 125,
+								mr: 1,
 							}}
-							variant={'body2'}
-							noWrap={true}
-						>
-							Ultimate Stress:
-						</Typography>
-						<NumberField
-							sx={{
-								mr: 0.5,
-							}}
-							label={'Tensile (MPa)'}
-							value={connection.ultimateStress.tension / 1e6}
+							label={'Young\'s Modulus'}
 							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={material.youngsModulus}
+							onSubmit={setModifiedMaterial('youngsModulus')}
+						/>
+						<EngineeringField
+							label={'Shear Modulus'}
+							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={material.shearModulus}
+							onSubmit={setModifiedMaterial('shearModulus')}
+						/>
+					</Box>
+					<Box
+						sx={{
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
+							mb: 1,
+							width: '100%',
+						}}
+					>
+						<EngineeringField
+							sx={{
+								mr: 1,
+							}}
+							label={'Ultimate Tensile Stress'}
+							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={material.ultimateStress.tension}
 							onSubmit={(value) => {
-
+								setModifiedMaterial('ultimateStress')({
+									tension: value,
+									compression: material.ultimateStress.compression,
+								})
 							}}
 						/>
-						<NumberField
-							label={'Compressive (MPa)'}
-							value={connection.ultimateStress.compression / 1e6}
+						<EngineeringField
+							label={'Ultimate Compressive Stress'}
 							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={material.ultimateStress.compression}
 							onSubmit={(value) => {
-
+								setModifiedMaterial('ultimateStress')({
+									tension: material.ultimateStress.tension,
+									compression: value,
+								})
 							}}
 						/>
 					</Box>
 				</Box>
 				<Button
 					sx={{
-						mt: 'auto',
+						mt: 1,
 					}}
 					disabled={!canSubmit}
 					fullWidth={true}

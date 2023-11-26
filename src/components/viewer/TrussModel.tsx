@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { BackSide, BoxGeometry, BufferGeometry, Color, MeshPhongMaterial, RingGeometry, SphereGeometry, TorusGeometry, Vector3 } from 'three'
+import { BackSide, BoxGeometry, BufferGeometry, Color, MeshBasicMaterial, SphereGeometry, Vector3 } from 'three'
 import Truss from '../../utility/truss/Truss'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
@@ -67,9 +67,9 @@ const TrussModel = (props: TrussModelProps) => {
 
 						const selected = props.selectedConnections?.has(connection.id)
 
-						const utilization = connection.utilization
+						const utilization = Math.min(Math.abs(connection.utilization), 1)
 
-						const stressType = connection.failure ? connection.stressType : 'neutral'
+						const stressType = (props.view === 'stress' || connection.failure) ? connection.stressType : 'neutral'
 						const color = new Color(TRUSS_COLORS[stressType] ?? 0x000000)
 
 						return (
@@ -81,8 +81,6 @@ const TrussModel = (props: TrussModelProps) => {
 									connection.id,
 									{
 										id: `${aIndex}-${bIndex}`,
-										length: a.distanceTo(b),
-										angle: a.angleTo(b),
 										connection: connection,
 										a,
 										b,
@@ -101,7 +99,7 @@ const TrussModel = (props: TrussModelProps) => {
 										]),
 										new LineMaterial({
 											color: color.getHex(),
-											linewidth: 5 * Math.min(Math.abs(utilization), 1) + 1,
+											linewidth: 5 * utilization + 1,
 											worldUnits: true,
 										}),
 									)}
@@ -116,7 +114,7 @@ const TrussModel = (props: TrussModelProps) => {
 										]),
 										new LineMaterial({
 											color: new Color(palette.primary.main).getHex(),
-											linewidth: 5 * Math.min(Math.abs(utilization), 1) + 4,
+											linewidth: 5 * utilization + 4,
 											transparent: true,
 											opacity: selected ? 1 : 0,
 											worldUnits: true,
@@ -159,17 +157,16 @@ const TrussModel = (props: TrussModelProps) => {
 							>
 								<mesh
 									geometry={geometry.main}
-									material={new MeshPhongMaterial({
-										color: joint.fixed ? '#999999' : '#ffffff',
+									material={new MeshBasicMaterial({
+										color: joint.fixed ? '#555555' : '#aaaaaa',
 									})}
 								/>
 								{selected && (
 									<mesh
 										geometry={geometry.selected}
-										material={new MeshPhongMaterial({
+										material={new MeshBasicMaterial({
 											color: palette.primary.main,
 											side: BackSide,
-											emissive: palette.primary.main,
 										})}
 									/>
 								)}
@@ -182,11 +179,11 @@ const TrussModel = (props: TrussModelProps) => {
 			{props.enableForces && (
 				<group>
 					{joints.reduce((acc, joint) => {
-						if (Math.floor(Math.abs(joint.externalForce.x) * 100) > 0 || Math.floor(Math.abs(joint.externalForce.y) * 100) > 0) {
+						if (Math.floor(Math.abs(joint.force.x) * 100) > 0 || Math.floor(Math.abs(joint.force.y) * 100) > 0) {
 							acc.push(
 								<Force
 									key={joint.id}
-									force={joint.externalForce}
+									force={joint.force}
 									origin={joint.position.clone().multiplyScalar(scale)}
 								/>
 							)

@@ -1,19 +1,4 @@
-export const METRIC_PREFIXES = [
-	{ exp: -18, symbol: 'a' },
-	{ exp: -15, symbol: 'f' },
-	{ exp: -12, symbol: 'p' },
-	{ exp: -9, symbol: 'n' },
-	{ exp: -6, symbol: 'µ' },
-	{ exp: -3, symbol: 'm' },
-	{ exp: -2, symbol: 'c' },
-	{ exp: 0, symbol: '' },
-	{ exp: 3, symbol: 'k' },
-	{ exp: 6, symbol: 'M' },
-	{ exp: 9, symbol: 'G' },
-	{ exp: 12, symbol: 'T' },
-	{ exp: 15, symbol: 'P' },
-	{ exp: 18, symbol: 'E' },
-];
+import { autoUnit } from "./math"
 
 /**
  * Formats a number in engineering notation.
@@ -23,11 +8,16 @@ export const METRIC_PREFIXES = [
  * @returns 
  */
 export const fEngineering = (value: number, baseUnit: string, precision: number = 2): string => {
-	const exponent = Math.floor(Math.log10(Math.abs(value)))
-	const prefix = METRIC_PREFIXES.findLast((p) => exponent >= p.exp)
+	const { value: baseValue, unit } = autoUnit(value, baseUnit)
+	return `${baseValue.toFixed(precision)} ${unit}`
+}
 
-	if (!prefix) return `${value} ${baseUnit}`
-
-	const roundedValue = (value / 10 ** prefix.exp).toFixed(precision)
-	return `${roundedValue} ${prefix!.symbol}${baseUnit}`
+/**
+ * Formats a number as a percentage.
+ * @param value Number to format.
+ * @param decimals Number of decimal places to round to.
+ * @returns 
+ */
+export const fPercent = (value: number, decimals = 2): string => {
+	return `${(value * 100).toFixed(decimals)}%`
 }
