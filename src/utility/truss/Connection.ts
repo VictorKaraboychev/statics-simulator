@@ -58,7 +58,7 @@ export default class Connection {
 	}
 
 	get transverseElongation(): number {
-		return this.transverseStrain * this.length
+		return this.transverseStrain * Math.sqrt(this.area / Math.PI) * 2
 	}
 
 	get utilization(): number {

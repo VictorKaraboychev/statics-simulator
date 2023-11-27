@@ -109,7 +109,7 @@ export const KEY_BINDINGS = [
 			},
 			{
 				keys: ['Shift', 'LeftClick'],
-				action: 'Add joint (Un-Mirrored)'
+				action: 'Add joint'
 			},
 			{
 				keys: ['Shift', 'Alt', 'LeftClick'],
@@ -120,6 +120,18 @@ export const KEY_BINDINGS = [
 	{
 		category: 'View',
 		bindings: [
+			{
+				keys: ['MiddleClick', 'Drag'],
+				action: 'Pan'
+			},
+			{
+				keys: ['ScrollUp'],
+				action: 'Zoom in'
+			},
+			{
+				keys: ['ScrollDown'],
+				action: 'Zoom out'
+			},
 			{
 				keys: ['Ctrl', 'F'],
 				action: 'Toggle Force Overlay'
@@ -134,20 +146,28 @@ export const KEY_BINDINGS = [
 		category: 'Movement',
 		bindings: [
 			{
+				keys: ['LeftClick', 'Drag'],
+				action: 'Move selected joints and members'
+			},
+			{
+				keys: ['Shift', 'LeftClick', 'Drag'],
+				action: 'Move selected joints and members (Mirrored)'
+			},
+			{
 				keys: ['Ctrl', 'Arrows'],
-				action: 'Move selected joints and members (Mirrored, 0.1m)'
+				action: 'Move selected joints and members (0.1m)'
 			},
 			{
 				keys: ['Ctrl', 'Shift', 'Arrows'],
-				action: 'Move selected joints and members (Un-Mirrored, 0.1m)'
+				action: 'Move selected joints and members (Mirrored, 0.1m)'
 			},
 			{
 				keys: ['Ctrl', 'Alt', 'Arrows'],
-				action: 'Precision move selected joints and members (Mirrored, 0.01m) '
+				action: 'Precision move selected joints and members (0.01m) '
 			},
 			{
 				keys: ['Ctrl', 'Shift', 'Alt', 'Arrows'],
-				action: 'Precision move selected joints and members (Un-Mirrored, 0.01m)'
+				action: 'Precision move selected joints and members (Mirrored, 0.01m)'
 			},
 		]
 	},

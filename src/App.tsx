@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Box, createTheme, ThemeProvider, useMediaQuery } from '@mui/material'
 import Viewer from './components/viewer/Viewer'
 import useCustomState, { useStateManager } from './state/state'
+import { Outlet } from 'react-router-dom'
 
 const App = () => {
 	useStateManager(true)
@@ -55,16 +56,20 @@ const App = () => {
 	return (
 		<ThemeProvider theme={THEME}>
 			<Box
-				component={'div'}
+				id={'scroll-view'}
 				sx={{
 					display: 'flex',
+					flexDirection: 'column',
+					position: 'relative',
 					width: '100vw',
 					height: '100vh',
+					overflowX: 'hidden',
+					overflowY: 'auto',
 					alignItems: 'center',
 					bgcolor: 'background.default',
 				}}
 			>
-				<Viewer />
+				<Outlet />
 			</Box>
 		</ThemeProvider>
 	)

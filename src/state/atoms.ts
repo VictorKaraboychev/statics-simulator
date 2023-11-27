@@ -18,7 +18,7 @@ export const customAtom = <T>(label: string, initial: T, mutability?: boolean): 
 }
 
 const atoms = {
-	theme: customAtom<PaletteMode | 'system'>('theme', 'system'),
+	theme: customAtom<PaletteMode | 'system'>('theme', 'light'),
 	current_truss: customAtom<TrussJSONType>('current_truss', DEFAULT_TRUSS, true),
 	saved_trusses: customAtom<TrussJSONType[]>('saved_trusses', []),
 	grid_scale: customAtom<GridScaleType>('grid_scale', DEFAULT_GRID_SCALE),

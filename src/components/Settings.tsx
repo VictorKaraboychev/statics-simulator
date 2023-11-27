@@ -7,7 +7,6 @@ import TooltipButton from './common/TooltipButton'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { THEME_OPTIONS } from '../config/GlobalConfig'
 import EngineeringField from './common/textfields/EngineeringField'
-import { fEngineering } from '../utility/format'
 import NumberField from './common/textfields/NumberField'
 
 interface SettingsProps {
@@ -20,10 +19,6 @@ const Settings = (props: SettingsProps) => {
 	const { value: TRUSS_PARAMETERS, set: setTrussConstraints } = useCustomState.truss_constraints()
 
 	const [open, setOpen] = useState(false)
-
-	// console.log(fEngineering(0.0004, 'm²'))
-	// console.log(fEngineering(4607000, 'g/m³'))
-	// console.log(fEngineering(4607000, 'g²⋅m/s'))
 
 	return (
 		<>
@@ -99,6 +94,7 @@ const Settings = (props: SettingsProps) => {
 							label={'Grid Scale'}
 							size={'small'}
 							baseUnit={'m'}
+							disabled={true}
 							defaultValue={GRID_SCALE.scale}
 							onSubmit={(value) => {
 								setGridScale({
@@ -252,6 +248,21 @@ const Settings = (props: SettingsProps) => {
 							}}
 						/>
 					</Box>
+					<Typography
+						variant={'body2'}
+						color={'text.primary'}
+					>
+						GitHub:
+						<a 
+							style={{ 
+								marginLeft: '0.25rem',
+								color: 'inherit',
+							}}
+							href={'https://github.com/VictorKaraboychev/statics-simulator'} target={'_blank'}
+						>
+							Victor Karaboychev
+						</a>
+					</Typography>
 					<Typography
 						variant={'body2'}
 						color={'text.primary'}
