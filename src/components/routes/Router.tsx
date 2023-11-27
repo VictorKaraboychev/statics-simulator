@@ -23,6 +23,7 @@ const getElement = (obj: RouteType): ReactNode => {
 			onReset={() => {
 				sessionStorage.clear()
 				localStorage.clear()
+				window.location.reload()
 			}}
 			onError={(_error: Error) => { // TODO: Send error to server
 

@@ -1,4 +1,3 @@
-import React from 'react'
 import { useTheme } from '@mui/material'
 import { Vector3, Vector2, Color, ConeBufferGeometry, MeshBasicMaterial } from 'three'
 import { Line2 } from 'three/examples/jsm/lines/Line2'

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { BackSide, BoxGeometry, BufferGeometry, Color, MeshBasicMaterial, SphereGeometry, Vector3 } from 'three'
+import { BackSide, BoxGeometry, BufferGeometry, Color, MeshBasicMaterial, SphereGeometry, Vector2, Vector3 } from 'three'
 import Truss from '../../utility/truss/Truss'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
@@ -12,11 +12,11 @@ import { useTheme } from '@mui/material'
 
 interface TrussModelProps {
 	truss: Truss,
-	scale: number,
 	view?: string,
 	hoverSelected?: React.MutableRefObject<boolean>,
 	selectedJoints?: Set<string>,
 	selectedConnections?: Set<string>,
+	scale: Vector3,
 	position?: Vector3,
 	enableForces?: boolean,
 	onJointClick?: (e: ThreeEvent<MouseEvent>, id: string, details: TrussJointDetailsType) => void,
@@ -28,7 +28,8 @@ const TrussModel = (props: TrussModelProps) => {
 
 	const truss = props.truss
 
-	const scale = props.scale
+	const scale = props.scale.clone()
+	const scale2D = new Vector2(scale.x, scale.y)
 	const joints = truss.joints
 
 	const [hovered, setHovered] = useState(false)
@@ -49,7 +50,7 @@ const TrussModel = (props: TrussModelProps) => {
 
 	return (
 		<group
-			position={props.position ? props.position.multiplyScalar(scale) : undefined}
+			position={props.position ? props.position.multiply(scale) : undefined}
 		>
 			<group
 				onPointerOver={() => setHovered(true)}
@@ -62,8 +63,8 @@ const TrussModel = (props: TrussModelProps) => {
 						const a = joints[aIndex]
 						const b = joints[bIndex]
 
-						const aPos = a.position.clone().multiplyScalar(scale)
-						const bPos = b.position.clone().multiplyScalar(scale)
+						const aPos = a.position.clone().multiply(scale2D)
+						const bPos = b.position.clone().multiply(scale2D)
 
 						const selected = props.selectedConnections?.has(connection.id)
 
@@ -142,7 +143,7 @@ const TrussModel = (props: TrussModelProps) => {
 						return (
 							<group
 								key={joint.id}
-								position={new Vector3(p.x, p.y, 0.5).multiplyScalar(scale)}
+								position={new Vector3(p.x, p.y, 0.5).multiply(scale)}
 								rotation={[0, 0, (joint.fixtures.x ? !joint.fixtures.y : joint.fixtures.y) ? Math.PI / 4 : 0]}
 								onClick={(e) => props.onJointClick?.(
 									e,
@@ -184,7 +185,7 @@ const TrussModel = (props: TrussModelProps) => {
 								<Force
 									key={joint.id}
 									force={joint.force}
-									origin={joint.position.clone().multiplyScalar(scale)}
+									origin={joint.position.clone().multiply(scale2D)}
 								/>
 							)
 						}

@@ -11,7 +11,7 @@ import useCustomState from '../../state/state'
 import { useEventEffect, usePersistentState } from '../../utility/hooks'
 import { DEFAULT_PRECISION, DRAG_UPDATE_INTERVAL, MAX_UNDO_STATES, TRUSS_SCALE, VIEW_MODES } from '../../config/GlobalConfig'
 import { round, roundVector } from '../../utility/math'
-import { Vector2 } from 'three'
+import { Vector2, Vector3 } from 'three'
 import Joint from '../../utility/truss/Joint'
 import ViewerInfoBar from './ViewerInfoBar'
 import Connection from '../../utility/truss/Connection'
@@ -26,7 +26,11 @@ interface ViewerProps {
 const Viewer = (props: ViewerProps) => {
 	const { value: truss, set: setTruss } = useCustomState.current_truss()
 	const { value: TRUSS_PARAMETERS } = useCustomState.truss_constraints()
+	const { value: EDITOR_SETTINGS } = useCustomState.editor_settings()
 	const { value: TRUSS_VIEW, set: setTrussView } = useCustomState.truss_view()
+
+	const SCALE = TRUSS_SCALE / EDITOR_SETTINGS.scale
+	const DECIMALS = Math.log10(1 / EDITOR_SETTINGS.scale) + (EDITOR_SETTINGS.snap_to_grid ? 1 : 5)
 
 	const [historyIndex, setHistoryIndex] = usePersistentState('truss_undo_index', 0, 'local')
 	const [history, setHistory] = usePersistentState<any[]>('truss_undo', [], 'local')
@@ -239,23 +243,16 @@ const Viewer = (props: ViewerProps) => {
 	const handleMouseClick = (e: ThreeEvent<MouseEvent>) => {
 		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
 
-		const { x, y } = e.point.clone().divideScalar(TRUSS_SCALE)
+		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
 
 		if (shift) {
-			truss.addJoint(
-				new Joint(new Vector2(
-					round(x, 1),
-					round(y, 1),
-				))
-			)
+			const position = new Vector2(x, y)
+
+			truss.addJoint(new Joint(position))
 
 			if (alt && x !== 0) {
-				truss.addJoint(
-					new Joint(new Vector2(
-						round(-x, 1),
-						round(y, 1),
-					))
-				)
+				position.x = -x
+				truss.addJoint(new Joint(position))
 			}
 
 			submit(truss)
@@ -272,7 +269,7 @@ const Viewer = (props: ViewerProps) => {
 	const handleMouseDown = (e: ThreeEvent<MouseEvent>) => {
 		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
 
-		const { x, y } = roundVector(e.point.clone().divideScalar(TRUSS_SCALE), 1)
+		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
 		const position = new Vector2(x, y)
 
 		if (mouse == 1) {
@@ -301,7 +298,7 @@ const Viewer = (props: ViewerProps) => {
 	const handleMouseUp = (e: ThreeEvent<MouseEvent>) => {
 		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
 
-		// const { x, y } = e.point.clone().divideScalar(TRUSS_SCALE)
+		// const { x, y } = e.point.clone().divideScalar(SCALE)
 
 		if (dragRef.current) {
 			// const { start, jointStarts } = dragRef.current
@@ -324,8 +321,8 @@ const Viewer = (props: ViewerProps) => {
 
 	const handleMouseHover = (e: ThreeEvent<MouseEvent>) => {
 		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
-
-		const { x, y } = roundVector(e.point.clone().divideScalar(TRUSS_SCALE), 1)
+		
+		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
 		const position = new Vector2(x, y)
 
 		if (mouse == 1) {
@@ -333,7 +330,7 @@ const Viewer = (props: ViewerProps) => {
 				if (dragRef.current.current.equals(position) || dragRef.current.lastUpdate > Date.now() - DRAG_UPDATE_INTERVAL) return
 
 				const { start, jointStarts } = dragRef.current
-				const delta = new Vector2(x, y).sub(start)
+				const delta = position.clone().sub(start)
 
 				const actionJoints = getActionJoints()
 
@@ -342,12 +339,14 @@ const Viewer = (props: ViewerProps) => {
 				actionJoints.forEach((id) => {
 					const joint = truss.getJoint(id)
 
-					if (mirror) {					
+					if (mirror) {
 						joint.position.x = jointStarts[id].x + delta.x * Math.sign(jointStarts[id].x) * Math.sign(start.x)
 						joint.position.y = jointStarts[id].y + delta.y * Math.sign(jointStarts[id].y) * Math.sign(start.y)
 					} else {
 						joint.position = jointStarts[id].clone().add(delta)
 					}
+
+					if (EDITOR_SETTINGS.snap_to_grid) joint.position = roundVector(joint.position, DECIMALS)
 				})
 
 				submit(truss)
@@ -500,7 +499,7 @@ const Viewer = (props: ViewerProps) => {
 					<TrussModel
 						truss={truss}
 						view={TRUSS_VIEW}
-						scale={TRUSS_SCALE}
+						scale={new Vector3(SCALE, SCALE, SCALE)}
 						enableForces={forcesEnabled}
 						hoverSelected={hoverSelectedRef}
 						selectedJoints={selectedJoints}

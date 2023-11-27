@@ -1,4 +1,4 @@
-import { GridScaleType } from "../types/general"
+import { EditorSettingsType } from "../types/general"
 
 export const METRIC_PREFIXES = [
 	{ exp: -18, symbol: 'a' },
@@ -35,9 +35,11 @@ export const DEFAULT_PRECISION = 5
 
 export const MAX_UNDO_STATES = 10000
 
-export const DEFAULT_GRID_SCALE: GridScaleType = {
+export const DEFAULT_EDITOR_SETTINGS: EditorSettingsType = {
 	scale: 1,
-	base_unit: 'm'
+	grid_enabled: true,
+	snap_to_grid: true,
+	debug: false,
 }
 
 export const TRUSS_SCALE = 20

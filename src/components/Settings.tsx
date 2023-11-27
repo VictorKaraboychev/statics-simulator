@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, SxProps, Theme, Typography } from '@mui/material'
+import { Box, Button, Checkbox, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, SxProps, Theme, Typography } from '@mui/material'
 import Dialog from './common/Dialog'
 import VERSION from '../version.json'
 import useCustomState from '../state/state'
@@ -15,15 +15,38 @@ interface SettingsProps {
 
 const Settings = (props: SettingsProps) => {
 	const { value: THEME, set: setTheme } = useCustomState.theme()
-	const { value: GRID_SCALE, set: setGridScale } = useCustomState.grid_scale()
+	const { value: EDITOR_SETTINGS, set: setEditorSettings } = useCustomState.editor_settings()
 	const { value: TRUSS_PARAMETERS, set: setTrussConstraints } = useCustomState.truss_constraints()
 
 	const [open, setOpen] = useState(false)
+
+	const canSubmit = Boolean(
+
+	)
+
+	const handleSubmit = () => {
+
+	}
+
+	const handleCancel = () => {
+		setOpen(false)
+	}
 
 	return (
 		<>
 			<Dialog
 				title={'Settings'}
+				buttons={[
+					{
+						label: 'Submit',
+						disabled: !canSubmit,
+						onClick: handleSubmit,
+					},
+					{
+						label: 'Cancel',
+						onClick: handleCancel,
+					},
+				]}
 				open={open}
 				setOpen={setOpen}
 			>
@@ -94,11 +117,10 @@ const Settings = (props: SettingsProps) => {
 							label={'Grid Scale'}
 							size={'small'}
 							baseUnit={'m'}
-							disabled={true}
-							defaultValue={GRID_SCALE.scale}
+							defaultValue={EDITOR_SETTINGS.scale}
 							onSubmit={(value) => {
-								setGridScale({
-									...GRID_SCALE,
+								setEditorSettings({
+									...EDITOR_SETTINGS,
 									scale: value,
 								})
 							}}
@@ -113,6 +135,51 @@ const Settings = (props: SettingsProps) => {
 								setTrussConstraints({
 									...TRUSS_PARAMETERS,
 									area: value,
+								})
+							}}
+						/>
+
+					</Box>
+					<Box
+						component={'div'}
+						sx={{
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
+							mb: 2,
+							width: '100%',
+						}}
+					>
+						<FormControlLabel
+							label={'Show Grid'}
+							control={<Checkbox />}
+							checked={EDITOR_SETTINGS.grid_enabled}
+							onChange={(e) => {
+								setEditorSettings({
+									...EDITOR_SETTINGS,
+									grid_enabled: (e.target as any).checked,
+								})
+							}}
+						/>
+						<FormControlLabel
+							label={'Snap to Grid'}
+							control={<Checkbox />}
+							checked={EDITOR_SETTINGS.snap_to_grid}
+							onChange={(e) => {
+								setEditorSettings({
+									...EDITOR_SETTINGS,
+									snap_to_grid: (e.target as any).checked,
+								})
+							}}
+						/>
+						<FormControlLabel
+							label={'Debug Mode'}
+							control={<Checkbox />}
+							checked={EDITOR_SETTINGS.debug}
+							onChange={(e) => {
+								setEditorSettings({
+									...EDITOR_SETTINGS,
+									debug: (e.target as any).checked,
 								})
 							}}
 						/>
@@ -216,22 +283,6 @@ const Settings = (props: SettingsProps) => {
 							sx={{
 								mr: 2,
 							}}
-							label={'Default Ultimate Compressive Stress'}
-							size={'small'}
-							baseUnit={'Pa'}
-							decimals={5}
-							defaultValue={TRUSS_PARAMETERS.ultimateStress.compression}
-							onSubmit={(value) => {
-								setTrussConstraints({
-									...TRUSS_PARAMETERS,
-									ultimateStress: {
-										...TRUSS_PARAMETERS.ultimateStress,
-										compression: value,
-									},
-								})
-							}}
-						/>
-						<EngineeringField
 							label={'Default Ultimate Tensile Stress'}
 							size={'small'}
 							baseUnit={'Pa'}
@@ -247,14 +298,30 @@ const Settings = (props: SettingsProps) => {
 								})
 							}}
 						/>
+						<EngineeringField
+							label={'Default Ultimate Compressive Stress'}
+							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.ultimateStress.compression}
+							onSubmit={(value) => {
+								setTrussConstraints({
+									...TRUSS_PARAMETERS,
+									ultimateStress: {
+										...TRUSS_PARAMETERS.ultimateStress,
+										compression: value,
+									},
+								})
+							}}
+						/>
 					</Box>
 					<Typography
 						variant={'body2'}
 						color={'text.primary'}
 					>
 						GitHub:
-						<a 
-							style={{ 
+						<a
+							style={{
 								marginLeft: '0.25rem',
 								color: 'inherit',
 							}}

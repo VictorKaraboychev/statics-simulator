@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Box, SxProps, Theme, useTheme } from '@mui/material'
 import { Canvas, ThreeEvent } from '@react-three/fiber'
-import { Color, ColorRepresentation, MeshPhongMaterial, OrthographicCamera, PlaneGeometry, Vector2, Vector3 } from 'three'
+import { Color, ColorRepresentation, MeshPhongMaterial, OrthographicCamera, PlaneGeometry, Vector3 } from 'three'
 import CameraController from './CameraController'
-import { HOVER_PRECISION, TRUSS_SCALE } from '../../config/GlobalConfig'
-import { roundVector } from '../../utility/math'
+import useCustomState from '../../state/state'
+//@ts-ignore
+import FPSStats from "react-fps-stats"
 
 interface VisualizerProps {
 	sx?: SxProps<Theme>
@@ -17,6 +18,9 @@ interface VisualizerProps {
 
 const Visualizer = (props: VisualizerProps) => {
 	const { palette } = useTheme()
+
+	const { value: EDITOR_SETTINGS } = useCustomState.editor_settings()
+
 	const [bgcolor, setBgColor] = useState<ColorRepresentation>(palette.mode === 'dark' ? 0x111111 : 0xffffff)
 
 	useEffect(() => {
@@ -36,6 +40,9 @@ const Visualizer = (props: VisualizerProps) => {
 				...props.sx,
 			}}
 		>
+			{EDITOR_SETTINGS.debug && (
+				<FPSStats />
+			)}
 			<Canvas
 				camera={camera}
 				shadows={true}
@@ -67,11 +74,13 @@ const Visualizer = (props: VisualizerProps) => {
 					intensity={1}
 					position={new Vector3(0, 50, 100)}
 				/>
-				<gridHelper
-					args={[4000, 200, new Color(0xffffff).sub(new Color(bgcolor))]}
-					position={[0, 0, -10]}
-					rotation={[Math.PI / 2, 0, 0]}
-				/>
+				{EDITOR_SETTINGS.grid_enabled && (
+					<gridHelper
+						args={[4000, 200, new Color(0xffffff).sub(new Color(bgcolor))]}
+						position={[0, 0, -10]}
+						rotation={[Math.PI / 2, 0, 0]}
+					/>
+				)}
 				{props.children}
 			</Canvas>
 		</Box>

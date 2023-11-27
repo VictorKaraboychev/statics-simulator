@@ -192,22 +192,22 @@ const JointInfo = (props: JointInfoProps) => {
 						mb: 1,
 					}}
 				>
-					<NumberField
+					<EngineeringField
 						sx={{
 							mr: 1,
 						}}
 						label={'Position (X)'}
 						size={'small'}
 						decimals={5}
-						endComponent={'m'}
+						baseUnit={'m'}
 						defaultValue={joint.position.x}
 						onSubmit={(value) => setPosition(new Vector2(value, position.y))}
 					/>
-					<NumberField
+					<EngineeringField
 						label={'Position (Y)'}
 						size={'small'}
 						decimals={5}
-						endComponent={'m'}
+						baseUnit={'m'}
 						defaultValue={joint.position.y}
 						onSubmit={(value) => setPosition(new Vector2(position.x, value))}
 

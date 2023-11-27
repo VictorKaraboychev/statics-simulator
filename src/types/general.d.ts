@@ -5,9 +5,11 @@ export type Range = {
 
 export type HoverState = 'accepted' | 'rejected' | 'none'
 
-export type GridScaleType = {
+export type EditorSettingsType = {
 	scale: number,
-	base_unit: string,
+	grid_enabled: boolean,
+	snap_to_grid: boolean,
+	debug: boolean,
 }
 
 type RouteEndPoint = {
