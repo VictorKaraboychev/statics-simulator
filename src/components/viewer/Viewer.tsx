@@ -9,7 +9,7 @@ import { saveAs } from 'file-saver'
 import Drop from '../common/Drop'
 import useCustomState from '../../state/state'
 import { useEventEffect, usePersistentState } from '../../utility/hooks'
-import { DEFAULT_PRECISION, MAX_UNDO_STATES, TRUSS_SCALE, VIEW_MODES } from '../../config/GlobalConfig'
+import { DEFAULT_PRECISION, DRAG_UPDATE_INTERVAL, MAX_UNDO_STATES, TRUSS_SCALE, VIEW_MODES } from '../../config/GlobalConfig'
 import { round, roundVector } from '../../utility/math'
 import { Vector2 } from 'three'
 import Joint from '../../utility/truss/Joint'
@@ -39,7 +39,7 @@ const Viewer = (props: ViewerProps) => {
 	const [jointDetails, setJointDetails] = useState<TrussJointDetailsType | null>(null)
 	const [connectionDetails, setConnectionDetails] = useState<TrussConnectionDetailsType | null>(null)
 
-	const dragRef = useRef<{ start: Vector2, current: Vector2, jointStarts: { [id: string]: Vector2 } }>()
+	const dragRef = useRef<{ lastUpdate: number, start: Vector2, current: Vector2, jointStarts: { [id: string]: Vector2 } }>()
 	const hoverSelectedRef = useRef<boolean>(false)
 
 	const dropRef = useRef<{ open: () => void }>()
@@ -287,6 +287,7 @@ const Viewer = (props: ViewerProps) => {
 				})
 
 				dragRef.current = {
+					lastUpdate: Date.now(),
 					start: position,
 					current: position,
 					jointStarts,
@@ -329,7 +330,7 @@ const Viewer = (props: ViewerProps) => {
 
 		if (mouse == 1) {
 			if (dragRef.current) {
-				if (dragRef.current?.current.equals(position)) return
+				if (dragRef.current.current.equals(position) || dragRef.current.lastUpdate > Date.now() - DRAG_UPDATE_INTERVAL) return
 
 				const { start, jointStarts } = dragRef.current
 				const delta = new Vector2(x, y).sub(start)
@@ -350,6 +351,7 @@ const Viewer = (props: ViewerProps) => {
 				})
 
 				submit(truss)
+				dragRef.current.lastUpdate = Date.now()
 				dragRef.current.current = position
 
 				document.body.style.cursor = 'grabbing'

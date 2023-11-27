@@ -42,6 +42,7 @@ export const DEFAULT_GRID_SCALE: GridScaleType = {
 
 export const TRUSS_SCALE = 20
 export const HOVER_PRECISION = 0.1
+export const DRAG_UPDATE_INTERVAL = 1000 / 60
 
 export const THEME_OPTIONS = {
 	system: 'System Default',
