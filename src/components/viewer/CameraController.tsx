@@ -31,8 +31,8 @@ const CameraController = (props: CameraControllerProps) => {
 				TWO: TOUCH.DOLLY_PAN,
 			}
 
-			controls.maxZoom = 15
-			controls.minZoom = 1
+			controls.maxZoom = 200
+			controls.minZoom = 20
 
 			controls.update()
 			return controls.dispose

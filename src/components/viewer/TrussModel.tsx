@@ -100,7 +100,7 @@ const TrussModel = (props: TrussModelProps) => {
 										]),
 										new LineMaterial({
 											color: color.getHex(),
-											linewidth: 5 * utilization + 1,
+											linewidth: 0.25 * utilization + 0.1,
 											worldUnits: true,
 										}),
 									)}
@@ -109,13 +109,13 @@ const TrussModel = (props: TrussModelProps) => {
 									object={new Line2(
 										new LineGeometry().setPositions([
 											...aPos.toArray(),
-											-0.5,
+											-0.05,
 											...bPos.toArray(),
-											-0.5,
+											-0.05,
 										]),
 										new LineMaterial({
 											color: new Color(palette.primary.main).getHex(),
-											linewidth: 5 * utilization + 4,
+											linewidth: 0.25 * utilization + 0.25,
 											transparent: true,
 											opacity: selected ? 1 : 0,
 											worldUnits: true,
@@ -130,13 +130,11 @@ const TrussModel = (props: TrussModelProps) => {
 					{joints.map((joint, i) => {
 						const p = joint.position.clone()
 
-						let geometry: { main: BufferGeometry, selected: BufferGeometry } = { main: new SphereGeometry(5, 16, 16), selected: new SphereGeometry(6.5, 16, 16) }
+						let geometry: { main: BufferGeometry, selected: BufferGeometry } = { main: new SphereGeometry(0.25, 16, 16), selected: new SphereGeometry(0.325, 16, 16) }
 
 						if (joint.fixed) {
-							geometry = { main: new BoxGeometry(10, 10, 10), selected: new BoxGeometry(13, 13, 13) }
+							geometry = { main: new BoxGeometry(0.5, 0.5, 0.5), selected: new BoxGeometry(0.65, 0.65, 0.65) }
 						}
-
-						// geometry = { main: new TorusGeometry(3.5, 2, 20, 16), selected: new SphereGeometry(6.5, 16, 16) }
 
 						const selected = props.selectedJoints?.has(joint.id)
 

@@ -11,7 +11,7 @@ import useCustomState from '../../state/state'
 import { useEventEffect, usePersistentState } from '../../utility/hooks'
 import { DEFAULT_PRECISION, DRAG_UPDATE_INTERVAL, MAX_UNDO_STATES, TRUSS_SCALE, VIEW_MODES } from '../../config/GlobalConfig'
 import { round, roundVector } from '../../utility/math'
-import { Vector2, Vector3 } from 'three'
+import { OrthographicCamera, Vector2, Vector3 } from 'three'
 import Joint from '../../utility/truss/Joint'
 import ViewerInfoBar from './ViewerInfoBar'
 import Connection from '../../utility/truss/Connection'
@@ -47,6 +47,8 @@ const Viewer = (props: ViewerProps) => {
 	const hoverSelectedRef = useRef<boolean>(false)
 
 	const dropRef = useRef<{ open: () => void }>()
+
+	const cameraRef = useRef<OrthographicCamera>()
 
 	const getActionJoints = (): Set<string> => {
 		const actionJoints = new Set(selectedJoints.values())
@@ -446,7 +448,13 @@ const Viewer = (props: ViewerProps) => {
 		setConnectionDetails(cDetails)
 	}
 
-	const handleToggleForces = () => setForcesEnabled(!forcesEnabled)
+	const handleHome = () => {
+		window.location.reload()
+	}
+
+	const handleToggleForces = () => {
+		setForcesEnabled(!forcesEnabled)
+	}
 
 	const handleImport = dropRef.current?.open!
 
@@ -491,6 +499,7 @@ const Viewer = (props: ViewerProps) => {
 					sx={{
 						zIndex: 10,
 					}}
+					cameraRef={cameraRef}
 					onClick={handleMouseClick}
 					onMouseUp={handleMouseUp}
 					onMouseDown={handleMouseDown}
@@ -538,10 +547,10 @@ const Viewer = (props: ViewerProps) => {
 						/>
 					)}
 				</Box>
-
 				<ViewerInfoBar
 					truss={truss}
 					forcesEnabled={forcesEnabled}
+					onHome={handleHome}
 					onToggleForces={handleToggleForces}
 					onImport={handleImport}
 					onExport={handleExport}

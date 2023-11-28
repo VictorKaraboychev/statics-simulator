@@ -3,7 +3,7 @@ import TooltipButton from '../common/TooltipButton'
 import useCustomState from '../../state/state'
 import Truss from '../../utility/truss/Truss'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
-import PauseIcon from '@mui/icons-material/Pause'
+import HomeIcon from '@mui/icons-material/Home'
 import PublishIcon from '@mui/icons-material/Publish'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import Settings from '../Settings'
@@ -13,6 +13,7 @@ import Info from '../Info'
 interface ViewerInfoBarProps {
 	truss: Truss,
 	forcesEnabled: boolean,
+	onHome?: () => void,
 	onToggleForces?: () => void,
 	onImport?: () => void,
 	onExport?: () => void,
@@ -91,6 +92,19 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 						mt: 2,
 					}}
 				>
+					<TooltipButton
+						sx={{
+							mr: 2,
+							backgroundColor: 'primary.main',
+							'&:hover': {
+								backgroundColor: 'primary.dark',
+							}
+						}}
+						label={'Home'}
+						onClick={props.onHome}
+					>
+						<HomeIcon />
+					</TooltipButton>
 					<Button
 						sx={{
 							mr: 2,

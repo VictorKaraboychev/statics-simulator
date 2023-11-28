@@ -42,7 +42,7 @@ export const DEFAULT_EDITOR_SETTINGS: EditorSettingsType = {
 	debug: false,
 }
 
-export const TRUSS_SCALE = 20
+export const TRUSS_SCALE = 1
 export const HOVER_PRECISION = 0.1
 export const DRAG_UPDATE_INTERVAL = 1000 / 60
 
