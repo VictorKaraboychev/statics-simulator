@@ -1,109 +1,503 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { Box, Button, Card, Popover, SxProps, Theme, Typography } from '@mui/material'
-import Truss from '../../utility/Truss'
+import { useRef, useState } from 'react'
+import { Box, SxProps, Theme } from '@mui/material'
+import Truss from '../../utility/truss/Truss'
 import Visualizer from './Visualizer'
-import { TrussConnectionDetailsType, TrussDetailsType, TrussJointDetailsType } from '../../types/truss'
+import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
 import TrussModel from './TrussModel'
 import { ThreeEvent } from '@react-three/fiber'
-import Joint from '../../utility/Joint'
 import { saveAs } from 'file-saver'
 import Drop from '../common/Drop'
+import useCustomState from '../../state/state'
+import { useEventEffect, usePersistentState } from '../../utility/hooks'
+import { DEFAULT_PRECISION, DRAG_UPDATE_INTERVAL, MAX_UNDO_STATES, TRUSS_SCALE, VIEW_MODES } from '../../config/GlobalConfig'
+import { round, roundVector } from '../../utility/math'
+import { OrthographicCamera, Vector2, Vector3 } from 'three'
+import Joint from '../../utility/truss/Joint'
+import ViewerInfoBar from './ViewerInfoBar'
+import Connection from '../../utility/truss/Connection'
+import JointInfo from './info/JointInfo'
+import ConnectionInfo from './info/ConnectionInfo'
+import Material from '../../utility/truss/Material'
+import { useSnackbar } from 'notistack'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
-	truss: Truss,
 }
 
 const Viewer = (props: ViewerProps) => {
-	const [truss, setTruss] = useState(props.truss)
+	const { value: truss, set: setTruss } = useCustomState.current_truss()
+	const { value: TRUSS_PARAMETERS } = useCustomState.truss_parameters()
+	const { value: EDITOR_SETTINGS } = useCustomState.editor_settings()
+	const { value: TRUSS_VIEW, set: setTrussView } = useCustomState.truss_view()
 
-	const [forcesEnabled, setForcesEnabled] = useState(false)
-	const [details, setDetails] = useState<TrussDetailsType | null>(null)
+	const { enqueueSnackbar } = useSnackbar()
 
-	const [open, setOpen] = useState(false)
-	const [position, setPosition] = useState<{ left: number, top: number } | null>(null)
+	const SCALE = TRUSS_SCALE / EDITOR_SETTINGS.scale
+	const DECIMALS = Math.log10(1 / EDITOR_SETTINGS.scale) + (EDITOR_SETTINGS.snap_to_grid ? 1 : 5)
 
-	const [connectionDetails, setConnectionDetails] = useState<TrussConnectionDetailsType | null>(null)
+	const [historyIndex, setHistoryIndex] = usePersistentState('truss_undo_index', 0, 'local')
+	const [history, setHistory] = usePersistentState<any[]>('truss_undo', [], 'local')
+
+	const [forcesEnabled, setForcesEnabled] = usePersistentState('force_enabled', true)
+
+	const [selectedJoints, setSelectedJoints] = useState<Set<string>>(new Set())
+	const [selectedConnections, setSelectedConnections] = useState<Set<string>>(new Set())
+
 	const [jointDetails, setJointDetails] = useState<TrussJointDetailsType | null>(null)
+	const [connectionDetails, setConnectionDetails] = useState<TrussConnectionDetailsType | null>(null)
+
+	const dragRef = useRef<{ lastUpdate: number, start: Vector2, current: Vector2, jointStarts: { [id: string]: Vector2 } }>()
+	const hoverSelectedRef = useRef<boolean>(false)
 
 	const dropRef = useRef<{ open: () => void }>()
 
-	useEffect(() => {
-		truss.computeForces()
+	const cameraRef = useRef<OrthographicCamera>()
 
-		const joints = truss.joints
-		const connections = truss.connections
+	const getActionJoints = (): Set<string> => {
+		const actionJoints = new Set(selectedJoints.values())
+		selectedConnections.forEach((id) => {
+			const ids = truss.getConnection(id).jointIds
+			if (ids) actionJoints.add(ids[0]).add(ids[1])
+		})
+		return actionJoints
+	}
 
-		const value = truss.cost
+	const submit = (t: Truss) => {
+		// if (history.length >= MAX_UNDO_STATES) history.shift()
+		// const difference = diff(history[history.length - 1] ?? {}, t.toJSON())
 
-		let maxCompression = 0
-		let maxTension = 0
+		// history.push(difference)
+		// setHistory([ ...history ])
 
-		connections.forEach(c => {
-			const a = joints[c[0]]
-			const b = joints[c[1]]
+		setTruss(t)
+	}
 
-			const force = a.connections[b.id].force
+	useEventEffect((e: KeyboardEvent) => {
+		const { altKey: alt, ctrlKey: ctrl, shiftKey: shift, key } = e
 
-			if (force) {
-				maxCompression = Math.max(maxCompression, force)
-				maxTension = Math.min(maxTension, force)
+		if (['Shift', 'Control', 'Alt'].includes(key)) return
+
+		let movement = 0.1
+		if (alt) movement = 0.01
+
+		const mirror = shift && selectedJoints.size > 1
+
+		const actionJoints = getActionJoints()
+
+		switch (key) {
+			case 'Delete': // Delete
+				selectedJoints.forEach((id) => truss.removeJoint(id))
+				selectedConnections.forEach((id) => truss.removeConnection(id))
+
+				setSelectedJoints(new Set())
+				setSelectedConnections(new Set())
+				setJointDetails(null)
+				setConnectionDetails(null)
+
+				submit(truss)
+				break
+			case 'n': // New
+				if (!alt) break
+
+				setTruss(new Truss([], []))
+
+				e.preventDefault()
+				e.stopPropagation()
+				break
+			case 'a': // Select all
+				if (!ctrl) break
+
+				setSelectedJoints(new Set(truss.jointIds))
+				setSelectedConnections(new Set(truss.connectionIds))
+
+				e.preventDefault()
+				break
+			case 'd': // Deselect all
+				if (!ctrl) break
+
+				setSelectedJoints(new Set())
+				setSelectedConnections(new Set())
+				setJointDetails(null)
+				setConnectionDetails(null)
+
+				e.preventDefault()
+				break
+			case 'z': // UNDO
+				if (!ctrl) break
+				if (history.length > 0) {
+					// setTruss(Truss.fromJSON(historyIndex.pop() as TrussJSONType))
+					// setHistoryIndex([ ...historyIndex ])
+				}
+				break
+			case 'y': // REDO
+				if (!ctrl) break
+				if (history.length > 0) {
+					// setTruss(Truss.fromJSON(historyIndex.pop() as TrussJSONType))
+					// setHistoryIndex([ ...historyIndex ])
+				}
+				break
+			case 'o': // Import
+				if (!ctrl) break
+
+				handleImport()
+
+				e.preventDefault()
+				e.stopPropagation()
+				break
+			case 's': // Export
+				if (!ctrl) break
+
+				handleExport()
+
+				e.preventDefault()
+				e.stopPropagation()
+				break
+			case 'm': // View mode
+				if (!ctrl) break
+
+				setTrussView(VIEW_MODES[(VIEW_MODES.indexOf(TRUSS_VIEW) + 1) % VIEW_MODES.length])
+
+				e.preventDefault()
+				e.stopPropagation()
+				break
+			case 'ArrowUp':
+				if (!ctrl) break
+
+				actionJoints.forEach((id) => {
+					const joint = truss.getJoint(id)
+
+					let m = movement
+
+					if (mirror) {
+						const y = joint.position.y
+						if (y === 0) {
+							m = 0
+						} else if (y < 0) {
+							m *= -1
+						}
+					}
+					joint.position.y = round(joint.position.y + m, DEFAULT_PRECISION)
+				})
+				submit(truss)
+				break
+			case 'ArrowDown':
+				if (!ctrl) break
+
+				actionJoints.forEach((id) => {
+					const joint = truss.getJoint(id)
+
+					let m = movement
+
+					if (mirror) {
+						const y = joint.position.y
+						if (y === 0) {
+							m = 0
+						} else if (y < 0) {
+							m *= -1
+						}
+					}
+					joint.position.y = round(joint.position.y - m, DEFAULT_PRECISION)
+				})
+				submit(truss)
+				break
+			case 'ArrowLeft':
+				if (!ctrl) break
+
+				actionJoints.forEach((id) => {
+					const joint = truss.getJoint(id)
+
+					let m = movement
+
+					if (mirror) {
+						const x = joint.position.x
+						if (x === 0) {
+							m = 0
+						} else if (x < 0) {
+							m *= -1
+						}
+					}
+					joint.position.x = round(joint.position.x - m, DEFAULT_PRECISION)
+				})
+				submit(truss)
+				break
+			case 'ArrowRight':
+				if (!ctrl) break
+
+				actionJoints.forEach((id) => {
+					const joint = truss.getJoint(id)
+
+					let m = movement
+
+					if (mirror) {
+						const x = joint.position.x
+						if (x === 0) {
+							m = 0
+						} else if (x < 0) {
+							m *= -1
+						}
+					}
+					joint.position.x = round(joint.position.x + m, DEFAULT_PRECISION)
+				})
+				submit(truss)
+				break
+			default:
+				return
+		}
+	}, 'keydown')
+
+	const handleMouseClick = (e: ThreeEvent<MouseEvent>) => {
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
+
+		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
+
+		console.log('mouse click')
+
+		if (shift) {
+			const position = new Vector2(x, y)
+
+			truss.addJoint(new Joint(position))
+
+			if (alt && x !== 0) {
+				position.x = -x
+				truss.addJoint(new Joint(position))
 			}
-		})
 
-		setDetails({
-			cost: value,
-			maxCompression,
-			maxTension,
-		})
-	}, [truss])
+			submit(truss)
+		}
 
-	const handleJointClick = (e: ThreeEvent<MouseEvent>, details: TrussJointDetailsType) => {
-		setJointDetails(details)
-		setConnectionDetails(null)
-		setPosition({
-			left: (e as any).x,
-			top: (e as any).y
-		})
-		setOpen(true)
+		if (!ctrl) {
+			setSelectedJoints(new Set())
+			setSelectedConnections(new Set())
+			setJointDetails(null)
+			setConnectionDetails(null)
+		}
 	}
 
-	const handleConnectionClick = (e: ThreeEvent<MouseEvent>, a: Joint, b: Joint, details: TrussConnectionDetailsType) => {
-		setConnectionDetails(details)
-		setJointDetails(null)
-		setPosition({
-			left: (e as any).x,
-			top: (e as any).y
-		})
-		setOpen(true)
+	const handleMouseDown = (e: ThreeEvent<MouseEvent>) => {
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
+
+		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
+		const position = new Vector2(x, y)
+
+		console.log('mouse down')
+
+		if (mouse == 1) {
+			if (hoverSelectedRef.current && !dragRef.current) {
+				const actionJoints = getActionJoints()
+
+				const jointStarts: { [id: string]: Vector2 } = {}
+
+				actionJoints.forEach((id) => {
+					const joint = truss.getJoint(id)
+					jointStarts[id] = joint.position.clone()
+				})
+
+				dragRef.current = {
+					lastUpdate: Date.now(),
+					start: position,
+					current: position,
+					jointStarts,
+				}
+
+				document.body.style.cursor = 'grabbing'
+			}
+		}
 	}
 
-	const handleClose = () => {
-		setOpen(false)
+	const handleMouseUp = (e: ThreeEvent<MouseEvent>) => {
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
+
+		// const { x, y } = e.point.clone().divideScalar(SCALE)
+
+		console.log('mouse up')
+
+		if (dragRef.current) {
+			// const { start, jointStarts } = dragRef.current
+			// const delta = new Vector2(x, y).sub(start)
+
+			// const actionJoints = getActionJoints()
+
+			// actionJoints.forEach((id) => {
+			// 	const joint = truss.getJoint(id)
+			// 	joint.position = jointStarts[id].clone().add(delta)
+			// })
+
+			dragRef.current = undefined
+
+			document.body.style.cursor = 'auto'
+
+			// submit(truss)
+		}
 	}
+
+	const handleMouseHover = (e: ThreeEvent<MouseEvent>) => {
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
+
+		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
+		const position = new Vector2(x, y)
+
+		if (mouse == 1) {
+			if (dragRef.current) {
+				if (dragRef.current.current.equals(position) || dragRef.current.lastUpdate > Date.now() - DRAG_UPDATE_INTERVAL) return
+
+				const { start, jointStarts } = dragRef.current
+				const delta = position.clone().sub(start)
+
+				const actionJoints = getActionJoints()
+
+				const mirror = shift && actionJoints.size > 1
+
+				actionJoints.forEach((id) => {
+					const joint = truss.getJoint(id)
+
+					if (mirror) {
+						joint.position.x = jointStarts[id].x + delta.x * Math.sign(jointStarts[id].x) * Math.sign(start.x)
+						joint.position.y = jointStarts[id].y + delta.y * Math.sign(jointStarts[id].y) * Math.sign(start.y)
+					} else {
+						joint.position = jointStarts[id].clone().add(delta)
+					}
+
+					if (EDITOR_SETTINGS.snap_to_grid) joint.position = roundVector(joint.position, DECIMALS)
+				})
+
+				submit(truss)
+				dragRef.current.lastUpdate = Date.now()
+				dragRef.current.current = position
+
+				document.body.style.cursor = 'grabbing'
+			}
+		}
+	}
+
+	const handleJointClick = (e: ThreeEvent<MouseEvent>, id: string, details: TrussJointDetailsType) => {
+		e.stopPropagation()
+
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt } = e.nativeEvent
+
+		let jDetails: TrussJointDetailsType | null = jointDetails
+		let cDetails: TrussConnectionDetailsType | null = connectionDetails
+
+		if (!ctrl && shift && selectedJoints.size === 1) {
+			const otherId: string = selectedJoints.values().next().value
+
+			const material = new Material('Material', '#000000', TRUSS_PARAMETERS.density, TRUSS_PARAMETERS.youngsModulus, TRUSS_PARAMETERS.shearModulus, TRUSS_PARAMETERS.poissonsRatio, TRUSS_PARAMETERS.ultimateStress)
+			const connection = new Connection(0, 0, 0, TRUSS_PARAMETERS.area, material)
+
+			truss.addConnection(id, otherId, connection)
+			submit(truss)
+		}
+
+		if (selectedJoints.has(id)) {
+			if (!ctrl && selectedJoints.size > 1) {
+				selectedJoints.clear()
+				selectedConnections.clear()
+				selectedJoints.add(id)
+
+				jDetails = details
+				cDetails = null
+			} else {
+				selectedJoints.delete(id)
+
+				jDetails = null
+			}
+		} else {
+			if (!ctrl) {
+				selectedJoints.clear()
+				selectedConnections.clear()
+
+				cDetails = null
+			}
+			selectedJoints.add(id)
+
+			jDetails = details
+		}
+
+		setSelectedJoints(selectedJoints)
+		setSelectedConnections(selectedConnections)
+		setJointDetails(jDetails)
+		setConnectionDetails(cDetails)
+	}
+
+	const handleConnectionClick = (e: ThreeEvent<MouseEvent>, id: string, details: TrussConnectionDetailsType) => {
+		e.stopPropagation()
+
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt } = e.nativeEvent
+
+		let jDetails: TrussJointDetailsType | null = jointDetails
+		let cDetails: TrussConnectionDetailsType | null = connectionDetails
+
+		if (selectedConnections.has(id)) {
+			if (!ctrl && selectedConnections.size > 1) {
+				selectedJoints.clear()
+				selectedConnections.clear()
+				selectedConnections.add(id)
+
+				jDetails = null
+				cDetails = details
+			} else {
+				selectedConnections.delete(id)
+
+				cDetails = null
+			}
+		} else {
+			if (!ctrl) {
+				selectedJoints.clear()
+				selectedConnections.clear()
+
+				jDetails = null
+			}
+			selectedConnections.add(id)
+
+			cDetails = details
+		}
+
+		setSelectedJoints(selectedJoints)
+		setSelectedConnections(selectedConnections)
+		setJointDetails(jDetails)
+		setConnectionDetails(cDetails)
+	}
+
+	const handleHome = () => {
+		window.location.reload()
+	}
+
+	const handleToggleForces = () => {
+		setForcesEnabled(!forcesEnabled)
+	}
+
+	const handleImport = dropRef.current?.open!
 
 	const handleExport = () => {
-		const json = JSON.stringify(props.truss.toJSON())
+		const json = JSON.stringify(truss.toJSON())
 		const blob = new Blob([json], { type: 'application/json' })
-
 		saveAs(blob, 'truss.json')
 	}
 
 	const handleDrop = (files: File[]) => {
-		const file = files[0]
-		file.text().then((text) => {
-			const json = JSON.parse(text)
-			setTruss(Truss.fromJSON(json))
-		})
-	}
+		try {
+			const file = files[0]
 
-	if (!details) return null
+			if (!file.type.includes('json')) {
+				enqueueSnackbar('Invalid file type, must be a .json file', { variant: 'error' })
+				return
+			}
+
+			file.text().then((text) => {
+				const json = JSON.parse(text)
+				submit(Truss.fromJSON(json))
+			})
+		} catch (e) {
+			enqueueSnackbar('Error parsing file contents, please check the file is valid', { variant: 'error' })
+			return
+		}
+	}
 
 	return (
 		<Drop
 			sx={{
 				width: '100%',
 				height: '100%',
+				...props.sx
 			}}
 			reference={dropRef}
 			noClick={true}
@@ -113,7 +507,6 @@ const Viewer = (props: ViewerProps) => {
 			onSubmit={handleDrop}
 		>
 			<Box
-				component={'div'}
 				sx={{
 					position: 'absolute',
 					display: 'flex',
@@ -122,183 +515,68 @@ const Viewer = (props: ViewerProps) => {
 					height: '100%',
 				}}
 			>
-
 				<Visualizer
 					sx={{
 						zIndex: 10,
 					}}
+					cameraRef={cameraRef}
+					onClick={handleMouseClick}
+					onMouseUp={handleMouseUp}
+					onMouseDown={handleMouseDown}
+					onHover={handleMouseHover}
 				>
 					<TrussModel
 						truss={truss}
+						view={TRUSS_VIEW}
+						simpleUtilization={TRUSS_PARAMETERS.simple}
+						scale={new Vector3(SCALE, SCALE, SCALE)}
 						enableForces={forcesEnabled}
+						hoverSelected={hoverSelectedRef}
+						selectedJoints={selectedJoints}
+						selectedConnections={selectedConnections}
 						onJointClick={handleJointClick}
 						onConnectionClick={handleConnectionClick}
 					/>
 				</Visualizer>
-				<Popover
+				<Box
 					sx={{
-						left: position?.left || 0,
-						top: position?.top || 0,
+						position: 'absolute',
+						display: 'flex',
+						flexDirection: 'row',
+						top: 10,
+						right: 10,
+						zIndex: 20,
 					}}
-					open={open}
-					anchorEl={document.body}
-					onClose={handleClose}
 				>
-					{connectionDetails && (
-						<Box
-							component={'div'}
-							sx={{
-								p: 2
-							}}
-						>
-							<Typography
-								sx={{
-									fontWeight: 'bold',
-								}}
-								variant={'body1'}
-							>
-								Connection Details
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								ID: {connectionDetails.id}
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								Force: {Math.ceil(connectionDetails.force || 0)?.toFixed(0)}N
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								Stress: {Math.abs(connectionDetails.stress * 100).toFixed(0)}%{connectionDetails.multiplier > 1 && ` ×${connectionDetails.multiplier}`}
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								Length: {connectionDetails.length.toFixed(2)}m
-							</Typography>
-						</Box>
-					)}
 					{jointDetails && (
-						<Box
-							component={'div'}
-							sx={{
-								p: 2
-							}}
-						>
-							<Typography
-								sx={{
-									fontWeight: 'bold',
-								}}
-								variant={'body1'}
-							>
-								Joint Details
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								ID: {jointDetails.id}
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								Connections: {jointDetails.joint.connections_count}
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								Position: ({jointDetails.joint.position.toArray().map(x => x.toFixed(2)).join(', ')})
-							</Typography>
-							<Typography
-								variant={'body2'}
-							>
-								External Forces: ({jointDetails.joint.externalForce.toArray().map(x => x.toFixed(0)).join(', ')})N
-							</Typography>
-						</Box>
+						<JointInfo
+							key={jointDetails.id}
+							truss={truss}
+							jointDetails={jointDetails}
+							onSubmit={submit}
+						/>
 					)}
-				</Popover>
-				<Card
-					sx={{
-						boxShadow: 5,
-						p: 2,
-					}}
-					variant={'outlined'}
-				>
-					<Box
-						component={'div'}
-						sx={{
-							display: 'flex',
-							flexDirection: 'row',
-						}}
-					>
-						<Typography
+					{connectionDetails && (
+						<ConnectionInfo
+							key={connectionDetails.id}
 							sx={{
-								mr: 2,
+								ml: 2,
 							}}
-							color={'text.primary'}
-						>
-							Cost: ${details.cost.toFixed(2)}
-						</Typography>
-						<Typography
-							sx={{
-								mr: 2,
-							}}
-							color={'text.primary'}
-						>
-							Max Compression: {details.maxCompression.toFixed(0)}N
-						</Typography>
-						<Typography
-							sx={{
-								mr: 2,
-							}}
-							color={'text.primary'}
-						>
-							Max Tension: {details.maxTension.toFixed(0)}N
-						</Typography>
-					</Box>
-					<Box
-						component={'div'}
-						sx={{
-							display: 'flex',
-							flexDirection: 'row',
-							mt: 1,
-						}}
-					>
-						<Button
-							sx={{
-								mr: 2,
-							}}
-							variant={'contained'}
-							onClick={() => setForcesEnabled(!forcesEnabled)}
-						>
-							{forcesEnabled ? 'Disable' : 'Enable'} Forces
-						</Button>
-						<Box
-							component={'div'}
-							sx={{
-								ml: 'auto',
-							}}
-						>
-							<Button
-								sx={{
-									mr: 2,
-								}}
-								variant={'contained'}
-								onClick={() => dropRef.current?.open()}
-							>
-								Import
-							</Button>
-							<Button
-								variant={'contained'}
-								onClick={handleExport}
-							>
-								Export
-							</Button>
-						</Box>
-					</Box>
-				</Card>
+							truss={truss}
+							connectionDetails={connectionDetails}
+							onSubmit={submit}
+						/>
+					)}
+				</Box>
+				<ViewerInfoBar
+					truss={truss}
+					forcesEnabled={forcesEnabled}
+					onHome={handleHome}
+					onToggleForces={handleToggleForces}
+					onImport={handleImport}
+					onExport={handleExport}
+					onSubmit={submit}
+				/>
 			</Box>
 		</Drop>
 	)

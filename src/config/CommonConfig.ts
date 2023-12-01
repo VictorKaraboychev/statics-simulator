@@ -1,0 +1,1 @@
+export const DEFAULT_INPUT_FIELD_DEBOUNCE = 200
