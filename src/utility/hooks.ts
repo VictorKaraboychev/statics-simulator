@@ -1,5 +1,6 @@
 import { DependencyList, Dispatch, EffectCallback, SetStateAction, useEffect, useRef, useState } from "react"
 import { deepCopy } from './object'
+import { Change, applyChanges, diff, revertChanges } from 'yajsondiff'
 
 export const useEventEffect = <K extends keyof WindowEventMap>(listener: (this: Window, ev: WindowEventMap[K]) => any, type: K, deps?: DependencyList) => {
 	useEffect(() => {
@@ -40,14 +41,68 @@ export const useCompoundState = <T extends Object>(initialState: T | (() => T), 
 
 export const usePersistentState = <T>(key: string, initialState?: T, storage: 'local' | 'session' = 'local'): [T, (value: T) => void] => {
 	const storageType = storage === 'local' ? localStorage : sessionStorage
-	const [state, setState] = useState(() => {
+	const [state, setState] = useState((() => {
 		const storage = storageType.getItem(key)
 		return storage !== null ? JSON.parse(storage) : initialState
-	})
+	})())
 
 	useEffect(() => {
 		storageType.setItem(key, JSON.stringify(state))
 	}, [state])
 
 	return [state, setState]
+}
+
+export const usePersistentRef = <T>(key: string, initialValue?: T, storage: 'local' | 'session' = 'local'): React.MutableRefObject<T> => {
+	const storageType = storage === 'local' ? localStorage : sessionStorage
+	const state = useRef<T>((() => {
+		const storage = storageType.getItem(key)
+		return storage !== null ? JSON.parse(storage) : initialValue
+	})())
+
+	useEffect(() => () => {
+		storageType.setItem(key, JSON.stringify(state.current))
+	}, [])
+
+	return state
+}
+
+export const useHistory = <T>(key: string, initialState?: T, maxStates = 1000, storage: 'local' | 'session' = 'session'): [T | undefined, (newValue: T) => void, () => void, () => void, () => void] => {
+	const savedState = usePersistentRef<{ undo: Change[][], redo: Change[][] }>(key, { undo: [], redo: [] }, storage)
+	const [value, setValue] = useState<T | undefined>(initialState)
+
+	const set = (newValue: T) => {
+		const difference = diff(value, newValue)
+
+		if (difference) {
+			savedState.current.undo.push(difference)
+			savedState.current.redo = []
+
+			if (savedState.current.undo.length > maxStates) savedState.current.undo.shift()
+		}
+		setValue(newValue)
+	}
+
+	const undo = () => {
+		const past = savedState.current.undo.pop()
+		if (!past) return
+
+		savedState.current.redo.push(past)
+		setValue(applyChanges(value, past))
+	}
+
+	const redo = () => {
+		const future = savedState.current.redo.pop()
+		if (!future) return
+
+		savedState.current.undo.push(future)
+		setValue(revertChanges(value, future))
+	}
+
+	const clear = () => {
+		savedState.current = { undo: [], redo: [] }
+		setValue(initialState)
+	}
+
+	return [value, set, undo, redo, clear]
 }
