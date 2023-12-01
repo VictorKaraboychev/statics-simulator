@@ -67,8 +67,8 @@ export const usePersistentRef = <T>(key: string, initialValue?: T, storage: 'loc
 	return state
 }
 
-export const useHistory = <T>(key: string, initialState?: T, maxStates = 1000, storage: 'local' | 'session' = 'session'): [T | undefined, (newValue: T) => void, () => void, () => void, () => void] => {
-	const savedState = usePersistentRef<{ undo: Change[][], redo: Change[][] }>(key, { undo: [], redo: [] }, storage)
+export const useHistory = <T>(key: string, initialState?: T, maxStates = 1000, storage: 'local' | 'session' = 'session'): [T | undefined, (newValue: T) => void, () => T | undefined, () => T | undefined, () => void] => {
+	const savedState = usePersistentRef<{ undo: Change[][], redo: Change[][] }>(`history-${key}`, { undo: [], redo: [] }, storage)
 	const [value, setValue] = useState<T | undefined>(initialState)
 
 	const set = (newValue: T) => {
@@ -80,23 +80,28 @@ export const useHistory = <T>(key: string, initialState?: T, maxStates = 1000, s
 
 			if (savedState.current.undo.length > maxStates) savedState.current.undo.shift()
 		}
+
 		setValue(newValue)
 	}
 
 	const undo = () => {
 		const past = savedState.current.undo.pop()
 		if (!past) return
-
 		savedState.current.redo.push(past)
-		setValue(applyChanges(value, past))
+
+		const newValue = revertChanges(value, past)
+		setValue(newValue)
+		return newValue
 	}
 
 	const redo = () => {
 		const future = savedState.current.redo.pop()
 		if (!future) return
-
 		savedState.current.undo.push(future)
-		setValue(revertChanges(value, future))
+
+		const newValue = applyChanges(value, future)
+		setValue(newValue)
+		return newValue
 	}
 
 	const clear = () => {

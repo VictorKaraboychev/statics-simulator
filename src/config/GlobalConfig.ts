@@ -74,14 +74,14 @@ export const KEY_BINDINGS = [
 				keys: ['Ctrl', 'O'],
 				action: 'Open'
 			},
-			// {
-			// 	keys: ['Ctrl', 'Z'],
-			// 	action: 'Undo'
-			// },
-			// {
-			// 	keys: ['Ctrl', 'Y'],
-			// 	action: 'Redo'
-			// },
+			{
+				keys: ['Ctrl', 'Z'],
+				action: 'Undo'
+			},
+			{
+				keys: ['Ctrl', 'Y'],
+				action: 'Redo'
+			},
 			{
 				keys: ['LeftClick'],
 				action: 'Select'

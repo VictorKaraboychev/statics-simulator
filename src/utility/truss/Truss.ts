@@ -282,8 +282,6 @@ export default class Truss {
 			// )
 
 			// console.timeEnd('computeForces')
-
-			console.log(this)
 		} catch (e) {
 			return false
 		}

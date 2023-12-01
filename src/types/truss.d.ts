@@ -45,7 +45,6 @@ export type JointJSONType = {
 	id: string,
 	position: [number, number]
 	fixtures?: { x: boolean, y: boolean }
-	displacement?: [number, number]
 	force?: [number, number]
 	connections: { [id: string]: string }
 }
@@ -53,10 +52,7 @@ export type JointJSONType = {
 export type ConnectionJSONType = {
 	id: string,
 	jointIds?: [string, string],
-	stress: number,
 	area: number,
-	length: number,
-	angle: number,
 	material: MaterialJSONType,
 }
 

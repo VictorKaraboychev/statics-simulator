@@ -17,10 +17,10 @@ export default class Connection {
 
 	jointIds: [string, string] | null = null // [jointId1, jointId2] or null if not connected
 
-	axialStress: number // positive force is tension (toward the outside of the connection) and negative force is compression (toward the center of the connection)
-	
-	length: number
-	angle: number
+	axialStress: number = 0 // + tension, - compression
+	length: number = 0
+	angle: number = 0
+
 	area: number
 
 	material: Material
@@ -29,13 +29,8 @@ export default class Connection {
 
 	private amoi: Vector2 | null = null
 
-	constructor(stress = 0, length = 0, angle = 0, area = 1, material?: Material, profile?: Profile) {
+	constructor(area = 1, material?: Material, profile?: Profile) {
 		this.id = getUUID()
-
-		this.axialStress = stress
-
-		this.length = length
-		this.angle = angle
 		this.area = area
 
 		this.profile = profile ?? new Rectangular(1, 1)
@@ -121,7 +116,7 @@ export default class Connection {
 	}
 
 	clone(): Connection {
-		const connection = new Connection(this.force, this.length, this.angle, this.area, this.material.clone())
+		const connection = new Connection(this.area, this.material.clone())
 		connection.id = this.id
 		connection.jointIds = this.jointIds
 		return connection
@@ -131,16 +126,13 @@ export default class Connection {
 		return {
 			id: this.id,
 			jointIds: this.jointIds ?? undefined,
-			stress: this.axialStress,
-			length: this.length,
-			angle: this.angle,
 			area: this.area,
 			material: this.material.toJSON(),
 		}
 	}
 
 	static fromJSON(json: ConnectionJSONType): Connection {
-		const connection = new Connection(json.stress, json.length, json.angle, json.area, Material.fromJSON(json.material))
+		const connection = new Connection(json.area, Material.fromJSON(json.material))
 		connection.id = json.id
 		connection.jointIds = json.jointIds ?? null
 		return connection

@@ -2,13 +2,13 @@ import { useRef, useState } from 'react'
 import { Box, SxProps, Theme } from '@mui/material'
 import Truss from '../../utility/truss/Truss'
 import Visualizer from './Visualizer'
-import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
+import { TrussConnectionDetailsType, TrussJSONType, TrussJointDetailsType } from '../../types/truss'
 import TrussModel from './TrussModel'
 import { ThreeEvent } from '@react-three/fiber'
 import { saveAs } from 'file-saver'
 import Drop from '../common/Drop'
 import useCustomState from '../../state/state'
-import { useEventEffect, usePersistentState } from '../../utility/hooks'
+import { useEventEffect, useHistory, usePersistentState } from '../../utility/hooks'
 import { DEFAULT_PRECISION, DRAG_UPDATE_INTERVAL, MAX_UNDO_STATES, TRUSS_SCALE, VIEW_MODES } from '../../config/GlobalConfig'
 import { round, roundVector } from '../../utility/math'
 import { OrthographicCamera, Vector2, Vector3 } from 'three'
@@ -19,13 +19,14 @@ import JointInfo from './info/JointInfo'
 import ConnectionInfo from './info/ConnectionInfo'
 import Material from '../../utility/truss/Material'
 import { useSnackbar } from 'notistack'
+import { DEFAULT_TRUSS } from '../../config/TrussConfig'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
 }
 
 const Viewer = (props: ViewerProps) => {
-	const { value: truss, set: setTruss } = useCustomState.current_truss()
+	// const { value: truss, set: setTruss } = useCustomState.current_truss()
 	const { value: TRUSS_PARAMETERS } = useCustomState.truss_parameters()
 	const { value: EDITOR_SETTINGS } = useCustomState.editor_settings()
 	const { value: TRUSS_VIEW, set: setTrussView } = useCustomState.truss_view()
@@ -35,8 +36,8 @@ const Viewer = (props: ViewerProps) => {
 	const SCALE = TRUSS_SCALE / EDITOR_SETTINGS.scale
 	const DECIMALS = Math.log10(1 / EDITOR_SETTINGS.scale) + (EDITOR_SETTINGS.snap_to_grid ? 1 : 5)
 
-	const [historyIndex, setHistoryIndex] = usePersistentState('truss_undo_index', 0, 'local')
-	const [history, setHistory] = usePersistentState<any[]>('truss_undo', [], 'local')
+	const [_, setHistory, undoHistory, redoHistory] = useHistory<TrussJSONType>('truss', DEFAULT_TRUSS, MAX_UNDO_STATES)
+	const [truss, setTruss] = useState<Truss>(Truss.fromJSON(DEFAULT_TRUSS))
 
 	const [forcesEnabled, setForcesEnabled] = usePersistentState('force_enabled', true)
 
@@ -62,13 +63,9 @@ const Viewer = (props: ViewerProps) => {
 		return actionJoints
 	}
 
-	const submit = (t: Truss) => {
-		// if (history.length >= MAX_UNDO_STATES) history.shift()
-		// const difference = diff(history[history.length - 1] ?? {}, t.toJSON())
-
-		// history.push(difference)
-		// setHistory([ ...history ])
-
+	const submit = (t: Truss, compute = true, save = true) => {
+		if (save) setHistory(t.toJSON())
+		if (compute) t.compute()
 		setTruss(t)
 	}
 
@@ -125,15 +122,17 @@ const Viewer = (props: ViewerProps) => {
 			case 'z': // UNDO
 				if (!ctrl) break
 				if (history.length > 0) {
-					// setTruss(Truss.fromJSON(historyIndex.pop() as TrussJSONType))
-					// setHistoryIndex([ ...historyIndex ])
+					const json = undoHistory()
+					if (!json) break
+					submit(Truss.fromJSON(json), true, false)
 				}
 				break
 			case 'y': // REDO
 				if (!ctrl) break
 				if (history.length > 0) {
-					// setTruss(Truss.fromJSON(historyIndex.pop() as TrussJSONType))
-					// setHistoryIndex([ ...historyIndex ])
+					const json = redoHistory()
+					if (!json) break
+					submit(Truss.fromJSON(json), true, false)
 				}
 				break
 			case 'o': // Import
@@ -250,8 +249,6 @@ const Viewer = (props: ViewerProps) => {
 
 		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
 
-		console.log('mouse click')
-
 		if (shift) {
 			const position = new Vector2(x, y)
 
@@ -278,8 +275,6 @@ const Viewer = (props: ViewerProps) => {
 
 		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
 		const position = new Vector2(x, y)
-
-		console.log('mouse down')
 
 		if (mouse == 1) {
 			if (hoverSelectedRef.current && !dragRef.current) {
@@ -309,8 +304,6 @@ const Viewer = (props: ViewerProps) => {
 
 		// const { x, y } = e.point.clone().divideScalar(SCALE)
 
-		console.log('mouse up')
-
 		if (dragRef.current) {
 			// const { start, jointStarts } = dragRef.current
 			// const delta = new Vector2(x, y).sub(start)
@@ -326,7 +319,7 @@ const Viewer = (props: ViewerProps) => {
 
 			document.body.style.cursor = 'auto'
 
-			// submit(truss)
+			submit(truss)
 		}
 	}
 
@@ -360,11 +353,12 @@ const Viewer = (props: ViewerProps) => {
 					if (EDITOR_SETTINGS.snap_to_grid) joint.position = roundVector(joint.position, DECIMALS)
 				})
 
-				submit(truss)
 				dragRef.current.lastUpdate = Date.now()
 				dragRef.current.current = position
 
 				document.body.style.cursor = 'grabbing'
+
+				submit(truss, false)
 			}
 		}
 	}
@@ -381,7 +375,7 @@ const Viewer = (props: ViewerProps) => {
 			const otherId: string = selectedJoints.values().next().value
 
 			const material = new Material('Material', '#000000', TRUSS_PARAMETERS.density, TRUSS_PARAMETERS.youngsModulus, TRUSS_PARAMETERS.shearModulus, TRUSS_PARAMETERS.poissonsRatio, TRUSS_PARAMETERS.ultimateStress)
-			const connection = new Connection(0, 0, 0, TRUSS_PARAMETERS.area, material)
+			const connection = new Connection(TRUSS_PARAMETERS.area, material)
 
 			truss.addConnection(id, otherId, connection)
 			submit(truss)

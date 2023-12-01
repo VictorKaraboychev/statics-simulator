@@ -50,7 +50,6 @@ export default class Joint {
 			id: this.id,
 			position: this.position.toArray(),
 			fixtures: this.fixed ? this.fixtures : undefined,
-			displacement: !this.displacement.equals(new Vector2(0, 0)) ? this.displacement.toArray() : undefined,
 			force: !this.force.equals(new Vector2(0, 0)) ? this.force.toArray() : undefined,
 			connections: this.connections,
 		}
@@ -63,7 +62,6 @@ export default class Joint {
 			json.force ? new Vector2(json.force[0], json.force[1]) : undefined
 		)
 		joint.id = json.id
-		if (json.displacement) joint.displacement = new Vector2(json.displacement[0], json.displacement[1])
 		joint.connections = json.connections
 		return joint
 	}
