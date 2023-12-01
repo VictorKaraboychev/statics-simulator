@@ -1,8 +1,10 @@
 import { PaletteMode } from '@mui/material'
 import { atom } from 'recoil'
-import { DEFAULT_TRUSS, DEFAULT_TRUSS_CONSTRAINTS } from '../config/TrussConfig'
-import { CustomAtom } from '../types/state'
-import { TrussConstraintsType, TrussJSONType } from '../types/truss'
+import { DEFAULT_TRUSS, DEFAULT_TRUSS_PARAMETERS } from '../config/TrussConfig'
+import { CustomAtom } from '../types/state.d'
+import { DefaultTrussParamsType, TrussJSONType } from '../types/truss.d'
+import { DEFAULT_EDITOR_SETTINGS } from '../config/GlobalConfig'
+import { EditorSettingsType } from '../types/general'
 
 export const customAtom = <T>(label: string, initial: T, mutability?: boolean): CustomAtom<T> => {
 	return {
@@ -16,14 +18,12 @@ export const customAtom = <T>(label: string, initial: T, mutability?: boolean): 
 }
 
 const atoms = {
-	theme: customAtom<PaletteMode | 'system'>('theme', 'system'),
+	theme: customAtom<PaletteMode | 'system'>('theme', 'light'),
 	current_truss: customAtom<TrussJSONType>('current_truss', DEFAULT_TRUSS, true),
 	saved_trusses: customAtom<TrussJSONType[]>('saved_trusses', []),
-	truss_constraints: customAtom<TrussConstraintsType>('truss_constraints', DEFAULT_TRUSS_CONSTRAINTS),
-	is_gen_running: customAtom<boolean>('is_gen_running', false),
-	generation: customAtom<number>('generation', 0),
-	cost_visible: customAtom<boolean>('cost_visible', true),
-	truss_view: customAtom<string>('truss_view','default'),
+	editor_settings: customAtom<EditorSettingsType>('grid_scale', DEFAULT_EDITOR_SETTINGS),
+	truss_parameters: customAtom<DefaultTrussParamsType>('truss_constraints', DEFAULT_TRUSS_PARAMETERS),
+	truss_view: customAtom<string>('truss_view', 'default'),
 }
 
 export default atoms

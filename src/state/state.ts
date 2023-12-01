@@ -1,36 +1,36 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRecoilState } from 'recoil'
 import { CustomAtom } from '../types/state'
-import Truss from '../utility/Truss'
+import Truss from '../utility/truss/Truss'
 import atoms from './atoms'
 
 const createGlobalState = <T>(atom: CustomAtom<T>): { value: T, initial: T, set: (newValue: T) => void, reset: () => void } => {
-	const [ value, set ] = useRecoilState(atom.state)
+	const [value, set] = useRecoilState(atom.state)
 
-    const reset = () => set(atom.initial)
-    
-    return { value, initial: atom.initial, set, reset }
+	const reset = () => set(atom.initial)
+
+	return { value, initial: atom.initial, set, reset }
 }
 
 const createGlobalPersistentState = <T>(atom: CustomAtom<T>): { value: T, initial: T, set: (newValue: T, save?: boolean) => void, load: () => void, reset: () => void } => {
-    const state = atom.state
-    const { value, initial, set: setValue } = createGlobalState(atom)
+	const state = atom.state
+	const { value, initial, set: setValue } = createGlobalState(atom)
 
 	const key = `global-${state.key}`
 
-    const load = () => {
+	const load = () => {
 		const loadValue = localStorage.getItem(key)
-        setValue(loadValue ? JSON.parse(loadValue) : initial)
-    }
+		setValue(loadValue ? JSON.parse(loadValue) : initial)
+	}
 
-    const set = (newValue: T, save = true) => {
-        setValue(newValue)
-        if (save) localStorage.setItem(key, JSON.stringify(newValue))
-    }
+	const set = (newValue: T, save = true) => {
+		setValue(newValue)
+		if (save) localStorage.setItem(key, JSON.stringify(newValue))
+	}
 
-    const reset = (save = true) => set(initial, save)
+	const reset = (save = true) => set(initial, save)
 
-    return { value, initial, set, load, reset }
+	return { value, initial, set, load, reset }
 }
 
 export const useStateManager = (handlePersistance = false) => {
@@ -40,7 +40,7 @@ export const useStateManager = (handlePersistance = false) => {
 	}
 
 	useEffect(() => {
-        if (!handlePersistance) return
+		if (!handlePersistance) return
 
 		console.log('STATE LOADED')
 		for (const property of properties) {
@@ -54,13 +54,13 @@ export const useStateManager = (handlePersistance = false) => {
 		}
 	}, [])
 
-    const globalReset = () => {
+	const globalReset = () => {
 		for (const property of properties) {
 			if (property.reset && property.load) property.reset()
 		}
-    }
+	}
 
-    return { globalReset }
+	return { globalReset }
 }
 
 const useGlobalState = {
@@ -68,8 +68,14 @@ const useGlobalState = {
 	current_truss: () => {
 		const { value: json, initial: initialJSON, set: setJSON, load, reset } = createGlobalPersistentState(atoms.current_truss)
 
-		const value = Truss.fromJSON(json)
-		value.compute()
+		const [value, setValue] = useState<Truss>(Truss.fromJSON(initialJSON))
+
+		useEffect(() => {
+			const value = Truss.fromJSON(json)
+			value.compute()
+
+			setValue(value)
+		}, [json])
 
 		const set = (newValue: Truss, save = true) => setJSON(newValue.toJSON(), save)
 
@@ -82,10 +88,8 @@ const useGlobalState = {
 
 		return { value: json.map(Truss.fromJSON), initial: initialJSON.map(Truss.fromJSON), set, load, reset }
 	},
-	truss_constraints: () => createGlobalPersistentState(atoms.truss_constraints),
-	is_gen_running: () => createGlobalState(atoms.is_gen_running),
-	generation: () => createGlobalState(atoms.generation),
-	cost_visible: () => createGlobalPersistentState(atoms.cost_visible),
+	editor_settings: () => createGlobalPersistentState(atoms.editor_settings),
+	truss_parameters: () => createGlobalPersistentState(atoms.truss_parameters),
 	truss_view: () => createGlobalPersistentState(atoms.truss_view),
 }
 

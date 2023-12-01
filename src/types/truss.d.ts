@@ -1,11 +1,18 @@
 import { Vector2 } from "three"
-import Joint from "../utility/Joint"
-import { JointJSONType } from "./joint"
+import Joint from "../utility/truss/Joint"
+import Connection from "../utility/truss/Connection"
 
-export type TrussDetailsType = {
-	cost: number,
-	maxCompression: number,
-	maxTension: number,
+export type DefaultTrussParamsType = {
+	simple: boolean,
+	density: number,
+	area: number,
+	youngsModulus: number,
+	shearModulus: number,
+	poissonsRatio?: number,
+	ultimateStress: {
+		tension: number,
+		compression: number
+	},
 }
 
 export type TrussJointDetailsType = {
@@ -15,26 +22,57 @@ export type TrussJointDetailsType = {
 
 export type TrussConnectionDetailsType = {
 	id: string,
-	force: number | null,
-	stress: number,
-	length: number,
-	angle: number,
-	multiplier: number,
+	connection: Connection,
 	a: Joint,
 	b: Joint,
 }
 
-export type TrussJSONType = {
-	joints: JointJSONType[],
-	connections: [number, number, number][]
+export type MaterialJSONType = {
+	id: string,
+	name: string,
+	color: string,
+	density: number,
+	youngsModulus: number,
+	shearModulus: number,
+	poissonsRatio: number,
+	ultimateStress: {
+		tension: number,
+		compression: number
+	},
 }
 
-export type TrussConstraintsType = {
-	maxCompression: number,
-	maxTension: number,
-	distributedForce: number,
-	maxMultiplier: number,
-	minDistance: number,
-	connectionCost: number,
-	jointCost: number,
+export type JointJSONType = {
+	id: string,
+	position: [number, number]
+	fixtures?: { x: boolean, y: boolean }
+	displacement?: [number, number]
+	force?: [number, number]
+	connections: { [id: string]: string }
+}
+
+export type ConnectionJSONType = {
+	id: string,
+	jointIds?: [string, string],
+	stress: number,
+	area: number,
+	length: number,
+	angle: number,
+	material: MaterialJSONType,
+}
+
+export type TrussJSONType = {
+	joints: JointJSONType[],
+	connections: ConnectionJSONType[]
+}
+
+export type ProfileType<T> = {
+	id: string,
+	name: string,
+	image?: string,
+	params: T,
+	configure: (...params: T) => ConfiguredProfileType,
+}
+
+export type ConfiguredProfileType = {
+	areaMomentOfInertia: (area: number) => number,
 }

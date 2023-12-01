@@ -1,4 +1,5 @@
 import { DependencyList, Dispatch, EffectCallback, SetStateAction, useEffect, useRef, useState } from "react"
+import { deepCopy } from './object'
 
 export const useEventEffect = <K extends keyof WindowEventMap>(listener: (this: Window, ev: WindowEventMap[K]) => any, type: K, deps?: DependencyList) => {
 	useEffect(() => {
@@ -24,24 +25,29 @@ export function useReliantState(initialState?: unknown, deps?: DependencyList): 
 	return [state, setState]
 }
 
-export const usePersistentState = <T>(key: string, initialState?: T, storage: 'local' | 'session' = 'local', deps?: DependencyList): [T, (value: T) => void] => {
+export const useCompoundState = <T extends Object>(initialState: T | (() => T), deps?: DependencyList): [T, <K extends keyof T>(key: K) => (value: T[K]) => void, () => void] => {
+	const [state, setState] = useReliantState(deepCopy(initialState), deps)
+
+	const set = <K extends keyof T>(key: K) => (value: T[K]) => {
+		state[key] = value
+		setState({ ...state })
+	}
+
+	const reset = () => setState(initialState)
+
+	return [state, set, reset]
+}
+
+export const usePersistentState = <T>(key: string, initialState?: T, storage: 'local' | 'session' = 'local'): [T, (value: T) => void] => {
 	const storageType = storage === 'local' ? localStorage : sessionStorage
 	const [state, setState] = useState(() => {
 		const storage = storageType.getItem(key)
 		return storage !== null ? JSON.parse(storage) : initialState
 	})
-	const stateRef = useRef(state)
 
 	useEffect(() => {
-		stateRef.current = state
+		storageType.setItem(key, JSON.stringify(state))
 	}, [state])
-
-	useEffect(() => {
-		const storage = storageType.getItem(key)
-		setState(storage !== null ? JSON.parse(storage) : initialState)
-
-		return () => storageType.setItem(key, JSON.stringify(stateRef.current))
-	}, deps || []) // Save to localStorage on unload
 
 	return [state, setState]
 }

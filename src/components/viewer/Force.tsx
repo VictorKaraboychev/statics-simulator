@@ -1,4 +1,3 @@
-import React from 'react'
 import { useTheme } from '@mui/material'
 import { Vector3, Vector2, Color, ConeBufferGeometry, MeshBasicMaterial } from 'three'
 import { Line2 } from 'three/examples/jsm/lines/Line2'
@@ -12,9 +11,9 @@ interface ForceProps {
 
 const Force = (props: ForceProps) => {
 	const { palette } = useTheme()
-	const color = new Color(palette.primary.main).getHex()
+	const color = new Color(palette.warning.main).getHex()
 
-	const force = new Vector3(props.force.x, props.force.y, 0).clone().normalize().multiplyScalar(35)
+	const force = new Vector3(props.force.x, props.force.y, 0).clone().normalize().multiplyScalar(1.5)
 	const origin = new Vector3(props.origin.x, props.origin.y, 0)
 
 	return (
@@ -27,13 +26,13 @@ const Force = (props: ForceProps) => {
 					]),
 					new LineMaterial({
 						color,
-						linewidth: 2,
+						linewidth: 0.125,
 						worldUnits: true,
 					}),
 				)}
 			/>
 			<mesh
-				geometry={new ConeBufferGeometry(5, 12, 5)}
+				geometry={new ConeBufferGeometry(0.25, 0.75, 20)}
 				material={new MeshBasicMaterial({
 					color,
 				})}

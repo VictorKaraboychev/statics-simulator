@@ -1,12 +1,13 @@
-import React, { useState } from 'react'
-import { Box, Checkbox, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, SxProps, Theme, Typography } from '@mui/material'
+import { useState } from 'react'
+import { Box, Checkbox, FormControl, FormControlLabel, Radio, RadioGroup, SxProps, Theme, Typography } from '@mui/material'
 import Dialog from './common/Dialog'
-import NumberField from './common/textfields/NumberField'
 import VERSION from '../version.json'
 import useCustomState from '../state/state'
 import TooltipButton from './common/TooltipButton'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { THEME_OPTIONS } from '../config/GlobalConfig'
+import EngineeringField from './common/textfields/EngineeringField'
+import NumberField from './common/textfields/NumberField'
 
 interface SettingsProps {
 	sx?: SxProps<Theme>,
@@ -14,20 +15,42 @@ interface SettingsProps {
 
 const Settings = (props: SettingsProps) => {
 	const { value: THEME, set: setTheme } = useCustomState.theme()
-	const { value: TRUSS_CONSTRAINTS, set: setTrussConstraints } = useCustomState.truss_constraints()
-	const { value: COST_VISIBLE, set: setCostVisible } = useCustomState.cost_visible()
+	const { value: EDITOR_SETTINGS, set: setEditorSettings } = useCustomState.editor_settings()
+	const { value: TRUSS_PARAMETERS, set: setTrussParams } = useCustomState.truss_parameters()
 
 	const [open, setOpen] = useState(false)
+
+	const canSubmit = Boolean(
+
+	)
+
+	const handleSubmit = () => {
+
+	}
+
+	const handleCancel = () => {
+		setOpen(false)
+	}
 
 	return (
 		<>
 			<Dialog
 				title={'Settings'}
+				buttons={[
+					{
+						label: 'Submit',
+						disabled: !canSubmit,
+						onClick: handleSubmit,
+					},
+					{
+						label: 'Cancel',
+						onClick: handleCancel,
+					},
+				]}
 				open={open}
 				setOpen={setOpen}
 			>
 				<Box
-					component={'div'}
 					sx={{
 						display: 'flex',
 						flexDirection: 'column',
@@ -39,8 +62,11 @@ const Settings = (props: SettingsProps) => {
 						}}
 					>
 						<Typography
+							sx={{
+								mb: 1,
+								fontWeight: 'bold',
+							}}
 							variant={'body2'}
-							color={'text.primary'}
 						>
 							Theme
 						</Typography>
@@ -52,11 +78,11 @@ const Settings = (props: SettingsProps) => {
 								<FormControlLabel
 									key={value}
 									value={value}
-									label={label} 
+									label={label}
 									control={
 										<Radio
 											sx={{
-												my: -0.75 
+												my: -0.75
 											}}
 										/>
 									}
@@ -64,6 +90,15 @@ const Settings = (props: SettingsProps) => {
 							))}
 						</RadioGroup>
 					</FormControl>
+					<Typography
+						sx={{
+							mb: 2,
+							fontWeight: 'bold',
+						}}
+						variant={'body2'}
+					>
+						Editor Settings
+					</Typography>
 					<Box
 						component={'div'}
 						sx={{
@@ -71,133 +106,241 @@ const Settings = (props: SettingsProps) => {
 							flexDirection: 'row',
 							alignItems: 'center',
 							mb: 2,
-						}}
-					>
-						<NumberField
-							sx={{
-								mr: 2,
-							}}
-							label={'Max Compression (N)'}
-							defaultValue={TRUSS_CONSTRAINTS.maxCompression}
-							size={'small'}
-							onSubmit={(value) => {
-								setTrussConstraints({
-									...TRUSS_CONSTRAINTS,
-									maxCompression: value,
-								})
-							}}
-						/>
-						<NumberField
-							label={'Max Tension (N)'}
-							defaultValue={TRUSS_CONSTRAINTS.maxTension}
-							size={'small'}
-							onSubmit={(value) => {
-								setTrussConstraints({
-									...TRUSS_CONSTRAINTS,
-									maxTension: value,
-								})
-							}}
-						/>
-					</Box>
-					<NumberField
-						sx={{
-							mb: 2,
-						}}
-						label={'Distributed Force (N/m)'}
-						size={'small'}
-						defaultValue={TRUSS_CONSTRAINTS.distributedForce}
-						onSubmit={(value) => {
-							setTrussConstraints({
-								...TRUSS_CONSTRAINTS,
-								distributedForce: value,
-							})
-						}}
-					/>
-					<Box
-						component={'div'}
-						sx={{
-							display: 'flex',
-							flexDirection: 'row',
-							alignItems: 'center',
-							mb: 2,
-						}}
-					>
-						<NumberField
-							sx={{
-								mr: 2,
-							}}
-							label={'Min Length (m)'}
-							defaultValue={TRUSS_CONSTRAINTS.minDistance}
-							size={'small'}
-							onSubmit={(value) => {
-								setTrussConstraints({
-									...TRUSS_CONSTRAINTS,
-									minDistance: value,
-								})
-							}}
-						/>
-						<NumberField
-							label={'Max Multiplier'}
-							defaultValue={TRUSS_CONSTRAINTS.maxMultiplier}
-							size={'small'}
-							onSubmit={(value) => {
-								setTrussConstraints({
-									...TRUSS_CONSTRAINTS,
-									maxMultiplier: value,
-								})
-							}}
-						/>
-					</Box>
-					<Box
-						component={'div'}
-						sx={{
-							display: 'flex',
-							flexDirection: 'row',
-							alignItems: 'center',
-							mb: 2,
-						}}
-					>
-						<NumberField
-							sx={{
-								mr: 2,
-							}}
-							label={'Joint Cost ($)'}
-							defaultValue={TRUSS_CONSTRAINTS.jointCost}
-							size={'small'}
-							onSubmit={(value) => {
-								setTrussConstraints({
-									...TRUSS_CONSTRAINTS,
-									jointCost: value,
-								})
-							}}
-						/>
-						<NumberField
-							label={'Member Cost ($/m)'}
-							defaultValue={TRUSS_CONSTRAINTS.connectionCost}
-							size={'small'}
-							onSubmit={(value) => {
-								setTrussConstraints({
-									...TRUSS_CONSTRAINTS,
-									connectionCost: value,
-								})
-							}}
-						/>
-					</Box>
-					<FormControlLabel
-						sx={{
 							width: '100%',
+						}}
+					>
+
+						<EngineeringField
+							sx={{
+								mr: 2,
+							}}
+							label={'Grid Scale'}
+							size={'small'}
+							baseUnit={'m'}
+							defaultValue={EDITOR_SETTINGS.scale}
+							onSubmit={(value) => {
+								setEditorSettings({
+									...EDITOR_SETTINGS,
+									scale: value,
+								})
+							}}
+						/>
+						<EngineeringField
+							label={'Default Cross-Sectional Area'}
+							size={'small'}
+							baseUnit={'m²'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.area}
+							onSubmit={(value) => {
+								setTrussParams({
+									...TRUSS_PARAMETERS,
+									area: value,
+								})
+							}}
+						/>
+
+					</Box>
+					<Box
+						component={'div'}
+						sx={{
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
+							mb: 2,
+							width: '100%',
+						}}
+					>
+						<FormControlLabel
+							label={'Show Grid'}
+							control={<Checkbox />}
+							checked={EDITOR_SETTINGS.grid_enabled}
+							onChange={(e) => {
+								setEditorSettings({
+									...EDITOR_SETTINGS,
+									grid_enabled: (e.target as any).checked,
+								})
+							}}
+						/>
+						<FormControlLabel
+							label={'Snap to Grid'}
+							control={<Checkbox />}
+							checked={EDITOR_SETTINGS.snap_to_grid}
+							onChange={(e) => {
+								setEditorSettings({
+									...EDITOR_SETTINGS,
+									snap_to_grid: (e.target as any).checked,
+								})
+							}}
+						/>
+						<FormControlLabel
+							label={'Simple Mode'}
+							control={<Checkbox />}
+							checked={TRUSS_PARAMETERS.simple}
+							onChange={(e) => {
+								setTrussParams({
+									...TRUSS_PARAMETERS,
+									simple: (e.target as any).checked,
+								})
+							}}
+						/>
+						<FormControlLabel
+							label={'Debug Mode'}
+							control={<Checkbox />}
+							checked={EDITOR_SETTINGS.debug}
+							onChange={(e) => {
+								setEditorSettings({
+									...EDITOR_SETTINGS,
+									debug: (e.target as any).checked,
+								})
+							}}
+						/>
+					</Box>
+					<Typography
+						sx={{
+							mb: 2,
+							fontWeight: 'bold',
+						}}
+						variant={'body2'}
+					>
+						Default Material Properties
+					</Typography>
+					<Box
+						component={'div'}
+						sx={{
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
 							mb: 2,
 						}}
-						label={'Cost Visible'}
-						control={
-							<Checkbox
-								checked={COST_VISIBLE}
-								onChange={(e) => {
-									setCostVisible(e.currentTarget.checked)
-								}}
-							/>
-						}
-					/>
+					>
+						<EngineeringField
+							sx={{
+								mr: 2,
+							}}
+							label={'Default Density'}
+							size={'small'}
+							baseUnit={'g/m³'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.density * 1e3}
+							onSubmit={(value) => {
+								setTrussParams({
+									...TRUSS_PARAMETERS,
+									density: value / 1e3,
+								})
+							}}
+						/>
+						<NumberField
+							label={'Default Poisson\'s Ratio'}
+							size={'small'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.poissonsRatio}
+							onSubmit={(value) => {
+								setTrussParams({
+									...TRUSS_PARAMETERS,
+									poissonsRatio: value,
+								})
+							}}
+						/>
+					</Box>
+					<Box
+						component={'div'}
+						sx={{
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
+							mb: 2,
+						}}
+					>
+						<EngineeringField
+							sx={{
+								mr: 2,
+							}}
+							label={'Default Young\'s Modulus'}
+							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.youngsModulus}
+							onSubmit={(value) => {
+								setTrussParams({
+									...TRUSS_PARAMETERS,
+									youngsModulus: value,
+								})
+							}}
+						/>
+						<EngineeringField
+							label={'Default Shear Modulus'}
+							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.shearModulus}
+							onSubmit={(value) => {
+								setTrussParams({
+									...TRUSS_PARAMETERS,
+									shearModulus: value,
+								})
+							}}
+						/>
+					</Box>
+					<Box
+						component={'div'}
+						sx={{
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
+							mb: 2,
+						}}
+					>
+						<EngineeringField
+							sx={{
+								mr: 2,
+							}}
+							label={'Default Ultimate Tensile Stress'}
+							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.ultimateStress.tension}
+							onSubmit={(value) => {
+								setTrussParams({
+									...TRUSS_PARAMETERS,
+									ultimateStress: {
+										...TRUSS_PARAMETERS.ultimateStress,
+										tension: value,
+									},
+								})
+							}}
+						/>
+						<EngineeringField
+							label={'Default Ultimate Compressive Stress'}
+							size={'small'}
+							baseUnit={'Pa'}
+							decimals={5}
+							defaultValue={TRUSS_PARAMETERS.ultimateStress.compression}
+							onSubmit={(value) => {
+								setTrussParams({
+									...TRUSS_PARAMETERS,
+									ultimateStress: {
+										...TRUSS_PARAMETERS.ultimateStress,
+										compression: value,
+									},
+								})
+							}}
+						/>
+					</Box>
+					<Typography
+						variant={'body2'}
+						color={'text.primary'}
+					>
+						GitHub:
+						<a
+							style={{
+								marginLeft: '0.25rem',
+								color: 'inherit',
+							}}
+							href={'https://github.com/VictorKaraboychev/statics-simulator'} target={'_blank'}
+						>
+							Victor Karaboychev
+						</a>
+					</Typography>
 					<Typography
 						variant={'body2'}
 						color={'text.primary'}

@@ -1,22 +1,24 @@
-import React, { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Box, SxProps, Theme } from '@mui/material'
-import Truss from '../../utility/Truss'
+import Truss from '../../utility/truss/Truss'
 import Visualizer from './Visualizer'
-import { TrussConnectionDetailsType, TrussJointDetailsType, TrussJSONType } from '../../types/truss'
+import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
 import TrussModel from './TrussModel'
 import { ThreeEvent } from '@react-three/fiber'
 import { saveAs } from 'file-saver'
 import Drop from '../common/Drop'
-import TrussInfo from './TrussInfo'
 import useCustomState from '../../state/state'
 import { useEventEffect, usePersistentState } from '../../utility/hooks'
-import { DEFAULT_PRECISION, MAX_UNDO_STATES, TRUSS_SCALE, VIEW_MODES } from '../../config/GlobalConfig'
-import { round } from '../../utility/math'
-import { Vector2 } from 'three'
-import Joint from '../../utility/Joint'
+import { DEFAULT_PRECISION, DRAG_UPDATE_INTERVAL, MAX_UNDO_STATES, TRUSS_SCALE, VIEW_MODES } from '../../config/GlobalConfig'
+import { round, roundVector } from '../../utility/math'
+import { OrthographicCamera, Vector2, Vector3 } from 'three'
+import Joint from '../../utility/truss/Joint'
 import ViewerInfoBar from './ViewerInfoBar'
-import { DEFAULT_TRUSS_CONSTRAINTS } from '../../config/TrussConfig'
-import { equals } from '../../utility/functions'
+import Connection from '../../utility/truss/Connection'
+import JointInfo from './info/JointInfo'
+import ConnectionInfo from './info/ConnectionInfo'
+import Material from '../../utility/truss/Material'
+import { useSnackbar } from 'notistack'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
@@ -24,31 +26,41 @@ interface ViewerProps {
 
 const Viewer = (props: ViewerProps) => {
 	const { value: truss, set: setTruss } = useCustomState.current_truss()
-	const { value: TRUSS_CONSTRAINTS } = useCustomState.truss_constraints()
+	const { value: TRUSS_PARAMETERS } = useCustomState.truss_parameters()
+	const { value: EDITOR_SETTINGS } = useCustomState.editor_settings()
 	const { value: TRUSS_VIEW, set: setTrussView } = useCustomState.truss_view()
+
+	const { enqueueSnackbar } = useSnackbar()
+
+	const SCALE = TRUSS_SCALE / EDITOR_SETTINGS.scale
+	const DECIMALS = Math.log10(1 / EDITOR_SETTINGS.scale) + (EDITOR_SETTINGS.snap_to_grid ? 1 : 5)
 
 	const [historyIndex, setHistoryIndex] = usePersistentState('truss_undo_index', 0, 'local')
 	const [history, setHistory] = usePersistentState<any[]>('truss_undo', [], 'local')
 
-	const [forcesEnabled, setForcesEnabled] = useState(false)
+	const [forcesEnabled, setForcesEnabled] = usePersistentState('force_enabled', true)
 
-	const [selectedJoints, setSelectedJoints] = useState<Set<number>>(new Set())
+	const [selectedJoints, setSelectedJoints] = useState<Set<string>>(new Set())
 	const [selectedConnections, setSelectedConnections] = useState<Set<string>>(new Set())
 
 	const [jointDetails, setJointDetails] = useState<TrussJointDetailsType | null>(null)
 	const [connectionDetails, setConnectionDetails] = useState<TrussConnectionDetailsType | null>(null)
 
+	const dragRef = useRef<{ lastUpdate: number, start: Vector2, current: Vector2, jointStarts: { [id: string]: Vector2 } }>()
+	const hoverSelectedRef = useRef<boolean>(false)
+
 	const dropRef = useRef<{ open: () => void }>()
 
+	const cameraRef = useRef<OrthographicCamera>()
 
-	const joints = truss.joints
-	const connections = truss.connections
-
-	useEffect(() => {
-		if (!equals(TRUSS_CONSTRAINTS, DEFAULT_TRUSS_CONSTRAINTS)) {
-			submit(truss)
-		}
-	}, [TRUSS_CONSTRAINTS])
+	const getActionJoints = (): Set<string> => {
+		const actionJoints = new Set(selectedJoints.values())
+		selectedConnections.forEach((id) => {
+			const ids = truss.getConnection(id).jointIds
+			if (ids) actionJoints.add(ids[0]).add(ids[1])
+		})
+		return actionJoints
+	}
 
 	const submit = (t: Truss) => {
 		// if (history.length >= MAX_UNDO_STATES) history.shift()
@@ -57,79 +69,25 @@ const Viewer = (props: ViewerProps) => {
 		// history.push(difference)
 		// setHistory([ ...history ])
 
-		// console.log('difference', difference, history)
-
-
-		// console.log('submit', TRUSS_CONSTRAINTS.distributedForce)
-
-		t.setDistributedForce(TRUSS_CONSTRAINTS.distributedForce)
-		setTruss(t.clone())
-	}
-
-
-	const handleMouseClick = (e: ThreeEvent<MouseEvent>) => {
-		if ((e as any).shiftKey) {
-			const { x, y } = e.point.clone().divideScalar(TRUSS_SCALE)
-
-			// console.log('Adding joint at', x, y)
-
-			truss.addJoint(
-				new Joint(new Vector2(
-					round(x, 1),
-					round(y, 1),
-				))
-			)
-
-			if ((e as any).altKey && x !== 0) {
-				truss.addJoint(
-					new Joint(new Vector2(
-						round(-x, 1),
-						round(y, 1),
-					))
-				)
-			}
-
-			submit(truss)
-		}
-
-		if (!(e as any).ctrlKey) {
-			setSelectedJoints(new Set())
-			setSelectedConnections(new Set())
-			setJointDetails(null)
-			setConnectionDetails(null)
-		}
+		setTruss(t)
 	}
 
 	useEventEffect((e: KeyboardEvent) => {
-		const {
-			altKey: alt,
-			ctrlKey: ctrl,
-			shiftKey: shift,
-			key,
-		} = e
+		const { altKey: alt, ctrlKey: ctrl, shiftKey: shift, key } = e
+
+		if (['Shift', 'Control', 'Alt'].includes(key)) return
 
 		let movement = 0.1
-		if (alt) movement *= 0.1
+		if (alt) movement = 0.01
 
-		const mirror = !shift && selectedJoints.size > 1
+		const mirror = shift && selectedJoints.size > 1
 
-		const actionJoints = new Set(selectedJoints.values())
-		selectedConnections.forEach((i) => {
-			const [a, b] = i.split('-').map(Number)
-			actionJoints.add(a)
-			actionJoints.add(b)
-		})
+		const actionJoints = getActionJoints()
 
 		switch (key) {
 			case 'Delete': // Delete
-				if (!shift) break
-				selectedJoints.forEach((id) => {
-					truss.removeJoint(joints[id].id)
-				})
-				selectedConnections.forEach((id) => {
-					const [a, b] = id.split('-').map(Number)
-					truss.removeConnection(joints[a].id, joints[b].id)
-				})
+				selectedJoints.forEach((id) => truss.removeJoint(id))
+				selectedConnections.forEach((id) => truss.removeConnection(id))
 
 				setSelectedJoints(new Set())
 				setSelectedConnections(new Set())
@@ -137,72 +95,76 @@ const Viewer = (props: ViewerProps) => {
 				setConnectionDetails(null)
 
 				submit(truss)
-			break
+				break
 			case 'n': // New
 				if (!alt) break
+
 				setTruss(new Truss([], []))
-				e.preventDefault()
-				e.stopPropagation()
-			break
-			case 'a': // Select all
-				if (!ctrl) break
-				setSelectedConnections(new Set(connections.map(([a, b]) => `${a}-${b}`)))
-				setSelectedJoints(new Set(joints.map((j, i) => i)))
 
 				e.preventDefault()
-			break
+				e.stopPropagation()
+				break
+			case 'a': // Select all
+				if (!ctrl) break
+
+				setSelectedJoints(new Set(truss.jointIds))
+				setSelectedConnections(new Set(truss.connectionIds))
+
+				e.preventDefault()
+				break
 			case 'd': // Deselect all
 				if (!ctrl) break
+
 				setSelectedJoints(new Set())
 				setSelectedConnections(new Set())
 				setJointDetails(null)
 				setConnectionDetails(null)
 
 				e.preventDefault()
-			break
-			// case 'o':
-			// 	if (!ctrl) break
-			// 	const [cost, t] = findMin(truss)
-
-			// 	console.log('cost', cost, t)
-			// 	submit(t)
-			// 	e.preventDefault()
-			// break
+				break
 			case 'z': // UNDO
 				if (!ctrl) break
 				if (history.length > 0) {
 					// setTruss(Truss.fromJSON(historyIndex.pop() as TrussJSONType))
 					// setHistoryIndex([ ...historyIndex ])
 				}
-			break
+				break
 			case 'y': // REDO
 				if (!ctrl) break
 				if (history.length > 0) {
 					// setTruss(Truss.fromJSON(historyIndex.pop() as TrussJSONType))
 					// setHistoryIndex([ ...historyIndex ])
 				}
-			break
+				break
 			case 'o': // Import
 				if (!ctrl) break
-				handleImport?.()
+
+				handleImport()
+
 				e.preventDefault()
 				e.stopPropagation()
-			break
+				break
 			case 's': // Export
 				if (!ctrl) break
+
 				handleExport()
+
 				e.preventDefault()
 				e.stopPropagation()
-			break
+				break
 			case 'm': // View mode
 				if (!ctrl) break
+
 				setTrussView(VIEW_MODES[(VIEW_MODES.indexOf(TRUSS_VIEW) + 1) % VIEW_MODES.length])
-			break
+
+				e.preventDefault()
+				e.stopPropagation()
+				break
 			case 'ArrowUp':
 				if (!ctrl) break
 
 				actionJoints.forEach((id) => {
-					const joint = joints[id]
+					const joint = truss.getJoint(id)
 
 					let m = movement
 
@@ -210,39 +172,39 @@ const Viewer = (props: ViewerProps) => {
 						const y = joint.position.y
 						if (y === 0) {
 							m = 0
-						} else if (y > 0) {
+						} else if (y < 0) {
 							m *= -1
 						}
 					}
 					joint.position.y = round(joint.position.y + m, DEFAULT_PRECISION)
 				})
 				submit(truss)
-			break
+				break
 			case 'ArrowDown':
 				if (!ctrl) break
 
 				actionJoints.forEach((id) => {
-					const joint = joints[id]
-					
+					const joint = truss.getJoint(id)
+
 					let m = movement
 
 					if (mirror) {
 						const y = joint.position.y
 						if (y === 0) {
 							m = 0
-						} else if (y > 0) {
+						} else if (y < 0) {
 							m *= -1
 						}
 					}
 					joint.position.y = round(joint.position.y - m, DEFAULT_PRECISION)
 				})
 				submit(truss)
-			break
+				break
 			case 'ArrowLeft':
 				if (!ctrl) break
-				
+
 				actionJoints.forEach((id) => {
-					const joint = joints[id]
+					const joint = truss.getJoint(id)
 
 					let m = movement
 
@@ -257,12 +219,12 @@ const Viewer = (props: ViewerProps) => {
 					joint.position.x = round(joint.position.x - m, DEFAULT_PRECISION)
 				})
 				submit(truss)
-			break
+				break
 			case 'ArrowRight':
 				if (!ctrl) break
-				
+
 				actionJoints.forEach((id) => {
-					const joint = joints[id]
+					const joint = truss.getJoint(id)
 
 					let m = movement
 
@@ -277,85 +239,233 @@ const Viewer = (props: ViewerProps) => {
 					joint.position.x = round(joint.position.x + m, DEFAULT_PRECISION)
 				})
 				submit(truss)
-			break
+				break
 			default:
 				return
 		}
 	}, 'keydown')
 
-	const handleJointClick = (e: ThreeEvent<MouseEvent>, i: number, details: TrussJointDetailsType) => {
-		e.stopPropagation()
+	const handleMouseClick = (e: ThreeEvent<MouseEvent>) => {
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
 
-		if (!(e as any).ctrlKey) {
-			if ((e as any).shiftKey && selectedJoints.size == 1) {
-				const [a, b] = [i, selectedJoints.values().next().value].sort((a, b) => a - b)
-				truss.addConnection(joints[a].id, joints[b].id, joints[a].connections[joints[b].id]?.multiplier ?? 1)
-				submit(truss)
+		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
+
+		console.log('mouse click')
+
+		if (shift) {
+			const position = new Vector2(x, y)
+
+			truss.addJoint(new Joint(position))
+
+			if (alt && x !== 0) {
+				position.x = -x
+				truss.addJoint(new Joint(position))
 			}
-			selectedJoints.clear()
-			selectedConnections.clear()
+
+			submit(truss)
+		}
+
+		if (!ctrl) {
+			setSelectedJoints(new Set())
+			setSelectedConnections(new Set())
+			setJointDetails(null)
 			setConnectionDetails(null)
 		}
-		if (selectedJoints.has(i)) {
-			selectedJoints.delete(i)
-			setJointDetails(null)
-		} else {
-			selectedJoints.add(i)
-		}
-
-		setSelectedJoints(selectedJoints)
-		setSelectedConnections(selectedConnections)
-		setJointDetails(details)
 	}
 
-	const handleConnectionClick = (e: ThreeEvent<MouseEvent>, i: string, details: TrussConnectionDetailsType) => {
-		e.stopPropagation()
+	const handleMouseDown = (e: ThreeEvent<MouseEvent>) => {
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
 
-		if (!(e as any).ctrlKey) {
-			selectedJoints.clear()
-			selectedConnections.clear()
-			setJointDetails(null)
-		}
-		if (selectedConnections.has(i)) {
-			selectedConnections.delete(i)
-			setConnectionDetails(null)
-		} else {
-			selectedConnections.add(i)
-		}
+		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
+		const position = new Vector2(x, y)
 
-		setSelectedJoints(selectedJoints)
-		setSelectedConnections(selectedConnections)
-		setConnectionDetails(details)
-	}
+		console.log('mouse down')
 
-	const handleSetMultipliers = () => {
-		for (let i = 0; i < joints.length; i++) {
-			const a = joints[i]
-			for (let j = 0; j < joints.length; j++) {
-				const b = joints[j]
-				if (b.id in a.connections) {
-					const c = a.connections[b.id]
-					if (c.force) {
-						c.multiplier = Math.min(Math.ceil(Math.abs(c.force) / (c.force > 0 ? TRUSS_CONSTRAINTS.maxCompression : TRUSS_CONSTRAINTS.maxTension)), TRUSS_CONSTRAINTS.maxMultiplier)
-					}
+		if (mouse == 1) {
+			if (hoverSelectedRef.current && !dragRef.current) {
+				const actionJoints = getActionJoints()
+
+				const jointStarts: { [id: string]: Vector2 } = {}
+
+				actionJoints.forEach((id) => {
+					const joint = truss.getJoint(id)
+					jointStarts[id] = joint.position.clone()
+				})
+
+				dragRef.current = {
+					lastUpdate: Date.now(),
+					start: position,
+					current: position,
+					jointStarts,
 				}
+
+				document.body.style.cursor = 'grabbing'
 			}
 		}
-		submit(truss)
 	}
 
-	const handleResetMultipliers = () => {
-		truss.joints.forEach((joint) => {
-			Object.values(joint.connections).forEach((connection) => {
-				connection.multiplier = 1
-			})
-		})
-		submit(truss)
+	const handleMouseUp = (e: ThreeEvent<MouseEvent>) => {
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
+
+		// const { x, y } = e.point.clone().divideScalar(SCALE)
+
+		console.log('mouse up')
+
+		if (dragRef.current) {
+			// const { start, jointStarts } = dragRef.current
+			// const delta = new Vector2(x, y).sub(start)
+
+			// const actionJoints = getActionJoints()
+
+			// actionJoints.forEach((id) => {
+			// 	const joint = truss.getJoint(id)
+			// 	joint.position = jointStarts[id].clone().add(delta)
+			// })
+
+			dragRef.current = undefined
+
+			document.body.style.cursor = 'auto'
+
+			// submit(truss)
+		}
 	}
 
-	const handleToggleForces = () => setForcesEnabled(!forcesEnabled)
+	const handleMouseHover = (e: ThreeEvent<MouseEvent>) => {
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
 
-	const handleImport = dropRef.current?.open
+		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
+		const position = new Vector2(x, y)
+
+		if (mouse == 1) {
+			if (dragRef.current) {
+				if (dragRef.current.current.equals(position) || dragRef.current.lastUpdate > Date.now() - DRAG_UPDATE_INTERVAL) return
+
+				const { start, jointStarts } = dragRef.current
+				const delta = position.clone().sub(start)
+
+				const actionJoints = getActionJoints()
+
+				const mirror = shift && actionJoints.size > 1
+
+				actionJoints.forEach((id) => {
+					const joint = truss.getJoint(id)
+
+					if (mirror) {
+						joint.position.x = jointStarts[id].x + delta.x * Math.sign(jointStarts[id].x) * Math.sign(start.x)
+						joint.position.y = jointStarts[id].y + delta.y * Math.sign(jointStarts[id].y) * Math.sign(start.y)
+					} else {
+						joint.position = jointStarts[id].clone().add(delta)
+					}
+
+					if (EDITOR_SETTINGS.snap_to_grid) joint.position = roundVector(joint.position, DECIMALS)
+				})
+
+				submit(truss)
+				dragRef.current.lastUpdate = Date.now()
+				dragRef.current.current = position
+
+				document.body.style.cursor = 'grabbing'
+			}
+		}
+	}
+
+	const handleJointClick = (e: ThreeEvent<MouseEvent>, id: string, details: TrussJointDetailsType) => {
+		e.stopPropagation()
+
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt } = e.nativeEvent
+
+		let jDetails: TrussJointDetailsType | null = jointDetails
+		let cDetails: TrussConnectionDetailsType | null = connectionDetails
+
+		if (!ctrl && shift && selectedJoints.size === 1) {
+			const otherId: string = selectedJoints.values().next().value
+
+			const material = new Material('Material', '#000000', TRUSS_PARAMETERS.density, TRUSS_PARAMETERS.youngsModulus, TRUSS_PARAMETERS.shearModulus, TRUSS_PARAMETERS.poissonsRatio, TRUSS_PARAMETERS.ultimateStress)
+			const connection = new Connection(0, 0, 0, TRUSS_PARAMETERS.area, material)
+
+			truss.addConnection(id, otherId, connection)
+			submit(truss)
+		}
+
+		if (selectedJoints.has(id)) {
+			if (!ctrl && selectedJoints.size > 1) {
+				selectedJoints.clear()
+				selectedConnections.clear()
+				selectedJoints.add(id)
+
+				jDetails = details
+				cDetails = null
+			} else {
+				selectedJoints.delete(id)
+
+				jDetails = null
+			}
+		} else {
+			if (!ctrl) {
+				selectedJoints.clear()
+				selectedConnections.clear()
+
+				cDetails = null
+			}
+			selectedJoints.add(id)
+
+			jDetails = details
+		}
+
+		setSelectedJoints(selectedJoints)
+		setSelectedConnections(selectedConnections)
+		setJointDetails(jDetails)
+		setConnectionDetails(cDetails)
+	}
+
+	const handleConnectionClick = (e: ThreeEvent<MouseEvent>, id: string, details: TrussConnectionDetailsType) => {
+		e.stopPropagation()
+
+		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt } = e.nativeEvent
+
+		let jDetails: TrussJointDetailsType | null = jointDetails
+		let cDetails: TrussConnectionDetailsType | null = connectionDetails
+
+		if (selectedConnections.has(id)) {
+			if (!ctrl && selectedConnections.size > 1) {
+				selectedJoints.clear()
+				selectedConnections.clear()
+				selectedConnections.add(id)
+
+				jDetails = null
+				cDetails = details
+			} else {
+				selectedConnections.delete(id)
+
+				cDetails = null
+			}
+		} else {
+			if (!ctrl) {
+				selectedJoints.clear()
+				selectedConnections.clear()
+
+				jDetails = null
+			}
+			selectedConnections.add(id)
+
+			cDetails = details
+		}
+
+		setSelectedJoints(selectedJoints)
+		setSelectedConnections(selectedConnections)
+		setJointDetails(jDetails)
+		setConnectionDetails(cDetails)
+	}
+
+	const handleHome = () => {
+		window.location.reload()
+	}
+
+	const handleToggleForces = () => {
+		setForcesEnabled(!forcesEnabled)
+	}
+
+	const handleImport = dropRef.current?.open!
 
 	const handleExport = () => {
 		const json = JSON.stringify(truss.toJSON())
@@ -364,10 +474,22 @@ const Viewer = (props: ViewerProps) => {
 	}
 
 	const handleDrop = (files: File[]) => {
-		files[0].text().then((text) => {
-			const json = JSON.parse(text)
-			submit(Truss.fromJSON(json))
-		})
+		try {
+			const file = files[0]
+
+			if (!file.type.includes('json')) {
+				enqueueSnackbar('Invalid file type, must be a .json file', { variant: 'error' })
+				return
+			}
+
+			file.text().then((text) => {
+				const json = JSON.parse(text)
+				submit(Truss.fromJSON(json))
+			})
+		} catch (e) {
+			enqueueSnackbar('Error parsing file contents, please check the file is valid', { variant: 'error' })
+			return
+		}
 	}
 
 	return (
@@ -385,7 +507,6 @@ const Viewer = (props: ViewerProps) => {
 			onSubmit={handleDrop}
 		>
 			<Box
-				component={'div'}
 				sx={{
 					position: 'absolute',
 					display: 'flex',
@@ -394,19 +515,23 @@ const Viewer = (props: ViewerProps) => {
 					height: '100%',
 				}}
 			>
-
 				<Visualizer
 					sx={{
 						zIndex: 10,
 					}}
+					cameraRef={cameraRef}
 					onClick={handleMouseClick}
+					onMouseUp={handleMouseUp}
+					onMouseDown={handleMouseDown}
+					onHover={handleMouseHover}
 				>
 					<TrussModel
 						truss={truss}
 						view={TRUSS_VIEW}
-						scale={TRUSS_SCALE}
-						constraints={TRUSS_CONSTRAINTS}
+						simpleUtilization={TRUSS_PARAMETERS.simple}
+						scale={new Vector3(SCALE, SCALE, SCALE)}
 						enableForces={forcesEnabled}
+						hoverSelected={hoverSelectedRef}
 						selectedJoints={selectedJoints}
 						selectedConnections={selectedConnections}
 						onJointClick={handleJointClick}
@@ -423,29 +548,31 @@ const Viewer = (props: ViewerProps) => {
 						zIndex: 20,
 					}}
 				>
-					<TrussInfo
-						truss={truss}
-						connectionDetails={null}
-						jointDetails={jointDetails}
-						onSubmit={submit}
-					/>
-					<TrussInfo
-						sx={{
-							ml: 2,
-						}}
-						truss={truss}
-						connectionDetails={connectionDetails}
-						jointDetails={null}
-						onSubmit={submit}
-					/>
+					{jointDetails && (
+						<JointInfo
+							key={jointDetails.id}
+							truss={truss}
+							jointDetails={jointDetails}
+							onSubmit={submit}
+						/>
+					)}
+					{connectionDetails && (
+						<ConnectionInfo
+							key={connectionDetails.id}
+							sx={{
+								ml: 2,
+							}}
+							truss={truss}
+							connectionDetails={connectionDetails}
+							onSubmit={submit}
+						/>
+					)}
 				</Box>
-				
 				<ViewerInfoBar
 					truss={truss}
 					forcesEnabled={forcesEnabled}
+					onHome={handleHome}
 					onToggleForces={handleToggleForces}
-					onSetMultipliers={handleSetMultipliers}
-					onResetMultipliers={handleResetMultipliers}
 					onImport={handleImport}
 					onExport={handleExport}
 					onSubmit={submit}
