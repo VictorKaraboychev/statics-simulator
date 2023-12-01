@@ -18,6 +18,7 @@ import Connection from '../../utility/truss/Connection'
 import JointInfo from './info/JointInfo'
 import ConnectionInfo from './info/ConnectionInfo'
 import Material from '../../utility/truss/Material'
+import { useSnackbar } from 'notistack'
 
 interface ViewerProps {
 	sx?: SxProps<Theme>,
@@ -25,9 +26,11 @@ interface ViewerProps {
 
 const Viewer = (props: ViewerProps) => {
 	const { value: truss, set: setTruss } = useCustomState.current_truss()
-	const { value: TRUSS_PARAMETERS } = useCustomState.truss_constraints()
+	const { value: TRUSS_PARAMETERS } = useCustomState.truss_parameters()
 	const { value: EDITOR_SETTINGS } = useCustomState.editor_settings()
 	const { value: TRUSS_VIEW, set: setTrussView } = useCustomState.truss_view()
+
+	const { enqueueSnackbar } = useSnackbar()
 
 	const SCALE = TRUSS_SCALE / EDITOR_SETTINGS.scale
 	const DECIMALS = Math.log10(1 / EDITOR_SETTINGS.scale) + (EDITOR_SETTINGS.snap_to_grid ? 1 : 5)
@@ -247,6 +250,8 @@ const Viewer = (props: ViewerProps) => {
 
 		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
 
+		console.log('mouse click')
+
 		if (shift) {
 			const position = new Vector2(x, y)
 
@@ -273,6 +278,8 @@ const Viewer = (props: ViewerProps) => {
 
 		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
 		const position = new Vector2(x, y)
+
+		console.log('mouse down')
 
 		if (mouse == 1) {
 			if (hoverSelectedRef.current && !dragRef.current) {
@@ -302,6 +309,8 @@ const Viewer = (props: ViewerProps) => {
 
 		// const { x, y } = e.point.clone().divideScalar(SCALE)
 
+		console.log('mouse up')
+
 		if (dragRef.current) {
 			// const { start, jointStarts } = dragRef.current
 			// const delta = new Vector2(x, y).sub(start)
@@ -323,7 +332,7 @@ const Viewer = (props: ViewerProps) => {
 
 	const handleMouseHover = (e: ThreeEvent<MouseEvent>) => {
 		const { ctrlKey: ctrl, shiftKey: shift, altKey: alt, buttons: mouse } = e.nativeEvent
-		
+
 		const { x, y } = roundVector(e.point.clone().divideScalar(SCALE), DECIMALS)
 		const position = new Vector2(x, y)
 
@@ -465,10 +474,22 @@ const Viewer = (props: ViewerProps) => {
 	}
 
 	const handleDrop = (files: File[]) => {
-		files[0].text().then((text) => {
-			const json = JSON.parse(text)
-			submit(Truss.fromJSON(json))
-		})
+		try {
+			const file = files[0]
+
+			if (!file.type.includes('json')) {
+				enqueueSnackbar('Invalid file type, must be a .json file', { variant: 'error' })
+				return
+			}
+
+			file.text().then((text) => {
+				const json = JSON.parse(text)
+				submit(Truss.fromJSON(json))
+			})
+		} catch (e) {
+			enqueueSnackbar('Error parsing file contents, please check the file is valid', { variant: 'error' })
+			return
+		}
 	}
 
 	return (
@@ -486,7 +507,6 @@ const Viewer = (props: ViewerProps) => {
 			onSubmit={handleDrop}
 		>
 			<Box
-				component={'div'}
 				sx={{
 					position: 'absolute',
 					display: 'flex',
@@ -508,6 +528,7 @@ const Viewer = (props: ViewerProps) => {
 					<TrussModel
 						truss={truss}
 						view={TRUSS_VIEW}
+						simpleUtilization={TRUSS_PARAMETERS.simple}
 						scale={new Vector3(SCALE, SCALE, SCALE)}
 						enableForces={forcesEnabled}
 						hoverSelected={hoverSelectedRef}

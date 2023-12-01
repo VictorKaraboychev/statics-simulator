@@ -3,6 +3,7 @@ import Joint from "../utility/truss/Joint"
 import Connection from "../utility/truss/Connection"
 
 export type DefaultTrussParamsType = {
+	simple: boolean,
 	density: number,
 	area: number,
 	youngsModulus: number,
@@ -62,4 +63,16 @@ export type ConnectionJSONType = {
 export type TrussJSONType = {
 	joints: JointJSONType[],
 	connections: ConnectionJSONType[]
+}
+
+export type ProfileType<T> = {
+	id: string,
+	name: string,
+	image?: string,
+	params: T,
+	configure: (...params: T) => ConfiguredProfileType,
+}
+
+export type ConfiguredProfileType = {
+	areaMomentOfInertia: (area: number) => number,
 }

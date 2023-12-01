@@ -22,7 +22,7 @@ const atoms = {
 	current_truss: customAtom<TrussJSONType>('current_truss', DEFAULT_TRUSS, true),
 	saved_trusses: customAtom<TrussJSONType[]>('saved_trusses', []),
 	editor_settings: customAtom<EditorSettingsType>('grid_scale', DEFAULT_EDITOR_SETTINGS),
-	truss_constraints: customAtom<DefaultTrussParamsType>('truss_constraints', DEFAULT_TRUSS_PARAMETERS),
+	truss_parameters: customAtom<DefaultTrussParamsType>('truss_constraints', DEFAULT_TRUSS_PARAMETERS),
 	truss_view: customAtom<string>('truss_view', 'default'),
 }
 

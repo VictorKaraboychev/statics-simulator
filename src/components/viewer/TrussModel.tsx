@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { BackSide, BoxGeometry, BufferGeometry, Color, MeshBasicMaterial, SphereGeometry, Vector2, Vector3 } from 'three'
+import { BackSide, BoxGeometry, BufferGeometry, Color, MeshBasicMaterial, SphereGeometry, Vector2, Vector3, Group, Mesh } from 'three'
 import Truss from '../../utility/truss/Truss'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
@@ -7,12 +7,13 @@ import { Line2 } from 'three/examples/jsm/lines/Line2'
 import Force from './Force'
 import { ThreeEvent } from '@react-three/fiber'
 import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
-import { TRUSS_COLORS } from '../../config/TrussConfig'
+import { TRUSS_COLORS, FAILURE_MODES } from '../../config/TrussConfig'
 import { useTheme } from '@mui/material'
 
 interface TrussModelProps {
 	truss: Truss,
 	view?: string,
+	simpleUtilization?: boolean,
 	hoverSelected?: React.MutableRefObject<boolean>,
 	selectedJoints?: Set<string>,
 	selectedConnections?: Set<string>,
@@ -56,76 +57,6 @@ const TrussModel = (props: TrussModelProps) => {
 				onPointerOver={() => setHovered(true)}
 				onPointerOut={() => setHovered(false)}
 			>
-				<group
-					position={[0, 0, -2]}
-				>
-					{truss.connections.map(([aIndex, bIndex, connection]) => {
-						const a = joints[aIndex]
-						const b = joints[bIndex]
-
-						const aPos = a.position.clone().multiply(scale2D)
-						const bPos = b.position.clone().multiply(scale2D)
-
-						const selected = props.selectedConnections?.has(connection.id)
-
-						const utilization = Math.min(Math.abs(connection.utilization), 1)
-
-						const stressType = (props.view === 'stress' || connection.failure) ? connection.stressType : 'neutral'
-						const color = new Color(TRUSS_COLORS[stressType] ?? 0x000000)
-
-						return (
-							<group
-								key={connection.id}
-								position={[0, 0, selected ? 1 : 0]}
-								onClick={(e) => props.onConnectionClick?.(
-									e,
-									connection.id,
-									{
-										id: `${aIndex}-${bIndex}`,
-										connection: connection,
-										a,
-										b,
-									}
-								)}
-								onPointerOver={() => selected && handleHoverSelected(true)}
-								onPointerOut={() => selected && handleHoverSelected(false)}
-							>
-								<primitive
-									object={new Line2(
-										new LineGeometry().setPositions([
-											...aPos.toArray(),
-											0,
-											...bPos.toArray(),
-											0,
-										]),
-										new LineMaterial({
-											color: color.getHex(),
-											linewidth: 0.25 * utilization + 0.1,
-											worldUnits: true,
-										}),
-									)}
-								/>
-								<primitive
-									object={new Line2(
-										new LineGeometry().setPositions([
-											...aPos.toArray(),
-											-0.05,
-											...bPos.toArray(),
-											-0.05,
-										]),
-										new LineMaterial({
-											color: new Color(palette.primary.main).getHex(),
-											linewidth: 0.25 * utilization + 0.25,
-											transparent: true,
-											opacity: selected ? 1 : 0,
-											worldUnits: true,
-										}),
-									)}
-								/>
-							</group>
-						)
-					})}
-				</group>
 				<group>
 					{joints.map((joint, i) => {
 						const p = joint.position.clone()
@@ -154,23 +85,89 @@ const TrussModel = (props: TrussModelProps) => {
 								onPointerOver={() => selected && handleHoverSelected(true)}
 								onPointerOut={() => selected && handleHoverSelected(false)}
 							>
-								<mesh
-									geometry={geometry.main}
-									material={new MeshBasicMaterial({
-										color: joint.fixed ? '#555555' : '#aaaaaa',
-									})}
+								<primitive
+									object={new Mesh(
+										geometry.main,
+										new MeshBasicMaterial({
+											color: joint.fixed ? '#555555' : '#aaaaaa',
+										}),
+									)}
 								/>
 								{selected && (
-									<mesh
-										geometry={geometry.selected}
-										material={new MeshBasicMaterial({
-											color: palette.primary.main,
-											side: BackSide,
-										})}
+									<primitive
+										object={new Mesh(
+											geometry.selected,
+											new MeshBasicMaterial({
+												color: palette.primary.main,
+												side: BackSide,
+											}),
+										)}
 									/>
 								)}
-							</group>
 
+							</group>
+						)
+					})}
+				</group>
+				<group
+					position={[0, 0, -2]}
+				>
+					{truss.connections.map(([aIndex, bIndex, connection]) => {
+						const a = joints[aIndex]
+						const b = joints[bIndex]
+
+						const id = aIndex < bIndex ? `${aIndex}-${bIndex}` : `${bIndex}-${aIndex}`
+
+						const aPos = a.position.clone().multiply(scale2D)
+						const bPos = b.position.clone().multiply(scale2D)
+
+						const selected = props.selectedConnections?.has(connection.id)
+
+						const utilization = Math.min(Math.abs(connection.getUtilization(props.simpleUtilization)), 1)
+
+						const color = props.view === 'stress' ? TRUSS_COLORS[connection.stressType] ?? 0x000000 : FAILURE_MODES[connection.getFailureMode(props.simpleUtilization)].color
+
+						return (
+							<group
+								key={connection.id}
+								position={[0, 0, selected ? 1 : 0]}
+								onClick={(e) => props.onConnectionClick?.(e, connection.id, { id, connection, a, b })}
+								onPointerOver={() => selected && handleHoverSelected(true)}
+								onPointerOut={() => selected && handleHoverSelected(false)}
+							>
+								<primitive
+									object={new Line2(
+										new LineGeometry().setPositions([
+											...aPos.toArray(),
+											0,
+											...bPos.toArray(),
+											0,
+										]),
+										new LineMaterial({
+											color: new Color(color).getHex(),
+											linewidth: 0.25 * utilization + 0.1,
+											worldUnits: true,
+										}),
+									)}
+								/>
+								<primitive
+									object={new Line2(
+										new LineGeometry().setPositions([
+											...aPos.toArray(),
+											-0.05,
+											...bPos.toArray(),
+											-0.05,
+										]),
+										new LineMaterial({
+											color: new Color(palette.primary.main).getHex(),
+											linewidth: 0.25 * utilization + 0.25,
+											transparent: true,
+											opacity: selected ? 1 : 0,
+											worldUnits: true,
+										}),
+									)}
+								/>
+							</group>
 						)
 					})}
 				</group>

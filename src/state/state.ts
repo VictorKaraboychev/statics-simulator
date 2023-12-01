@@ -89,7 +89,7 @@ const useGlobalState = {
 		return { value: json.map(Truss.fromJSON), initial: initialJSON.map(Truss.fromJSON), set, load, reset }
 	},
 	editor_settings: () => createGlobalPersistentState(atoms.editor_settings),
-	truss_constraints: () => createGlobalPersistentState(atoms.truss_constraints),
+	truss_parameters: () => createGlobalPersistentState(atoms.truss_parameters),
 	truss_view: () => createGlobalPersistentState(atoms.truss_view),
 }
 

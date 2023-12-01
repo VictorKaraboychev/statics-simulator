@@ -1,11 +1,15 @@
+import { Vector2 } from "three"
 import { ConnectionJSONType } from "../../types/truss"
 import { getUUID } from "../functions"
 import Material from "./Material"
+import Profile, { Rectangular } from "./Profiles"
 
 export enum FailureMode {
 	NONE,
-	AXIAL,
+	AXIAL_TENSION,
+	AXIAL_COMPRESSION,
 	BUCKLING,
+	SHEAR,
 }
 
 export default class Connection {
@@ -21,7 +25,11 @@ export default class Connection {
 
 	material: Material
 
-	constructor(stress = 0, length = 0, angle = 0, area = 1, material?: Material) {
+	profile: Profile
+
+	private amoi: Vector2 | null = null
+
+	constructor(stress = 0, length = 0, angle = 0, area = 1, material?: Material, profile?: Profile) {
 		this.id = getUUID()
 
 		this.axialStress = stress
@@ -29,6 +37,8 @@ export default class Connection {
 		this.length = length
 		this.angle = angle
 		this.area = area
+
+		this.profile = profile ?? new Rectangular(1, 1)
 
 		this.material = material ?? new Material('Material')
 	}
@@ -58,20 +68,7 @@ export default class Connection {
 	}
 
 	get transverseElongation(): number {
-		return this.transverseStrain * Math.sqrt(this.area / Math.PI) * 2
-	}
-
-	get utilization(): number {
-		return Math.abs(this.axialStress) / Math.abs(this.material.ultimateStress[this.stressType])
-	}
-
-	get safetyFactor(): number {
-		return 1 / this.utilization
-	}
-
-	get failure(): FailureMode {
-		if (this.utilization <= 1) return FailureMode.NONE
-		return FailureMode.AXIAL
+		return this.transverseStrain * this.profile.getWidth(this.area)
 	}
 
 	get stressType(): 'tension' | 'compression' {
@@ -82,13 +79,14 @@ export default class Connection {
 		return this.material.youngsModulus * this.area / this.length
 	}
 
-	get areaMomentOfInertia(): number {
-		return this.area ** 2 / 6
+	get areaMomentOfInertia(): Vector2 {
+		if (!this.amoi) this.amoi = this.profile.getAreaMomentOfInertia(this.area)
+		return this.amoi
 	}
 
-	get bucklingForce(): number {
-		return Math.PI ** 2 * this.material.youngsModulus * this.areaMomentOfInertia / this.length ** 2
-	
+	private get maximumAxialBucklingStress(): number {
+		const amoi = this.areaMomentOfInertia
+		return Math.PI ** 2 * this.material.youngsModulus * Math.min(amoi.x, amoi.y) / (this.length ** 2 * this.area)
 	}
 
 	get volume(): number {
@@ -97,6 +95,29 @@ export default class Connection {
 
 	get mass(): number {
 		return this.material.density * this.volume
+	}
+
+	getSafetyFactor(simple: boolean = true): number {
+		return 1 / this.getUtilization(simple)
+	}
+
+	getUtilization(simple = true): number {
+		let maxStress = Math.abs(this.material.ultimateStress.tension)
+
+		if (this.stressType === 'compression') {
+			maxStress = simple ? Math.abs(this.material.ultimateStress.compression) : Math.min(Math.abs(this.maximumAxialBucklingStress), Math.abs(this.material.ultimateStress.compression))
+		}
+
+		return Math.abs(this.axialStress) / maxStress
+	}
+
+	getFailureMode(simple = true): FailureMode {
+		if (this.getUtilization(simple) > 1) {
+			if (this.stressType === 'tension') return FailureMode.AXIAL_TENSION
+			if (!simple && Math.abs(this.maximumAxialBucklingStress) < Math.abs(this.material.ultimateStress.compression)) return FailureMode.BUCKLING
+			return FailureMode.AXIAL_COMPRESSION
+		}
+		return FailureMode.NONE
 	}
 
 	clone(): Connection {

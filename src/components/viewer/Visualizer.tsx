@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Box, SxProps, Theme, useTheme } from '@mui/material'
 import { Canvas, ThreeEvent } from '@react-three/fiber'
-import { Color, ColorRepresentation, MeshPhongMaterial, OrthographicCamera, PlaneGeometry, Vector3 } from 'three'
+import { Color, ColorRepresentation, MeshBasicMaterial, MeshPhongMaterial, OrthographicCamera, PlaneGeometry, Vector3 } from 'three'
 import CameraController from './CameraController'
 import useCustomState from '../../state/state'
 //@ts-ignore
@@ -41,7 +41,6 @@ const Visualizer = (props: VisualizerProps) => {
 
 	return (
 		<Box
-			component={'div'}
 			sx={{
 				width: '100%',
 				height: '100%',
@@ -67,7 +66,7 @@ const Visualizer = (props: VisualizerProps) => {
 					material={new MeshPhongMaterial({
 						color: bgcolor,
 						emissive: bgcolor,
-						emissiveIntensity: 4,
+						emissiveIntensity: palette.mode === 'dark' ? 4 : 100,
 					})}
 					position={[0, 0, -50]}
 					rotation={[0, 0, Math.PI / 2]}
@@ -76,12 +75,12 @@ const Visualizer = (props: VisualizerProps) => {
 					onPointerDown={props.onMouseDown}
 					onPointerMove={props.onHover}
 				/>
-				<hemisphereLight
+				{/* <hemisphereLight
 					color={0x999999}
 					groundColor={0x444444}
 					intensity={1}
 					position={new Vector3(0, 50, 100)}
-				/>
+				/> */}
 				{EDITOR_SETTINGS.grid_enabled && (
 					// <gridHelper
 					// 	args={[5000, 5000, new Color(0xffffff).sub(new Color(bgcolor))]}

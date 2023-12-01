@@ -1,3 +1,4 @@
+import { FailureMode } from './../utility/truss/Connection'
 import { EditorSettingsType } from "../types/general"
 
 export const METRIC_PREFIXES = [

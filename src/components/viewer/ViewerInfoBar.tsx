@@ -9,6 +9,8 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import Settings from '../Settings'
 import { useEventEffect } from '../../utility/hooks'
 import Info from '../Info'
+import { useEffect, useState } from 'react'
+import { fEngineering } from '../../utility/format'
 
 interface ViewerInfoBarProps {
 	truss: Truss,
@@ -21,10 +23,34 @@ interface ViewerInfoBarProps {
 }
 
 const ViewerInfoBar = (props: ViewerInfoBarProps) => {
-	const { value: TRUSS_CONSTRAINTS } = useCustomState.truss_constraints()
+	const [mass, setMass] = useState(0)
+	const [maxForces, setMaxForces] = useState({
+		compression: 0,
+		tension: 0,
+	})
 
 	const truss = props.truss
-	// const maxForces = truss.getMaxForces()
+
+	useEffect(() => {
+		const mass = truss.connections.reduce((acc, [a, b, connection]) => {
+			return acc + connection.mass
+		}, 0)
+
+		const maxForces = truss.connections.reduce((acc, [a, b, connection]) => {
+			const force = connection.force
+
+			return {
+				compression: Math.min(acc.compression, force),
+				tension: Math.max(acc.tension, force),
+			}
+		}, { 
+			compression: 0, 
+			tension: 0 
+		})
+
+		setMass(mass)
+		setMaxForces(maxForces)
+	}, [props.truss])
 
 	useEventEffect((e: KeyboardEvent) => {
 		const {
@@ -59,7 +85,7 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 				}}
 				variant={'outlined'}
 			>
-				{/* <Box
+				<Box
 					component={'div'}
 					sx={{
 						display: 'flex',
@@ -70,19 +96,30 @@ const ViewerInfoBar = (props: ViewerInfoBarProps) => {
 						sx={{
 							mr: 2,
 						}}
+						variant={'body2'}
 						color={'text.primary'}
 					>
-						Max Compression: {maxForces.maxCompression.toFixed(0)}N
+						Max Compression: {fEngineering(maxForces.compression, 'N')}
 					</Typography>
 					<Typography
 						sx={{
 							mr: 2,
 						}}
+						variant={'body2'}
 						color={'text.primary'}
 					>
-						Max Tension: {maxForces.maxTension.toFixed(0)}N
+						Max Tension: {fEngineering(maxForces.tension, 'N')}
 					</Typography>
-				</Box> */}
+				</Box>
+				<Typography
+					sx={{
+						mr: 2,
+					}}
+					variant={'body2'}
+					color={'text.primary'}
+				>
+					Total Mass: {fEngineering(mass * 1e3, 'g')}
+				</Typography>
 				<Box
 					component={'div'}
 					sx={{

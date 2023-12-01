@@ -6,6 +6,8 @@ import { useCompoundState, useEventEffect, useReliantState } from '../../../util
 import { fEngineering, fPercent } from '../../../utility/format'
 import EngineeringField from '../../common/textfields/EngineeringField'
 import Material from '../../../utility/truss/Material'
+import useCustomState from '../../../state/state'
+import { FAILURE_MODES } from '../../../config/TrussConfig'
 
 interface ConnectionInfoProps {
 	sx?: SxProps<Theme>
@@ -15,6 +17,8 @@ interface ConnectionInfoProps {
 }
 
 const ConnectionInfo = (props: ConnectionInfoProps) => {
+	const { value: TRUSS_PARAMETERS } = useCustomState.truss_parameters()
+
 	const connectionDetails = props.connectionDetails
 	const connection = props.truss.getConnection(connectionDetails.connection.id)
 	const material = connection.material
@@ -55,6 +59,10 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 	}, 'keydown')
 
 	if (!connection) return null
+
+	const utilization = connection.getUtilization(TRUSS_PARAMETERS.simple)
+	const failureMode = connection.getFailureMode(TRUSS_PARAMETERS.simple)
+	const failure = FAILURE_MODES[failureMode]
 
 	return (
 		<Card
@@ -128,8 +136,33 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 				<Typography
 					variant={'body2'}
 				>
-					Utilization: {fPercent(connection.utilization)} (FoS: {connection.utilization > 0 ? connection.safetyFactor.toFixed(2) : '0.00'}×)
+					Utilization: {fPercent(utilization)} (FoS: {utilization > 0 ? (1 / utilization).toFixed(2) : '0.00'}×)
 				</Typography>
+				<Box
+					sx={{
+						display: 'flex',
+						flexDirection: 'row',
+						alignItems: 'center',
+					}}
+				>
+					<Typography
+						variant={'body2'}
+					>
+						Failure Mode:
+						<Typography
+							sx={{
+								fontWeight: 'bold',
+								color: failure.color,
+								textJustify: 'center',
+								textTransform: 'capitalize',
+								ml: 0.5,
+							}}
+							variant={'caption'}
+						>
+							{failure.label}
+						</Typography>
+					</Typography>
+				</Box>
 				<Table
 					sx={{
 						mb: 2,

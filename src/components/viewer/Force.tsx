@@ -11,7 +11,7 @@ interface ForceProps {
 
 const Force = (props: ForceProps) => {
 	const { palette } = useTheme()
-	const color = new Color(palette.primary.main).getHex()
+	const color = new Color(palette.warning.main).getHex()
 
 	const force = new Vector3(props.force.x, props.force.y, 0).clone().normalize().multiplyScalar(1.5)
 	const origin = new Vector3(props.origin.x, props.origin.y, 0)

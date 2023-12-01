@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, Button, Checkbox, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, SxProps, Theme, Typography } from '@mui/material'
+import { Box, Checkbox, FormControl, FormControlLabel, Radio, RadioGroup, SxProps, Theme, Typography } from '@mui/material'
 import Dialog from './common/Dialog'
 import VERSION from '../version.json'
 import useCustomState from '../state/state'
@@ -16,7 +16,7 @@ interface SettingsProps {
 const Settings = (props: SettingsProps) => {
 	const { value: THEME, set: setTheme } = useCustomState.theme()
 	const { value: EDITOR_SETTINGS, set: setEditorSettings } = useCustomState.editor_settings()
-	const { value: TRUSS_PARAMETERS, set: setTrussConstraints } = useCustomState.truss_constraints()
+	const { value: TRUSS_PARAMETERS, set: setTrussParams } = useCustomState.truss_parameters()
 
 	const [open, setOpen] = useState(false)
 
@@ -132,7 +132,7 @@ const Settings = (props: SettingsProps) => {
 							decimals={5}
 							defaultValue={TRUSS_PARAMETERS.area}
 							onSubmit={(value) => {
-								setTrussConstraints({
+								setTrussParams({
 									...TRUSS_PARAMETERS,
 									area: value,
 								})
@@ -169,6 +169,17 @@ const Settings = (props: SettingsProps) => {
 								setEditorSettings({
 									...EDITOR_SETTINGS,
 									snap_to_grid: (e.target as any).checked,
+								})
+							}}
+						/>
+						<FormControlLabel
+							label={'Simple Mode'}
+							control={<Checkbox />}
+							checked={TRUSS_PARAMETERS.simple}
+							onChange={(e) => {
+								setTrussParams({
+									...TRUSS_PARAMETERS,
+									simple: (e.target as any).checked,
 								})
 							}}
 						/>
@@ -212,7 +223,7 @@ const Settings = (props: SettingsProps) => {
 							decimals={5}
 							defaultValue={TRUSS_PARAMETERS.density * 1e3}
 							onSubmit={(value) => {
-								setTrussConstraints({
+								setTrussParams({
 									...TRUSS_PARAMETERS,
 									density: value / 1e3,
 								})
@@ -224,7 +235,7 @@ const Settings = (props: SettingsProps) => {
 							decimals={5}
 							defaultValue={TRUSS_PARAMETERS.poissonsRatio}
 							onSubmit={(value) => {
-								setTrussConstraints({
+								setTrussParams({
 									...TRUSS_PARAMETERS,
 									poissonsRatio: value,
 								})
@@ -250,7 +261,7 @@ const Settings = (props: SettingsProps) => {
 							decimals={5}
 							defaultValue={TRUSS_PARAMETERS.youngsModulus}
 							onSubmit={(value) => {
-								setTrussConstraints({
+								setTrussParams({
 									...TRUSS_PARAMETERS,
 									youngsModulus: value,
 								})
@@ -263,7 +274,7 @@ const Settings = (props: SettingsProps) => {
 							decimals={5}
 							defaultValue={TRUSS_PARAMETERS.shearModulus}
 							onSubmit={(value) => {
-								setTrussConstraints({
+								setTrussParams({
 									...TRUSS_PARAMETERS,
 									shearModulus: value,
 								})
@@ -289,7 +300,7 @@ const Settings = (props: SettingsProps) => {
 							decimals={5}
 							defaultValue={TRUSS_PARAMETERS.ultimateStress.tension}
 							onSubmit={(value) => {
-								setTrussConstraints({
+								setTrussParams({
 									...TRUSS_PARAMETERS,
 									ultimateStress: {
 										...TRUSS_PARAMETERS.ultimateStress,
@@ -305,7 +316,7 @@ const Settings = (props: SettingsProps) => {
 							decimals={5}
 							defaultValue={TRUSS_PARAMETERS.ultimateStress.compression}
 							onSubmit={(value) => {
-								setTrussConstraints({
+								setTrussParams({
 									...TRUSS_PARAMETERS,
 									ultimateStress: {
 										...TRUSS_PARAMETERS.ultimateStress,

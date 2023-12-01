@@ -188,7 +188,7 @@ export default class Truss {
 				[C * S, S * S]
 			]).multiply(connection.axialStiffness)
 
-			const M2 = M1.clone().multiply(-1)
+			const M2 = Matrix.mul(M1, -1)
 
 			addSubMatrix(TGSM, M1, p1, p1)
 			addSubMatrix(TGSM, M2, p1, p2)
@@ -201,7 +201,7 @@ export default class Truss {
 		try {
 			let j = 0
 
-			const D = joints.reduce((acc, joint, i) => {
+			const DM = joints.reduce((acc, joint, i) => {
 				const k = i * 2
 				if (joint.fixtures.x) acc.addRow(k, [0])
 				if (joint.fixtures.y) acc.addRow(k + 1, [0])
@@ -223,7 +223,8 @@ export default class Truss {
 				return acc
 			}, new Matrix(0, 1))))
 
-			const F = K.mmul(D)
+			const F = K.mmul(DM).getColumnVector(0).to1DArray()
+			const D = DM.getColumnVector(0).to1DArray()
 
 			const S = connections.reduce((acc, [aIndex, bIndex, connection], i) => {
 				const p1 = 2 * aIndex
@@ -248,38 +249,41 @@ export default class Truss {
 							])
 						).mmul(
 							new Matrix([
-								[D.get(p1, 0)],
-								[D.get(p1 + 1, 0)],
-								[D.get(p2, 0)],
-								[D.get(p2 + 1, 0)]
+								[D[p1]],
+								[D[p1 + 1]],
+								[D[p2]],
+								[D[p2 + 1]]
 							])
 						).get(0, 0) * (connection.material.youngsModulus / connection.length)
 					]
 				)
 
 				return acc
-			}, Matrix.zeros(0, 1))
+			}, Matrix.zeros(0, 1)).getColumnVector(0).to1DArray()
 
 			connections.forEach(([aIndex, bIndex, connection], i) => {
-				connection.axialStress = -S.get(i, 0) // negative because of sign convention (tension is positive)
+				connection.axialStress = -S[i] // negative because of sign convention (tension is positive)
 			})
 
 			// Update the joints
 			joints.forEach((joint, i) => {
-				if (joint.fixtures.x) joint.force.x = F.get(i * 2, 0)
-				if (joint.fixtures.y) joint.force.y = F.get(i * 2 + 1, 0)
+				const k = i * 2
+				if (joint.fixtures.x) joint.force.x = F[k]
+				if (joint.fixtures.y) joint.force.y = F[k + 1]
 
-				joint.displacement.set(D.get(i * 2, 0), D.get(i * 2 + 1, 0))
+				joint.displacement.set(D[k], D[k + 1])
 			})
 
 			// console.log(
 			// 	K.to2DArray().map((row) => row.map((value) => value.toFixed(3))),
-			// 	D.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			// 	F.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
-			// 	S.to2DArray().map((row) => row.map((value) => value.toFixed(4))),
+			// 	D,
+			// 	F,
+			// 	S,
 			// )
 
 			// console.timeEnd('computeForces')
+
+			console.log(this)
 		} catch (e) {
 			return false
 		}
