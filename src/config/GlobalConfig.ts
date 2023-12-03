@@ -1,4 +1,3 @@
-import { FailureMode } from './../utility/truss/Connection'
 import { EditorSettingsType } from "../types/general"
 
 export const METRIC_PREFIXES = [
@@ -32,19 +31,17 @@ export const EXPONENT_SUFFIXES: { [key: string]: number } = {
 	'⁹': 9,
 }
 
-export const DEFAULT_PRECISION = 5
+export const DEFAULT_DECIMALS = 5
+export const SNAP_DECIMALS = 1
 
-export const MAX_UNDO_STATES = 10000
+export const MAX_UNDO_STATES = 1000
 
 export const DEFAULT_EDITOR_SETTINGS: EditorSettingsType = {
 	scale: 1,
 	grid_enabled: true,
-	snap_to_grid: true,
 	debug: false,
 }
 
-export const TRUSS_SCALE = 1
-export const HOVER_PRECISION = 0.1
 export const DRAG_UPDATE_INTERVAL = 1000 / 60
 
 export const THEME_OPTIONS = {

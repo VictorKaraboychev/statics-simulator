@@ -1,3 +1,5 @@
+import { Vector2 } from "three"
+
 export type Range = {
 	min?: number
 	max?: number
@@ -8,7 +10,6 @@ export type HoverState = 'accepted' | 'rejected' | 'none'
 export type EditorSettingsType = {
 	scale: number,
 	grid_enabled: boolean,
-	snap_to_grid: boolean,
 	debug: boolean,
 }
 
@@ -24,4 +25,11 @@ export type RouteWrapperType = { property: keyof RouteType, guard: (props: { val
 export interface ErrorFallbackInterface {
 	error: Error
 	resetErrorBoundary: () => void
+}
+
+export type DragType<T> = {
+	start: Vector2,
+	current: Vector2,
+	lastUpdate: number,
+	data: T
 }

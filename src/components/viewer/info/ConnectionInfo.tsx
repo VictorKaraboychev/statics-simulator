@@ -1,30 +1,28 @@
 import { Box, Button, Card, SxProps, Table, TableBody, TableCell, TableHead, TableRow, Theme, Typography } from '@mui/material'
 import NumberField from '../../common/textfields/NumberField'
-import { TrussConnectionDetailsType } from '../../../types/truss'
 import Truss from '../../../utility/truss/Truss'
 import { useCompoundState, useEventEffect, useReliantState } from '../../../utility/hooks'
 import { fEngineering, fPercent } from '../../../utility/format'
 import EngineeringField from '../../common/textfields/EngineeringField'
 import Material from '../../../utility/truss/Material'
 import useCustomState from '../../../state/state'
-import { FAILURE_MODES } from '../../../config/TrussConfig'
+import { FAILURE_MODES, TRUSS_COLORS } from '../../../config/TrussConfig'
 
 interface ConnectionInfoProps {
 	sx?: SxProps<Theme>
+	id: string
 	truss: Truss
-	connectionDetails: TrussConnectionDetailsType
 	onSubmit?: (truss: Truss) => void
 }
 
 const ConnectionInfo = (props: ConnectionInfoProps) => {
 	const { value: TRUSS_PARAMETERS } = useCustomState.truss_parameters()
 
-	const connectionDetails = props.connectionDetails
-	const connection = props.truss.getConnection(connectionDetails.connection.id)
+	const connection = props.truss.getConnection(props.id)
 	const material = connection.material
 
-	const [modifiedArea, setModifiedArea] = useReliantState<number>(connection.area, [props.connectionDetails, props.truss])
-	const [modifiedMaterial, setModifiedMaterial] = useCompoundState<Material>(material, [props.connectionDetails, props.truss])
+	const [modifiedArea, setModifiedArea] = useReliantState<number>(connection.area, [props.id, props.truss])
+	const [modifiedMaterial, setModifiedMaterial] = useCompoundState<Material>(material, [props.id, props.truss])
 
 	const canSubmit = Boolean(
 		connection &&
@@ -39,7 +37,7 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 	)
 
 	const handleSubmit = () => {
-		if (!connectionDetails || !connection) return
+		if (!connection) return
 
 		connection.area = modifiedArea
 		material.density = modifiedMaterial.density
@@ -92,7 +90,7 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 				<Typography
 					variant={'body2'}
 				>
-					ID: {connectionDetails.id}
+					ID: {props.id}
 				</Typography>
 				<Typography
 					variant={'body2'}
@@ -123,7 +121,7 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 						<Typography
 							sx={{
 								fontWeight: 'bold',
-								color: connection.stressType === 'tension' ? 'error.main' : 'success.main',
+								color: TRUSS_COLORS[connection.stressType],
 								textJustify: 'center',
 								textTransform: 'capitalize',
 							}}
@@ -152,7 +150,7 @@ const ConnectionInfo = (props: ConnectionInfoProps) => {
 						<Typography
 							sx={{
 								fontWeight: 'bold',
-								color: failure.color,
+								color: failure.label === 'None' ? 'text.secondary' : failure.color,
 								textJustify: 'center',
 								textTransform: 'capitalize',
 								ml: 0.5,

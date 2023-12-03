@@ -15,18 +15,6 @@ export type DefaultTrussParamsType = {
 	},
 }
 
-export type TrussJointDetailsType = {
-	id: number,
-	joint: Joint,
-}
-
-export type TrussConnectionDetailsType = {
-	id: string,
-	connection: Connection,
-	a: Joint,
-	b: Joint,
-}
-
 export type MaterialJSONType = {
 	id: string,
 	name: string,

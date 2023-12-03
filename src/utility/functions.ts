@@ -25,6 +25,18 @@ export const getUUID = () => {
  */
 export const scrollTo = (options?: ScrollToOptions, id?: string) => document.getElementById(id ?? 'scroll-view')?.scrollTo(options)
 
+export const setCursor = (cursor: string) => {
+	if (document.body.style.cursor !== cursor) {
+		document.body.style.cursor = cursor
+	}
+}
+
+export const clearSelection = () => {
+	if (window.getSelection) { 
+		window.getSelection()?.removeAllRanges()
+	}
+}
+
 export const equals = <T>(a: T, b: T): boolean => JSON.stringify(a) === JSON.stringify(b)
 
 export const last = <T>(array: T[]): T => array[array.length - 1]

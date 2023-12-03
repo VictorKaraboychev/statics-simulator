@@ -80,7 +80,7 @@ export const useHistory = <T>(key: string, initialState?: T, maxStates = 1000, s
 
 			if (savedState.current.undo.length > maxStates) savedState.current.undo.shift()
 		}
-
+		console.log(savedState.current.undo.length)
 		setValue(newValue)
 	}
 

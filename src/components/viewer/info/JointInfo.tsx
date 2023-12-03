@@ -1,24 +1,19 @@
 import { Box, Button, Card, Checkbox, SxProps, Table, TableBody, TableCell, TableHead, TableRow, Theme, Typography } from '@mui/material'
-import NumberField from '../../common/textfields/NumberField'
-import { TrussJointDetailsType } from '../../../types/truss'
 import { Vector2 } from 'three'
 import { useEventEffect, useReliantState } from '../../../utility/hooks'
 import Truss from '../../../utility/truss/Truss'
-import { roundVector2 } from '../../../utility/functions'
-import { DEFAULT_PRECISION } from '../../../config/GlobalConfig'
 import EngineeringField from '../../common/textfields/EngineeringField'
 import { fEngineering } from '../../../utility/format'
 
 interface JointInfoProps {
 	sx?: SxProps<Theme>
+	id: string
 	truss: Truss
-	jointDetails: TrussJointDetailsType
 	onSubmit?: (truss: Truss) => void
 }
 
 const JointInfo = (props: JointInfoProps) => {
-	const jointDetails = props.jointDetails
-	const joint = props.truss.getJoint(jointDetails.joint.id)
+	const joint = props.truss.getJoint(props.id)
 
 	const [position, setPosition] = useReliantState<Vector2>(joint ? joint.position : new Vector2(0, 0), [joint.position])
 	const [externalForce, setExternalForce] = useReliantState<Vector2>(joint ? joint.force : new Vector2(0, 0), [joint.force])
@@ -33,8 +28,8 @@ const JointInfo = (props: JointInfoProps) => {
 	const handleSubmit = () => {
 		if (!canSubmit || !joint) return
 
-		joint.position = roundVector2(position, DEFAULT_PRECISION)
-		joint.force = roundVector2(externalForce, DEFAULT_PRECISION)
+		joint.position = position
+		joint.force = externalForce
 
 		props.onSubmit?.(props.truss)
 	}
@@ -79,7 +74,7 @@ const JointInfo = (props: JointInfoProps) => {
 				<Typography
 					variant={'body2'}
 				>
-					ID: {jointDetails.id}
+					ID: {props.id}
 				</Typography>
 				<Typography
 					sx={{
@@ -87,7 +82,7 @@ const JointInfo = (props: JointInfoProps) => {
 					}}
 					variant={'body2'}
 				>
-					Connections: {jointDetails.joint.numConnections}
+					Connections: {joint.numConnections}
 				</Typography>
 				<Table
 					size={'small'}

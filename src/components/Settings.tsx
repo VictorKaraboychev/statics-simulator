@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, Checkbox, FormControl, FormControlLabel, Radio, RadioGroup, SxProps, Theme, Typography } from '@mui/material'
+import { Box, Checkbox, FormControl, FormControlLabel, ListItem, Radio, RadioGroup, SxProps, Theme, Typography } from '@mui/material'
 import Dialog from './common/Dialog'
 import VERSION from '../version.json'
 import useCustomState from '../state/state'
@@ -144,15 +144,20 @@ const Settings = (props: SettingsProps) => {
 						component={'div'}
 						sx={{
 							display: 'flex',
-							flexDirection: 'row',
-							alignItems: 'center',
+							flexDirection: 'column',
 							mb: 2,
 							width: '100%',
 						}}
 					>
 						<FormControlLabel
 							label={'Show Grid'}
-							control={<Checkbox />}
+							control={
+								<Checkbox
+									sx={{
+										py: 0,
+									}}
+								/>
+							}
 							checked={EDITOR_SETTINGS.grid_enabled}
 							onChange={(e) => {
 								setEditorSettings({
@@ -162,19 +167,14 @@ const Settings = (props: SettingsProps) => {
 							}}
 						/>
 						<FormControlLabel
-							label={'Snap to Grid'}
-							control={<Checkbox />}
-							checked={EDITOR_SETTINGS.snap_to_grid}
-							onChange={(e) => {
-								setEditorSettings({
-									...EDITOR_SETTINGS,
-									snap_to_grid: (e.target as any).checked,
-								})
-							}}
-						/>
-						<FormControlLabel
 							label={'Simple Mode'}
-							control={<Checkbox />}
+							control={
+								<Checkbox
+									sx={{
+										py: 0,
+									}}
+								/>
+							}
 							checked={TRUSS_PARAMETERS.simple}
 							onChange={(e) => {
 								setTrussParams({
@@ -185,7 +185,13 @@ const Settings = (props: SettingsProps) => {
 						/>
 						<FormControlLabel
 							label={'Debug Mode'}
-							control={<Checkbox />}
+							control={
+								<Checkbox
+									sx={{
+										py: 0,
+									}}
+								/>
+							}
 							checked={EDITOR_SETTINGS.debug}
 							onChange={(e) => {
 								setEditorSettings({
@@ -326,37 +332,82 @@ const Settings = (props: SettingsProps) => {
 							}}
 						/>
 					</Box>
-					<Typography
-						variant={'body2'}
-						color={'text.primary'}
+					<Box
+						sx={{
+							display: 'flex',
+							flexDirection: 'row',
+						}}
 					>
-						GitHub:
-						<a
-							style={{
-								marginLeft: '0.25rem',
-								color: 'inherit',
+						<Box
+							sx={{
+								display: 'flex',
+								flexDirection: 'column',
+								mr: 2,
+								width: '100%',
 							}}
-							href={'https://github.com/VictorKaraboychev/statics-simulator'} target={'_blank'}
 						>
-							Victor Karaboychev
-						</a>
-					</Typography>
-					<Typography
-						variant={'body2'}
-						color={'text.primary'}
-					>
-						Version: {VERSION.version}
-					</Typography>
-					<Typography
-						variant={'body2'}
-						color={'text.primary'}
-					>
-						Date Updated: {new Date(VERSION.date).toLocaleString(undefined, {
-							day: 'numeric',
-							month: 'short',
-							year: 'numeric',
-						})}
-					</Typography>
+							<Typography
+								variant={'body2'}
+								color={'text.primary'}
+							>
+								GitHub:
+								<a
+									style={{
+										marginLeft: '0.25rem',
+										color: 'inherit',
+									}}
+									href={'https://github.com/VictorKaraboychev/statics-simulator'} target={'_blank'}
+								>
+									Victor Karaboychev
+								</a>
+							</Typography>
+							<Typography
+								variant={'body2'}
+								color={'text.primary'}
+							>
+								Version: {VERSION.version}
+							</Typography>
+							<Typography
+								variant={'body2'}
+								color={'text.primary'}
+							>
+								Date Updated: {new Date(VERSION.date).toLocaleString(undefined, {
+									day: 'numeric',
+									month: 'short',
+									year: 'numeric',
+								})}
+							</Typography>
+						</Box>
+						<Box
+							sx={{
+								display: 'flex',
+								flexDirection: 'column',
+								width: '100%',
+							}}
+						>
+							<Typography
+								sx={{
+									fontWeight: 'bold',
+								}}
+								variant={'body2'}
+								color={'text.primary'}
+							>
+								Change Log:
+							</Typography>
+							{VERSION.changelog.map((change, index) => (
+								<ListItem
+									key={index}
+									sx={{
+										fontSize: '0.9rem',
+										p: 0,
+									}}
+									color={'text.primary'}
+								>
+									{change}
+								</ListItem>
+							))}
+						</Box>
+					</Box>
 				</Box>
 			</Dialog>
 			<TooltipButton

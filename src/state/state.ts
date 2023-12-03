@@ -65,22 +65,6 @@ export const useStateManager = (handlePersistance = false) => {
 
 const useGlobalState = {
 	theme: () => createGlobalPersistentState(atoms.theme),
-	current_truss: () => {
-		const { value: json, initial: initialJSON, set: setJSON, load, reset } = createGlobalPersistentState(atoms.current_truss)
-
-		const [value, setValue] = useState<Truss>(Truss.fromJSON(initialJSON))
-
-		useEffect(() => {
-			const value = Truss.fromJSON(json)
-			value.compute()
-
-			setValue(value)
-		}, [json])
-
-		const set = (newValue: Truss, save = true) => setJSON(newValue.toJSON(), save)
-
-		return { value, initial: Truss.fromJSON(initialJSON), set, load, reset }
-	},
 	saved_trusses: () => {
 		const { value: json, initial: initialJSON, set: setJSON, load, reset } = createGlobalPersistentState(atoms.saved_trusses)
 

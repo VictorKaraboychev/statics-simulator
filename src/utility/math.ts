@@ -1,6 +1,7 @@
 import { Vector, Vector2, Vector3 } from 'three'
 import { Range } from '../types/general'
 import { EXPONENT_SUFFIXES, METRIC_PREFIXES } from '../config/GlobalConfig'
+import { Region2, Region3 } from '../types/vector'
 
 /**
  * Checks if a value is within a given range.
@@ -8,7 +9,7 @@ import { EXPONENT_SUFFIXES, METRIC_PREFIXES } from '../config/GlobalConfig'
  * @param range  Range to compare the value to.
  * @returns  Whether the value in within the given range.
  */
- export const isWithin = (value: number, range: Range): boolean => {
+export const isWithin = (value: number, range: Range): boolean => {
 	return (range.min === undefined || value >= range.min) && (range.max === undefined || value < range.max)
 }
 
@@ -31,6 +32,34 @@ export const roundVector = <T extends Vector>(vector: T, decimals: number = 0): 
 	return vector.multiplyScalar(10 ** decimals).round().divideScalar(10 ** decimals)
 }
 
+export const isWithinVector2 = (vector: Vector2, region: Region2): boolean => {
+	const start = new Vector2(
+		Math.min(region.start.x, region.end.x),
+		Math.min(region.start.y, region.end.y),
+	)
+	const end = new Vector2(
+		Math.max(region.start.x, region.end.x),
+		Math.max(region.start.y, region.end.y),
+	)
+
+	return vector.x >= start.x && vector.x <= end.x && vector.y >= start.y && vector.y <= end.y
+}
+
+export const isWithinVector3 = (vector: Vector3, region: Region3): boolean => {
+	const start = new Vector3(
+		Math.min(region.start.x, region.end.x),
+		Math.min(region.start.y, region.end.y),
+		Math.min(region.start.z, region.end.z),
+	)
+	const end = new Vector3(
+		Math.max(region.start.x, region.end.x),
+		Math.max(region.start.y, region.end.y),
+		Math.max(region.start.z, region.end.z),
+	)
+
+	return vector.x >= start.x && vector.x <= end.x && vector.y >= start.y && vector.y <= end.y && vector.z >= start.z && vector.z <= end.z
+}
+
 // export const delay = new (ms: number) => {
 // 	return
 // }
@@ -45,8 +74,8 @@ export const delay = (ms: number) => new Promise<void>((resolve, reject) => {
 // }
 
 export const countDecimals = (num: number) => {
-    if (Math.floor(num.valueOf()) === num.valueOf()) return 0
-    return num.toString().split('.')[1].length || 0
+	if (Math.floor(num.valueOf()) === num.valueOf()) return 0
+	return num.toString().split('.')[1].length || 0
 }
 
 export const rangeCheck = (value: number, range: Range, def = 0) => {

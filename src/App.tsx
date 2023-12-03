@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Box, createTheme, ThemeProvider, useMediaQuery } from '@mui/material'
-import Viewer from './components/viewer/Viewer'
 import useCustomState, { useStateManager } from './state/state'
 import { Outlet } from 'react-router-dom'
+import { setCursor } from './utility/functions'
 
 const App = () => {
 	useStateManager(true)
@@ -52,6 +52,9 @@ const App = () => {
 		[prefersDarkMode, THEME_TYPE],
 	)
 
+	useEffect(() => {
+		setCursor('auto')
+	}, [])
 
 	return (
 		<ThemeProvider theme={THEME}>

@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from 'react'
 import { Box, SxProps, Theme, useTheme } from '@mui/material'
 import { Canvas, ThreeEvent } from '@react-three/fiber'
-import { Color, ColorRepresentation, MeshBasicMaterial, MeshPhongMaterial, OrthographicCamera, PlaneGeometry, Vector3 } from 'three'
+import { Color, ColorRepresentation, MeshPhongMaterial, OrthographicCamera, PlaneGeometry, Vector3 } from 'three'
 import CameraController from './CameraController'
 import useCustomState from '../../state/state'
 //@ts-ignore
 import FPSStats from "react-fps-stats"
 import { InfiniteGridHelper } from './InfiniteGridHelper'
+import Selection from './Selection'
+import { Region2 } from '../../types/vector'
+import { clearSelection } from '../../utility/functions'
 
 interface VisualizerProps {
 	sx?: SxProps<Theme>
 	cameraRef?: React.MutableRefObject<OrthographicCamera | undefined>
 	children?: React.ReactNode
+	selectionRegion?: Region2
 	onClick?: (e: ThreeEvent<MouseEvent>) => void
 	onMouseUp?: (e: ThreeEvent<MouseEvent>) => void
 	onMouseDown?: (e: ThreeEvent<MouseEvent>) => void
@@ -37,6 +41,18 @@ const Visualizer = (props: VisualizerProps) => {
 
 	if (props.cameraRef) {
 		props.cameraRef.current = camera
+	}
+
+	const handleClick = (e: ThreeEvent<MouseEvent>) => {
+		e.stopPropagation()
+		e.nativeEvent.preventDefault()
+		e.nativeEvent.stopPropagation()
+	}
+	
+	const handleDoubleClick = (e: ThreeEvent<MouseEvent>) => {
+		e.stopPropagation()
+		e.nativeEvent.preventDefault()
+		e.nativeEvent.stopPropagation()
 	}
 
 	return (
@@ -70,11 +86,18 @@ const Visualizer = (props: VisualizerProps) => {
 					})}
 					position={[0, 0, -50]}
 					rotation={[0, 0, Math.PI / 2]}
-					onClick={props.onClick}
+					onClick={handleClick}
+					onDoubleClick={handleDoubleClick}
 					onPointerUp={props.onMouseUp}
 					onPointerDown={props.onMouseDown}
 					onPointerMove={props.onHover}
 				/>
+				{props.selectionRegion && (
+					<Selection
+						region={props.selectionRegion}
+						color={new Color(palette.primary.main)}
+					/>
+				)}
 				{/* <hemisphereLight
 					color={0x999999}
 					groundColor={0x444444}

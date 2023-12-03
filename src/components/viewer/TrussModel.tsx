@@ -5,23 +5,22 @@ import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { Line2 } from 'three/examples/jsm/lines/Line2'
 import Force from './Force'
-import { ThreeEvent } from '@react-three/fiber'
-import { TrussConnectionDetailsType, TrussJointDetailsType } from '../../types/truss'
 import { TRUSS_COLORS, FAILURE_MODES } from '../../config/TrussConfig'
 import { useTheme } from '@mui/material'
+import { setCursor } from '../../utility/functions'
+import { ThreeEvent } from '@react-three/fiber'
 
 interface TrussModelProps {
 	truss: Truss,
 	view?: string,
 	simpleUtilization?: boolean,
-	hoverSelected?: React.MutableRefObject<boolean>,
-	selectedJoints?: Set<string>,
-	selectedConnections?: Set<string>,
+	hover?: React.MutableRefObject<{ joint: string | null, connection: string | null }>,
+	selected?: { joints: Set<string>, connections: Set<string> },
 	scale: Vector3,
 	position?: Vector3,
 	enableForces?: boolean,
-	onJointClick?: (e: ThreeEvent<MouseEvent>, id: string, details: TrussJointDetailsType) => void,
-	onConnectionClick?: (e: ThreeEvent<MouseEvent>, id: string, details: TrussConnectionDetailsType) => void,
+	// onJointClick?: (e: ThreeEvent<MouseEvent>, id: string) => void,
+	// onConnectionClick?: (e: ThreeEvent<MouseEvent>, id: string) => void,
 }
 
 const TrussModel = (props: TrussModelProps) => {
@@ -36,16 +35,30 @@ const TrussModel = (props: TrussModelProps) => {
 	const [hovered, setHovered] = useState(false)
 
 	useEffect(() => {
-		document.body.style.cursor = hovered ? 'pointer' : 'auto'
-
-		return () => {
-			document.body.style.cursor = 'auto'
-		}
+		setCursor(hovered ? 'pointer' : 'auto')
+		return () => setCursor('auto')
 	}, [hovered])
 
-	const handleHoverSelected = (hover: boolean) => {
-		if (props.hoverSelected) {
-			props.hoverSelected.current = hover
+	const handlePointerEnter = () => {
+		setHovered(true)
+	}
+
+	const handlePointerLeave = (e: ThreeEvent<PointerEvent>) => {
+		if (e.intersections.length === 0) return
+
+		setHovered(false)
+		if (props.hover) props.hover.current = { joint: null, connection: null }
+	}
+
+	const handleHoverJoint = (id: string) => {
+		if (props.hover && props.hover.current.joint !== id) {
+			props.hover.current.joint = id
+		}
+	}
+
+	const handleHoverConnection = (id: string) => {
+		if (props.hover && props.hover.current.connection !== id) {
+			props.hover.current.connection = id
 		}
 	}
 
@@ -54,8 +67,8 @@ const TrussModel = (props: TrussModelProps) => {
 			position={props.position ? props.position.multiply(scale) : undefined}
 		>
 			<group
-				onPointerOver={() => setHovered(true)}
-				onPointerOut={() => setHovered(false)}
+				onPointerEnter={handlePointerEnter}
+				onPointerLeave={handlePointerLeave}
 			>
 				<group>
 					{joints.map((joint, i) => {
@@ -67,23 +80,15 @@ const TrussModel = (props: TrussModelProps) => {
 							geometry = { main: new BoxGeometry(0.5, 0.5, 0.5), selected: new BoxGeometry(0.65, 0.65, 0.65) }
 						}
 
-						const selected = props.selectedJoints?.has(joint.id)
+						const selected = props.selected?.joints?.has(joint.id) ?? false
 
 						return (
 							<group
 								key={joint.id}
 								position={new Vector3(p.x, p.y, 0.5).multiply(scale)}
 								rotation={[0, 0, (joint.fixtures.x ? !joint.fixtures.y : joint.fixtures.y) ? Math.PI / 4 : 0]}
-								onClick={(e) => props.onJointClick?.(
-									e,
-									joint.id,
-									{
-										id: i,
-										joint: joints[i],
-									}
-								)}
-								onPointerOver={() => selected && handleHoverSelected(true)}
-								onPointerOut={() => selected && handleHoverSelected(false)}
+								// onClick={(e) => props.onJointClick?.(e, joint.id)}
+								onPointerMove={() => handleHoverJoint(joint.id)}
 							>
 								<primitive
 									object={new Mesh(
@@ -121,7 +126,7 @@ const TrussModel = (props: TrussModelProps) => {
 						const aPos = a.position.clone().multiply(scale2D)
 						const bPos = b.position.clone().multiply(scale2D)
 
-						const selected = props.selectedConnections?.has(connection.id)
+						const selected = props.selected?.connections?.has(connection.id) ?? false
 
 						const utilization = Math.min(Math.abs(connection.getUtilization(props.simpleUtilization)), 1)
 
@@ -131,9 +136,8 @@ const TrussModel = (props: TrussModelProps) => {
 							<group
 								key={connection.id}
 								position={[0, 0, selected ? 1 : 0]}
-								onClick={(e) => props.onConnectionClick?.(e, connection.id, { id, connection, a, b })}
-								onPointerOver={() => selected && handleHoverSelected(true)}
-								onPointerOut={() => selected && handleHoverSelected(false)}
+								// onClick={(e) => props.onConnectionClick?.(e, connection.id)}
+								onPointerMove={() => handleHoverConnection(connection.id)}
 							>
 								<primitive
 									object={new Line2(
